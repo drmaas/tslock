@@ -1,0 +1,21 @@
+{
+  "name": "tslock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TSLock monorepo — distributed locks for scheduled tasks in TypeScript",
+  "license": "Apache-2.0",
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
