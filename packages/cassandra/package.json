@@ -1,0 +1,42 @@
+{
+  "name": "@tslock/cassandra",
+  "version": "1.0.0",
+  "description": "TSLock provider for Apache Cassandra using Lightweight Transactions",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@tslock/core": "workspace:*",
+    "cassandra-driver": "^4.6.0"
+  },
+  "peerDependenciesMeta": {
+    "@tslock/core": { "optional": false },
+    "cassandra-driver": { "optional": false }
+  },
+  "devDependencies": {
+    "@tslock/core": "workspace:*",
+    "cassandra-driver": "^4.6.0",
+    "typescript": "^5.5.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}
