@@ -1,0 +1,42 @@
+{
+  "name": "@tslock/mongo",
+  "version": "1.0.0",
+  "description": "TSLock provider for MongoDB",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@tslock/core": "workspace:*",
+    "mongodb": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tslock/core": { "optional": false },
+    "mongodb": { "optional": false }
+  },
+  "devDependencies": {
+    "@tslock/core": "workspace:*",
+    "typescript": "^5.5.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0",
+    "mongodb": "^6.0.0"
+  }
+}
