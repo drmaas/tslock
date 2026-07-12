@@ -1,0 +1,44 @@
+{
+  "name": "@tslock/datastore",
+  "version": "1.0.0",
+  "description": "TSLock provider for Google Cloud Datastore",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@tslock/core": "workspace:*",
+    "@google-cloud/datastore": "^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tslock/core": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@tslock/core": "workspace:*",
+    "@tslock/test-support": "workspace:*",
+    "@google-cloud/datastore": "^8.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "tsup": "^8.0.0"
+  }
+}
