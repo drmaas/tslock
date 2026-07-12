@@ -1,0 +1,46 @@
+{
+  "name": "@tslock/drizzle",
+  "version": "1.0.0",
+  "description": "TSLock SQL provider using Drizzle ORM",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@tslock/core": "workspace:*",
+    "@tslock/sql-support": "workspace:*",
+    "drizzle-orm": "^0.30.0"
+  },
+  "peerDependenciesMeta": {
+    "@tslock/core": { "optional": false },
+    "@tslock/sql-support": { "optional": false },
+    "drizzle-orm": { "optional": false }
+  },
+  "devDependencies": {
+    "@tslock/core": "workspace:*",
+    "@tslock/sql-support": "workspace:*",
+    "@tslock/test-support": "workspace:*",
+    "typescript": "^5.5.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0",
+    "drizzle-orm": "^0.30.0"
+  }
+}
