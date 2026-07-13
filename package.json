@@ -15,10 +15,11 @@
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "test": "pnpm -r test",
+    "test:ci": "pnpm --filter @tslock/core build && pnpm -r test",
     "build": "pnpm -r build",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm check && pnpm test && pnpm build && changeset publish"
+    "release": "pnpm check && pnpm test:ci && pnpm build && changeset publish"
   },
   "engines": {
     "node": ">=22"
