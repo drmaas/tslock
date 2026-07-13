@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig, Utils } from '@tslock/core';
+import { ClockProvider, Utils, createLockConfig } from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collection';
 import type { Database } from 'arangojs/database';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,7 +8,7 @@ type ArangoCollection<T> = DocumentCollection<T> & EdgeCollection<T>;
 
 function makeTxn(overrides: Record<string, any> = {}) {
   return {
-    step: vi.fn().mockImplementation((fn: Function) => fn()),
+    step: vi.fn().mockImplementation((fn: () => void) => fn()),
     commit: vi.fn().mockResolvedValue(undefined),
     abort: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -135,7 +135,7 @@ describe('ArangoDbLockProvider', () => {
     const provider = new ArangoDbLockProvider(col, db);
     const lock = await provider.lock(config());
     expect(lock).toBeDefined();
-    const extended = await lock!.extend(60_000, 0);
+    const extended = await lock?.extend(60_000, 0);
     expect(extended).toBeUndefined();
   });
 
@@ -153,7 +153,7 @@ describe('ArangoDbLockProvider', () => {
     const provider = new ArangoDbLockProvider(col, db);
     const lock = await provider.lock(config());
     expect(lock).toBeDefined();
-    const extended = await lock!.extend(60_000, 0);
+    const extended = await lock?.extend(60_000, 0);
     expect(extended).toBeUndefined();
     expect(col.update).not.toHaveBeenCalled();
   });
@@ -172,7 +172,7 @@ describe('ArangoDbLockProvider', () => {
     const provider = new ArangoDbLockProvider(col, db);
     const lock = await provider.lock(config());
     expect(lock).toBeDefined();
-    const extended = await lock!.extend(60_000, 0);
+    const extended = await lock?.extend(60_000, 0);
     expect(extended).toBeUndefined();
     expect(col.update).not.toHaveBeenCalled();
   });
@@ -193,7 +193,7 @@ describe('ArangoDbLockProvider', () => {
     const provider = new ArangoDbLockProvider(col, db);
     const lock = await provider.lock(config());
     expect(lock).toBeDefined();
-    const extended = await lock!.extend(60_000, 0);
+    const extended = await lock?.extend(60_000, 0);
     expect(extended).toBeDefined();
     expect(col.update).toHaveBeenCalled();
   });

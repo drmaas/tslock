@@ -30,7 +30,7 @@ export function storageBasedLockProviderIntegrationTests(
       const name = uniqueLockName();
       const lock = await provider.lock(config(name, '1m'));
       expect(lock).toBeDefined();
-      await lock!.unlock();
+      await lock?.unlock();
       if (accessor) {
         const inserted = await accessor.insertRecord(config(name, '1m'));
         expect(inserted).toBe(false);
@@ -45,14 +45,14 @@ export function storageBasedLockProviderIntegrationTests(
         const inserted = await accessor.insertRecord(config(name, '1m'));
         expect(inserted).toBe(false);
       }
-      await lock!.unlock();
+      await lock?.unlock();
     });
 
     it('shouldUpdateRecordIfExpired', async () => {
       const name = uniqueLockName();
       const lock1 = await provider.lock(config(name, '1s'));
       expect(lock1).toBeDefined();
-      await lock1!.unlock();
+      await lock1?.unlock();
       if (timeMode === 'mock') {
         let current = baseTime;
         ClockProvider.setClock(() => {
@@ -64,7 +64,7 @@ export function storageBasedLockProviderIntegrationTests(
       }
       const lock2 = await provider.lock(config(name, '1m'));
       expect(lock2).toBeDefined();
-      await lock2!.unlock();
+      await lock2?.unlock();
     });
   });
 }

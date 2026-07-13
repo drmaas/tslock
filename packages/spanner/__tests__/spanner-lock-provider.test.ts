@@ -1,11 +1,10 @@
-import { ClockProvider, createLockConfig, StorageBasedLockProvider } from '@tslock/core';
+import { ClockProvider, StorageBasedLockProvider, createLockConfig } from '@tslock/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SpannerColumnNames } from '../src/spanner-configuration.js';
-import { SpannerStorageAccessor } from '../src/spanner-storage-accessor.js';
 
 const NOW = 1_000_000;
 
-function cols(overrides?: Partial<SpannerColumnNames>): SpannerColumnNames {
+function _cols(overrides?: Partial<SpannerColumnNames>): SpannerColumnNames {
   return { name: 'name', lockUntil: 'lockUntil', lockedAt: 'lockedAt', lockedBy: 'lockedBy', ...overrides };
 }
 
@@ -75,7 +74,7 @@ describe('SpannerLockProvider', () => {
     accessor.insertRecord.mockResolvedValue(true);
     accessor.unlock.mockResolvedValue(undefined);
     const lock = await provider.lock(cfg());
-    await lock!.unlock();
+    await lock?.unlock();
     expect(accessor.unlock).toHaveBeenCalledOnce();
   });
 
@@ -83,7 +82,7 @@ describe('SpannerLockProvider', () => {
     accessor.insertRecord.mockResolvedValue(true);
     accessor.extend.mockResolvedValue(true);
     const lock = await provider.lock(cfg());
-    const extended = await lock!.extend(30_000, 0);
+    const extended = await lock?.extend(30_000, 0);
     expect(extended).toBeDefined();
     expect(accessor.extend).toHaveBeenCalledOnce();
   });
@@ -92,7 +91,7 @@ describe('SpannerLockProvider', () => {
     accessor.insertRecord.mockResolvedValue(true);
     accessor.extend.mockResolvedValue(false);
     const lock = await provider.lock(cfg());
-    const extended = await lock!.extend(30_000, 0);
+    const extended = await lock?.extend(30_000, 0);
     expect(extended).toBeUndefined();
   });
 
@@ -100,7 +99,7 @@ describe('SpannerLockProvider', () => {
     accessor.insertRecord.mockResolvedValue(true);
     accessor.unlock.mockResolvedValue(undefined);
     const lock = await provider.lock(cfg());
-    await lock!.unlock();
-    await expect(lock!.unlock()).rejects.toThrow();
+    await lock?.unlock();
+    await expect(lock?.unlock()).rejects.toThrow();
   });
 });

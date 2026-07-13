@@ -11,7 +11,7 @@ export function translateToPositional(
   const values: unknown[] = [];
   let counter = 0;
 
-  const result = sql.replace(NAMED_PARAM_PATTERN, (match, name: string) => {
+  const result = sql.replace(NAMED_PARAM_PATTERN, (_match, name: string) => {
     if (!(name in params)) {
       throw new LockException(`Missing param: ${name}`);
     }
@@ -33,7 +33,7 @@ export function translateToNamed(
   params: Record<string, unknown>,
   prefix: string,
 ): { sql: string; params: Record<string, unknown> } {
-  const result = sql.replace(NAMED_PARAM_PATTERN, (match, name: string) => {
+  const result = sql.replace(NAMED_PARAM_PATTERN, (_match, name: string) => {
     if (!(name in params)) {
       throw new LockException(`Missing param: ${name}`);
     }

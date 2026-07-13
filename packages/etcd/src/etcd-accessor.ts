@@ -1,7 +1,7 @@
 import { ClockProvider, type LockConfiguration, Utils } from '@tslock/core';
 import type { Etcd3, Lease } from 'etcd3';
-import { EtcdLock } from './etcd-lock.js';
 import { MILLIS_IN_SECOND } from './etcd-lock-provider-options.js';
+import { EtcdLock } from './etcd-lock.js';
 
 export class EtcdAccessor {
   constructor(

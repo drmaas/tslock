@@ -1,6 +1,6 @@
 import type { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { ConditionalCheckFailedException, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
-import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import { ClockProvider, type LockConfiguration, Utils, lockAtMostUntil, unlockTime } from '@tslock/core';
 import { DynamoDBLock } from './dynamodb-lock.js';
 
 export class DynamoDBAccessor {

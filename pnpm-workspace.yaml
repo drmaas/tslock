@@ -2,7 +2,8 @@ packages:
   - 'packages/*'
 minimumReleaseAge: 0
 allowBuilds:
+  '@biomejs/biome': true
   couchbase: true
   esbuild: true
   protobufjs: true
-  zookeeper: set this to true or false
+  zookeeper: false

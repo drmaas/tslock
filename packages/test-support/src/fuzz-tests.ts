@@ -18,7 +18,7 @@ export function fuzzTests(getProvider: () => Promise<LockProvider>): void {
         const results = await Promise.all(promises);
         const locks = results.filter((r) => r !== undefined);
         expect(locks.length).toBe(1);
-        await locks[0]!.unlock();
+        await locks[0]?.unlock();
       }
     });
 

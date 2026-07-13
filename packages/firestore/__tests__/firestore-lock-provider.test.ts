@@ -1,6 +1,5 @@
-import { ClockProvider, createLockConfig, StorageBasedLockProvider } from '@tslock/core';
+import { ClockProvider, StorageBasedLockProvider, createLockConfig } from '@tslock/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FirestoreStorageAccessor } from '../src/firestore-storage-accessor.js';
 
 const NOW = 1_000_000;
 
@@ -70,7 +69,7 @@ describe('FirestoreLockProvider', () => {
     accessor.insertRecord.mockResolvedValue(true);
     accessor.unlock.mockResolvedValue(undefined);
     const lock = await provider.lock(cfg());
-    await lock!.unlock();
+    await lock?.unlock();
     expect(accessor.unlock).toHaveBeenCalledOnce();
   });
 
@@ -78,7 +77,7 @@ describe('FirestoreLockProvider', () => {
     accessor.insertRecord.mockResolvedValue(true);
     accessor.extend.mockResolvedValue(true);
     const lock = await provider.lock(cfg());
-    const extended = await lock!.extend(30_000, 0);
+    const extended = await lock?.extend(30_000, 0);
     expect(extended).toBeDefined();
     expect(accessor.extend).toHaveBeenCalledOnce();
   });
@@ -87,7 +86,7 @@ describe('FirestoreLockProvider', () => {
     accessor.insertRecord.mockResolvedValue(true);
     accessor.extend.mockResolvedValue(false);
     const lock = await provider.lock(cfg());
-    const extended = await lock!.extend(30_000, 0);
+    const extended = await lock?.extend(30_000, 0);
     expect(extended).toBeUndefined();
   });
 
@@ -95,7 +94,7 @@ describe('FirestoreLockProvider', () => {
     accessor.insertRecord.mockResolvedValue(true);
     accessor.unlock.mockResolvedValue(undefined);
     const lock = await provider.lock(cfg());
-    await lock!.unlock();
-    await expect(lock!.unlock()).rejects.toThrow();
+    await lock?.unlock();
+    await expect(lock?.unlock()).rejects.toThrow();
   });
 });

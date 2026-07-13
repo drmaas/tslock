@@ -8,7 +8,7 @@ export interface SimpleLock {
 }
 
 export abstract class AbstractSimpleLock implements SimpleLock {
-  protected valid: boolean = true;
+  protected valid = true;
 
   constructor(protected readonly config: LockConfiguration) {}
 

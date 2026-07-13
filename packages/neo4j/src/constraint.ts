@@ -1,5 +1,5 @@
 import type { Driver } from 'neo4j-driver';
-import { buildCreateConstraintCypher, type ResolvedOptions } from './neo4j-cypher.js';
+import { type ResolvedOptions, buildCreateConstraintCypher } from './neo4j-cypher.js';
 import { type Neo4jColumnNames, resolveOptions } from './neo4j-lock-provider.js';
 
 export async function createUniqueConstraint(

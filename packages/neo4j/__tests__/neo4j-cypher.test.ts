@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  type ResolvedOptions,
   buildCreateConstraintCypher,
   buildExtendCypher,
   buildInsertCypher,
   buildUnlockCypher,
   buildUpdateCypher,
-  type ResolvedOptions,
 } from '../src/neo4j-cypher.js';
 
 const defaultOpts: ResolvedOptions = {

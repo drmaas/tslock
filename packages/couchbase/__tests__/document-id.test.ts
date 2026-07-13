@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDocumentId, MAX_DOCUMENT_ID_LENGTH } from '../src/document-id.js';
+import { MAX_DOCUMENT_ID_LENGTH, buildDocumentId } from '../src/document-id.js';
 
 describe('buildDocumentId', () => {
   it('returns prefix + name', () => {

@@ -38,7 +38,7 @@ describe('IoRedisLockProvider', () => {
     const lock = (await provider.lock(createLockConfig('t', 60_000)))!;
     await lock.unlock();
     expect(client.eval).toHaveBeenCalled();
-    expect(client.eval.mock.calls[0]![0]).toBe(DEL_IF_EQUALS_SCRIPT);
+    expect(client.eval.mock.calls[0]?.[0]).toBe(DEL_IF_EQUALS_SCRIPT);
   });
 
   it('unlock() with safeUpdate=false calls del', async () => {
@@ -57,7 +57,7 @@ describe('IoRedisLockProvider', () => {
     const extended = await lock.extend(120_000, 0);
     expect(extended).toBeDefined();
     expect(client.eval).toHaveBeenCalled();
-    expect(client.eval.mock.calls[0]![0]).toBe(EXTEND_IF_EQUALS_SCRIPT);
+    expect(client.eval.mock.calls[0]?.[0]).toBe(EXTEND_IF_EQUALS_SCRIPT);
   });
 
   it('extend() returns undefined when eval returns 0', async () => {
@@ -85,6 +85,6 @@ describe('IoRedisLockProvider', () => {
     const provider = new IoRedisLockProvider(client as never, { keyPrefix: 'myapp', env: 'prod' });
     const lock = await provider.lock(createLockConfig('t', 60_000));
     expect(lock).toBeDefined();
-    expect(client.call.mock.calls[0]![1]).toBe('myapp:prod:t');
+    expect(client.call.mock.calls[0]?.[1]).toBe('myapp:prod:t');
   });
 });

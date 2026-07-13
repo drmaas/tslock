@@ -73,7 +73,7 @@ describe('KyselyStorageAccessor', () => {
     const accessor = new KyselyStorageAccessor(db, source, dialect);
     await accessor.insertRecord(createLockConfig('t', 1000));
     expect(executeQuery).toHaveBeenCalledOnce();
-    const compiled = executeQuery.mock.calls[0]![0] as ReturnType<typeof CompiledQuery.raw>;
+    const compiled = executeQuery.mock.calls[0]?.[0] as ReturnType<typeof CompiledQuery.raw>;
     expect(compiled.sql).toContain('INSERT INTO shedlock');
     expect(compiled.sql).toContain('$1');
   });

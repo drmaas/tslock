@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
 import { describe, expect, it } from 'vitest';
 import { InMemoryLockProvider } from '../src/in-memory-lock-provider.js';
 

@@ -10,7 +10,7 @@ function normalizePath(path: string): string {
     result = result.slice(0, -1);
   }
   if (!result.startsWith('/')) {
-    result = '/' + result;
+    result = `/${result}`;
   }
   return result;
 }

@@ -2,9 +2,8 @@ import {
   AbstractSimpleLock,
   type ExtensibleLockProvider,
   type LockConfiguration,
-  lockAtMostUntil,
   type SimpleLock,
-  unlockTime,
+  lockAtMostUntil,
 } from '@tslock/core';
 import type { RedisTemplate } from './redis-template.js';
 import { DEL_IF_EQUALS_SCRIPT, EXTEND_IF_EQUALS_SCRIPT } from './scripts.js';
@@ -33,20 +32,6 @@ class RedisLock extends AbstractSimpleLock {
     private readonly safeUpdate: boolean,
   ) {
     super(config);
-  }
-
-  private static buildKey(name: string, prefix: string, env: string): string {
-    return `${prefix}:${env}:${name}`;
-  }
-
-  private static buildValue(parts: RedisLockValueParts): string {
-    return `ADDED:${parts.isoNow}@${parts.hostname}:${parts.randomId}`;
-  }
-
-  private static getKeyPrefix(prefix: string | undefined, env: string | undefined): string {
-    const p = prefix ?? DEFAULT_KEY_PREFIX;
-    const e = env ?? ENV_DEFAULT;
-    return `${p}:${e}`;
   }
 
   protected override async doUnlock(): Promise<void> {
@@ -92,7 +77,7 @@ export class InternalRedisLockProvider implements ExtensibleLockProvider {
   }
 
   buildValue(parts: RedisLockValueParts): string {
-    return RedisLock['buildValue'](parts);
+    return RedisLock.buildValue(parts);
   }
 
   static parseKey(key: string, prefix: string, env: string): string {
@@ -101,7 +86,7 @@ export class InternalRedisLockProvider implements ExtensibleLockProvider {
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const key = this.buildKey(config.name);
-    const value = RedisLock['buildValue']({
+    const value = RedisLock.buildValue({
       hostname: 'tslock',
       isoNow: new Date(lockAtMostUntil(config)).toISOString(),
       randomId: Math.random().toString(36).slice(2),

@@ -4,8 +4,6 @@ import { translateToPositional } from '../param-translator.js';
 import type { QueryResult, SqlConnection } from '../sql-connection.js';
 
 export class Mysql2Connection implements SqlConnection {
-  private static readonly MARIADB_DETECT_KEY = '__tslock_mariadb_detected';
-
   private constructor(
     private readonly pool: Pool,
     private readonly product: DatabaseProduct,

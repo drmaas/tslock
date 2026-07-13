@@ -2,8 +2,8 @@ import {
   AbstractStorageAccessor,
   ClockProvider,
   type LockConfiguration,
-  lockAtMostUntil,
   Utils,
+  lockAtMostUntil,
   unlockTime,
 } from '@tslock/core';
 import type { Collection } from 'couchbase';

@@ -77,7 +77,7 @@ describe('KeepAliveLockProvider', () => {
   it('extend called on interval tick', async () => {
     const { provider, extendMock } = makeProvider();
     const kap = new KeepAliveLockProvider(provider, scheduler);
-    const lock = await kap.lock(createLockConfig('t', 60_000));
+    const _lock = await kap.lock(createLockConfig('t', 60_000));
     const cb = [...scheduler.callbacks.values()][0]!;
     await cb();
     expect(extendMock).toHaveBeenCalled();

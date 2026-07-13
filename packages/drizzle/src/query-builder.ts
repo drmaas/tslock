@@ -1,4 +1,4 @@
-import { param, type SQL, sql } from 'drizzle-orm';
+import { type SQL, param, sql } from 'drizzle-orm';
 
 const NAMED_PARAM_PATTERN = /:([a-zA-Z_][a-zA-Z0-9_]*)/g;
 

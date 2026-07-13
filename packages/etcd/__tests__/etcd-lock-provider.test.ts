@@ -132,7 +132,7 @@ describe('EtcdLockProvider', () => {
       const lock = await provider.lock(makeConfig('unlock-me', 30_000));
       expect(lock).toBeDefined();
 
-      await lock!.unlock();
+      await lock?.unlock();
       expect(lease.revoke).toHaveBeenCalled();
     });
 
@@ -157,7 +157,7 @@ describe('EtcdLockProvider', () => {
       const lock = await provider.lock(makeConfig('keep-lock', 30_000, 10_000));
       expect(lock).toBeDefined();
 
-      await lock!.unlock();
+      await lock?.unlock();
 
       expect(client.lease).toHaveBeenCalledTimes(2);
       expect(client.lease).toHaveBeenNthCalledWith(1, 30);
@@ -175,7 +175,7 @@ describe('EtcdLockProvider', () => {
       expect(lock).toBeDefined();
 
       try {
-        const result = await lock!.extend(60_000, 0);
+        const result = await lock?.extend(60_000, 0);
         expect(result).toBeUndefined();
       } catch (e) {
         expect(e).toBeInstanceOf(LockException);

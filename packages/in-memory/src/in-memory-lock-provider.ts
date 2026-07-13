@@ -2,8 +2,8 @@ import {
   ClockProvider,
   type ExtensibleLockProvider,
   type LockConfiguration,
-  lockAtMostUntil,
   type SimpleLock,
+  lockAtMostUntil,
 } from '@tslock/core';
 import { InMemoryLock } from './in-memory-lock.js';
 

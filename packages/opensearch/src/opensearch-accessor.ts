@@ -1,5 +1,5 @@
 import type { Client } from '@opensearch-project/opensearch';
-import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import { ClockProvider, type LockConfiguration, Utils, lockAtMostUntil, unlockTime } from '@tslock/core';
 import type { OpenSearchFieldNames } from './field-names.js';
 import { OpenSearchLock } from './opensearch-lock.js';
 
@@ -13,7 +13,7 @@ if (ctx._source[params.lockUntilField] <= params.now) {
 }
 `;
 
-const UNLOCK_SCRIPT = `ctx._source[params.lockUntilField] = params.unlockTime`;
+const UNLOCK_SCRIPT = 'ctx._source[params.lockUntilField] = params.unlockTime';
 
 const EXTEND_SCRIPT = `
 if (ctx._source[params.lockedByField] == params.lockedBy && ctx._source[params.lockUntilField] > params.now) {

@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
 import type { Client as HazelcastClient } from 'hazelcast-client';
 import { describe, expect, it, vi } from 'vitest';
 import { HazelcastLockProvider } from '../src/hazelcast-lock-provider.js';

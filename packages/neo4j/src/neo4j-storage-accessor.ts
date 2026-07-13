@@ -2,17 +2,17 @@ import {
   AbstractStorageAccessor,
   ClockProvider,
   type LockConfiguration,
-  lockAtMostUntil,
   Utils,
+  lockAtMostUntil,
   unlockTime,
 } from '@tslock/core';
 import type { Driver, ManagedTransaction } from 'neo4j-driver';
 import {
+  type ResolvedOptions,
   buildExtendCypher,
   buildInsertCypher,
   buildUnlockCypher,
   buildUpdateCypher,
-  type ResolvedOptions,
 } from './neo4j-cypher.js';
 
 function isConstraintViolation(error: unknown, lockName: string): boolean {

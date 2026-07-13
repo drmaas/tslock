@@ -33,7 +33,7 @@ export function extensibleLockProviderIntegrationTests(
       } else {
         await sleep(6_000);
       }
-      const extended = await lock!.extend(10_000, 0);
+      const extended = await lock?.extend(10_000, 0);
       expect(extended).toBeDefined();
       if (timeMode === 'mock') {
         let current2 = baseTime + 6_000;
@@ -46,7 +46,7 @@ export function extensibleLockProviderIntegrationTests(
       }
       const lock2 = await provider.lock(config(name, '10s'));
       expect(lock2).toBeUndefined();
-      await extended!.unlock();
+      await extended?.unlock();
     });
 
     it('shouldNotExtendIfExpired', async () => {
@@ -62,7 +62,7 @@ export function extensibleLockProviderIntegrationTests(
       } else {
         await sleep(2_000);
       }
-      const extended = await lock!.extend(10_000, 0);
+      const extended = await lock?.extend(10_000, 0);
       expect(extended).toBeUndefined();
     });
   });

@@ -4,8 +4,8 @@ import {
   ClockProvider,
   type LockConfiguration,
   LockException,
-  lockAtMostUntil,
   Utils,
+  lockAtMostUntil,
   unlockTime,
 } from '@tslock/core';
 import { isNotFound, isPreconditionFailed } from './s3-errors.js';
@@ -86,7 +86,7 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
 
   override async updateRecord(config: LockConfiguration): Promise<boolean> {
     const head = await this.headObject(config.name);
-    if (head === null) throw new LockException('Lock record not found: ' + config.name);
+    if (head === null) throw new LockException(`Lock record not found: ${config.name}`);
     const lockUntil = this.parseLockUntil(head.metadata);
     if (lockUntil > ClockProvider.now()) return false;
     try {

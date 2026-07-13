@@ -1,7 +1,7 @@
 import { StorageBasedLockProvider } from '@tslock/core';
-import { createSqlStatementsSource, type SqlConfiguration } from '@tslock/sql-support';
+import { type SqlConfiguration, createSqlStatementsSource } from '@tslock/sql-support';
 import type { Kysely } from 'kysely';
-import { getDialectInfo, type KyselyDialectName } from './dialect-info.js';
+import { type KyselyDialectName, getDialectInfo } from './dialect-info.js';
 import { KyselyStorageAccessor } from './kysely-storage-accessor.js';
 
 export class KyselyLockProvider extends StorageBasedLockProvider {

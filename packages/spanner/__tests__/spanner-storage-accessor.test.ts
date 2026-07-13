@@ -42,12 +42,8 @@ function cfg(name = 'test', most = 60_000, least = 0) {
 }
 
 async function runTx(tx: any, fn: (t: any) => Promise<any>): Promise<any> {
-  try {
-    const result = await fn(tx);
-    return result;
-  } catch (e) {
-    throw e;
-  }
+  const result = await fn(tx);
+  return result;
 }
 
 describe('SpannerStorageAccessor', () => {
@@ -66,11 +62,7 @@ describe('SpannerStorageAccessor', () => {
       tx.commit.mockRejectedValue({ code: 6 });
       const db = makeDb({
         runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
-          try {
-            return await runTx(tx, fn);
-          } catch (e: any) {
-            throw e;
-          }
+          return await runTx(tx, fn);
         }),
       });
       const accessor = new SpannerStorageAccessor(db, 'shedlock', cols(), 'my-host');
@@ -82,11 +74,7 @@ describe('SpannerStorageAccessor', () => {
       tx.commit.mockRejectedValue({ code: 9, message: 'already exists' });
       const db = makeDb({
         runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
-          try {
-            return await runTx(tx, fn);
-          } catch (e: any) {
-            throw e;
-          }
+          return await runTx(tx, fn);
         }),
       });
       const accessor = new SpannerStorageAccessor(db, 'shedlock', cols(), 'my-host');
@@ -98,11 +86,7 @@ describe('SpannerStorageAccessor', () => {
       tx.commit.mockRejectedValue(new Error('network error'));
       const db = makeDb({
         runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
-          try {
-            return await runTx(tx, fn);
-          } catch (e: any) {
-            throw e;
-          }
+          return await runTx(tx, fn);
         }),
       });
       const accessor = new SpannerStorageAccessor(db, 'shedlock', cols(), 'my-host');

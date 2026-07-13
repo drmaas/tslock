@@ -19,7 +19,7 @@ describe('InMemoryLockProvider integration', () => {
   it('shouldLockOnce', async () => {
     const lock = await provider.lock(createLockConfig('test', 60_000));
     expect(lock).toBeDefined();
-    await lock!.unlock();
+    await lock?.unlock();
   });
 
   it('shouldSkipIfLocked', async () => {
@@ -27,15 +27,15 @@ describe('InMemoryLockProvider integration', () => {
     const lock2 = await provider.lock(createLockConfig('test', 60_000));
     expect(lock1).toBeDefined();
     expect(lock2).toBeUndefined();
-    await lock1!.unlock();
+    await lock1?.unlock();
   });
 
   it('shouldUnlock', async () => {
     const lock1 = await provider.lock(createLockConfig('test', 60_000));
-    await lock1!.unlock();
+    await lock1?.unlock();
     const lock2 = await provider.lock(createLockConfig('test', 60_000));
     expect(lock2).toBeDefined();
-    await lock2!.unlock();
+    await lock2?.unlock();
   });
 
   it('shouldLockAtLeastFor', async () => {
@@ -48,7 +48,7 @@ describe('InMemoryLockProvider integration', () => {
     ClockProvider.setClock(() => baseTime + 7_000);
     const lock3 = await provider.lock(createLockConfig('test', 10_000));
     expect(lock3).toBeDefined();
-    await lock3!.unlock();
+    await lock3?.unlock();
   });
 
   it('shouldExtendLock', async () => {
@@ -60,6 +60,6 @@ describe('InMemoryLockProvider integration', () => {
     ClockProvider.setClock(() => baseTime + 14_000);
     const lock2 = await provider.lock(createLockConfig('test', 10_000));
     expect(lock2).toBeUndefined();
-    await extended!.unlock();
+    await extended?.unlock();
   });
 });

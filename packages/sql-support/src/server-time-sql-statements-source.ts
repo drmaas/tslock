@@ -1,7 +1,7 @@
 import type { LockConfiguration } from '@tslock/core';
 import type { SqlConfiguration } from './sql-configuration.js';
-import { SQL_PARAM_NAMES } from './sql-statements.js';
 import { SqlStatementsSource } from './sql-statements-source.js';
+import { SQL_PARAM_NAMES } from './sql-statements.js';
 
 export abstract class ServerTimeStatementsSource extends SqlStatementsSource {
   readonly #insert: string;

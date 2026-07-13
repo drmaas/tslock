@@ -1,7 +1,6 @@
 import {
   type ExtensibleLockProvider,
   type LockConfiguration,
-  LockException,
   type SimpleLock,
   StorageBasedLockProvider,
   Utils,

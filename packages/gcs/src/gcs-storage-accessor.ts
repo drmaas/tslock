@@ -4,8 +4,8 @@ import {
   ClockProvider,
   type LockConfiguration,
   LockException,
-  lockAtMostUntil,
   Utils,
+  lockAtMostUntil,
   unlockTime,
 } from '@tslock/core';
 import { isNotFound, isPreconditionFailed } from './gcs-errors.js';
@@ -86,7 +86,7 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
 
   override async updateRecord(config: LockConfiguration): Promise<boolean> {
     const current = await this.getWithMetadata(config.name);
-    if (current === null) throw new LockException('Lock record not found: ' + config.name);
+    if (current === null) throw new LockException(`Lock record not found: ${config.name}`);
     const lockUntil = this.parseLockUntil(current.metadata);
     if (lockUntil > ClockProvider.now()) return false;
     const file = this.file(config.name);

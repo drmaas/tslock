@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import { ZooKeeperLockProvider } from '../src/zookeeper-lock-provider.js';
 
@@ -14,7 +14,7 @@ function makeClient(overrides: Record<string, unknown> = {}): any {
 
 const BASE_NOW = 1_000_000;
 
-function makeStat(version: number = 1) {
+function makeStat(version = 1) {
   return {
     czxid: 0,
     mzxid: 0,

@@ -6,7 +6,6 @@ import {
 } from '@tslock/core';
 import type { Collection } from 'couchbase';
 import { CouchbaseStorageAccessor } from './couchbase-storage-accessor.js';
-import { buildDocumentId } from './document-id.js';
 
 export interface CouchbaseColumnNames {
   readonly name: string;

@@ -2,11 +2,11 @@ import {
   ClockProvider,
   type LockConfiguration,
   type LockProvider,
-  lockAtMostUntil,
   type SimpleLock,
+  lockAtMostUntil,
 } from '@tslock/core';
 import type { KV } from 'nats';
-import { connect, StorageType } from 'nats';
+import { StorageType, connect } from 'nats';
 import { bytesToLong, longToBytes } from './long-utils.js';
 import type { NatsLockProviderOptions } from './nats-configuration.js';
 import { NatsLock } from './nats-lock.js';
@@ -15,7 +15,7 @@ function isNatsConflictError(e: unknown): boolean {
   if (e && typeof e === 'object') {
     const err = e as { code?: number; message?: string };
     if (err.code === 10071) return true;
-    if (err.message && err.message.includes('stream name already in use')) return true;
+    if (err.message?.includes('stream name already in use')) return true;
   }
   return false;
 }

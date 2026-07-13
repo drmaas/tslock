@@ -15,5 +15,5 @@ declare module 'memjs' {
   }
   const Client: { create(servers: string, options?: ClientCreateOptions): Client };
 
-  export { Client, ClientAddOptions, ClientCreateOptions, ClientResult };
+  export { Client, type ClientAddOptions, type ClientCreateOptions, type ClientResult };
 }

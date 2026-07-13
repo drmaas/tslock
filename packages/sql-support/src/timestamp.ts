@@ -35,8 +35,8 @@ function getOffset(timeZone: string, epochMillis: number): string {
   const offset = parts.find((p) => p.type === 'timeZoneName')?.value ?? '+00:00';
   const match = /GMT([+-]\d{1,2}):?(\d{2})?/.exec(offset);
   if (!match) return '+00:00';
-  const sign = match[1]!.startsWith('-') ? '-' : '+';
-  const hours = match[1]!.replace(/[+-]/, '').padStart(2, '0');
+  const sign = match[1]?.startsWith('-') ? '-' : '+';
+  const hours = match[1]?.replace(/[+-]/, '').padStart(2, '0');
   const minutes = match[2] ?? '00';
   return `${sign}${hours}:${minutes}`;
 }

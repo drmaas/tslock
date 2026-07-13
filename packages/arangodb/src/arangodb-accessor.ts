@@ -1,8 +1,8 @@
-import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import { ClockProvider, type LockConfiguration, Utils, lockAtMostUntil, unlockTime } from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collection';
 import type { Database } from 'arangojs/database';
-import { ArangoDbLock } from './arangodb-lock.js';
 import type { ArangoDbLockDocument } from './arangodb-lock-document.js';
+import { ArangoDbLock } from './arangodb-lock.js';
 
 type ArangoCollection<T extends Record<string, any>> = DocumentCollection<T> & EdgeCollection<T>;
 

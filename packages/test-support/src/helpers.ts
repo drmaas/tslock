@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createLockConfig, type LockConfiguration, type LockProvider, parseDuration } from '@tslock/core';
+import { type LockConfiguration, type LockProvider, createLockConfig, parseDuration } from '@tslock/core';
 
 export function config(
   name: string,

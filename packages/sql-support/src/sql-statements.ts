@@ -15,7 +15,7 @@ export const SQL_PARAM_NAMES = {
 
 export const NAMED_PARAM_PATTERN = /:([a-zA-Z_][a-zA-Z0-9_]*)/g;
 
-export function translateToPositional(sql: string, paramOrder: readonly string[]): string {
+export function translateToPositional(sql: string, _paramOrder: readonly string[]): string {
   let index = 0;
   return sql.replace(NAMED_PARAM_PATTERN, () => {
     return `$${++index}`;
