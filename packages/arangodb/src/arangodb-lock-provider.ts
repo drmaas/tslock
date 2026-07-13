@@ -1,10 +1,6 @@
+import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collection';
 import type { Database } from 'arangojs/database';
-import {
-  type ExtensibleLockProvider,
-  type LockConfiguration,
-  type SimpleLock,
-} from '@tslock/core';
 import { ArangoDbAccessor } from './arangodb-accessor.js';
 import type { ArangoDbLockDocument } from './arangodb-lock-document.js';
 

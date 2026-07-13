@@ -1,10 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
 import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@tslock/sql-support';
-import { DrizzleStorageAccessor, type DrizzleExecutor } from '../src/drizzle-storage-accessor.js';
+import { describe, expect, it, vi } from 'vitest';
 import { DRIZZLE_DIALECT_INFOS } from '../src/drizzle-lock-provider.js';
+import { type DrizzleExecutor, DrizzleStorageAccessor } from '../src/drizzle-storage-accessor.js';
 
-function makeDb(affected: number | { affectedRows?: number; rowCount?: number; changes?: number }, throwError?: unknown): { db: DrizzleExecutor; executeMock: ReturnType<typeof vi.fn> } {
+function makeDb(
+  affected: number | { affectedRows?: number; rowCount?: number; changes?: number },
+  throwError?: unknown,
+): { db: DrizzleExecutor; executeMock: ReturnType<typeof vi.fn> } {
   const executeMock = vi.fn();
   if (throwError) {
     executeMock.mockRejectedValue(throwError);
@@ -16,9 +19,7 @@ function makeDb(affected: number | { affectedRows?: number; rowCount?: number; c
   return { db: { execute: executeMock }, executeMock };
 }
 
-const source = new DefaultSqlStatementsSource(
-  new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES }),
-);
+const source = new DefaultSqlStatementsSource(new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES }));
 const pgDialect = DRIZZLE_DIALECT_INFOS.postgresql;
 const mysqlDialect = DRIZZLE_DIALECT_INFOS.mysql;
 const sqliteDialect = DRIZZLE_DIALECT_INFOS.sqlite;

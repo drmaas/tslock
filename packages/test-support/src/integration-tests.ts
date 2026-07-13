@@ -1,10 +1,5 @@
+import { ClockProvider, type LockConfiguration, LockException, type LockProvider } from '@tslock/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  ClockProvider,
-  LockException,
-  type LockConfiguration,
-  type LockProvider,
-} from '@tslock/core';
 import { config, sleep, uniqueLockName } from './helpers.js';
 
 export interface IntegrationTestOptions {
@@ -88,8 +83,7 @@ export function lockProviderIntegrationTests(
       }
       try {
         await lock!.unlock();
-      } catch {
-      }
+      } catch {}
     });
   });
 }

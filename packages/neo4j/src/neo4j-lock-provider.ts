@@ -1,6 +1,11 @@
-import { StorageBasedLockProvider, type ExtensibleLockProvider, type SimpleLock, type LockConfiguration } from '@tslock/core';
-import { Neo4jStorageAccessor } from './neo4j-storage-accessor.js';
+import {
+  type ExtensibleLockProvider,
+  type LockConfiguration,
+  type SimpleLock,
+  StorageBasedLockProvider,
+} from '@tslock/core';
 import type { ResolvedOptions } from './neo4j-cypher.js';
+import { Neo4jStorageAccessor } from './neo4j-storage-accessor.js';
 
 export interface Neo4jColumnNames {
   readonly name: string;
@@ -51,18 +56,10 @@ export function resolveOptions(options?: Neo4jLockProviderOptions): ResolvedOpti
 export class Neo4jLockProvider implements ExtensibleLockProvider {
   private readonly delegate: StorageBasedLockProvider;
 
-  constructor(
-    driver: import('neo4j-driver').Driver,
-    options?: Neo4jLockProviderOptions,
-  ) {
+  constructor(driver: import('neo4j-driver').Driver, options?: Neo4jLockProviderOptions) {
     const resolved = resolveOptions(options);
     this.delegate = new StorageBasedLockProvider(
-      new Neo4jStorageAccessor(
-        driver,
-        resolved,
-        options?.lockedByValue,
-        options?.database,
-      ),
+      new Neo4jStorageAccessor(driver, resolved, options?.lockedByValue, options?.database),
     );
   }
 

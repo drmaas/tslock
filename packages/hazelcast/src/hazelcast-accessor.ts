@@ -1,7 +1,7 @@
-import { ClockProvider, Utils, type LockConfiguration, lockAtMostUntil, lockAtLeastUntil } from '@tslock/core';
+import { ClockProvider, type LockConfiguration, lockAtLeastUntil, lockAtMostUntil, Utils } from '@tslock/core';
 import type { Client as HazelcastClient } from 'hazelcast-client';
-import type { HazelcastLockRecord } from './hazelcast-lock-record.js';
 import { HazelcastLock } from './hazelcast-lock.js';
+import type { HazelcastLockRecord } from './hazelcast-lock-record.js';
 
 export class HazelcastAccessor {
   constructor(
@@ -55,8 +55,7 @@ export class HazelcastAccessor {
       if (locked) {
         try {
           await store.unlock(config.name);
-        } catch {
-        }
+        } catch {}
       }
     }
   }
@@ -88,8 +87,7 @@ export class HazelcastAccessor {
       if (locked) {
         try {
           await store.unlock(config.name);
-        } catch {
-        }
+        } catch {}
       }
     }
   }

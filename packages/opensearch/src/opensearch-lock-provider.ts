@@ -1,11 +1,7 @@
 import type { Client } from '@opensearch-project/opensearch';
-import {
-  type ExtensibleLockProvider,
-  type LockConfiguration,
-  type SimpleLock,
-} from '@tslock/core';
-import { OpenSearchAccessor } from './opensearch-accessor.js';
+import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
 import { FieldNames, type OpenSearchFieldNames } from './field-names.js';
+import { OpenSearchAccessor } from './opensearch-accessor.js';
 
 export interface OpenSearchLockProviderOptions {
   index?: string;

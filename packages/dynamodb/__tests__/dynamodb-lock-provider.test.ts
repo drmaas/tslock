@@ -1,6 +1,6 @@
+import { ConditionalCheckFailedException, type DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
-import { DynamoDBClient, ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { DynamoDBLockProvider } from '../src/dynamodb-lock-provider.js';
 
 function makeClient(overrides: Record<string, any> = {}): DynamoDBClient {
@@ -24,7 +24,9 @@ describe('DynamoDBLockProvider', () => {
   });
 
   it('lock() returns undefined when condition fails', async () => {
-    const client = makeClient({ send: vi.fn().mockRejectedValue(new ConditionalCheckFailedException({ message: 'cond fail', $metadata: {} })) });
+    const client = makeClient({
+      send: vi.fn().mockRejectedValue(new ConditionalCheckFailedException({ message: 'cond fail', $metadata: {} })),
+    });
     const provider = new DynamoDBLockProvider({ tableName: 'locks', client });
     const lock = await provider.lock(config());
     expect(lock).toBeUndefined();
@@ -53,8 +55,10 @@ describe('DynamoDBLockProvider', () => {
     const send = vi.fn().mockResolvedValue({});
     const client = makeClient({ send });
     const provider = new DynamoDBLockProvider({
-      tableName: 'locks', client,
-      partitionKey: 'pk', sortKey: { name: 'sk', value: 'global' },
+      tableName: 'locks',
+      client,
+      partitionKey: 'pk',
+      sortKey: { name: 'sk', value: 'global' },
     });
     await provider.lock(config());
     const cmd = send.mock.calls[0][0];
@@ -79,7 +83,8 @@ describe('DynamoDBLockProvider', () => {
 
   it('extend() returns undefined when condition fails', async () => {
     const client = makeClient({
-      send: vi.fn()
+      send: vi
+        .fn()
         .mockResolvedValueOnce({})
         .mockRejectedValueOnce(new ConditionalCheckFailedException({ message: 'cond fail', $metadata: {} })),
     });

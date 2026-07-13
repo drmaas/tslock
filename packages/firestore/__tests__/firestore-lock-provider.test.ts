@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { createLockConfig, ClockProvider, StorageBasedLockProvider } from '@tslock/core';
+import { ClockProvider, createLockConfig, StorageBasedLockProvider } from '@tslock/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FirestoreStorageAccessor } from '../src/firestore-storage-accessor.js';
 
 const NOW = 1_000_000;
@@ -52,11 +52,8 @@ describe('FirestoreLockProvider', () => {
 
   it('clears cache when updateRecord throws after fresh insert', async () => {
     ClockProvider.setClock(() => NOW);
-    const insertSpy = vi.fn()
-      .mockResolvedValueOnce(false)
-      .mockResolvedValue(true);
-    const updateSpy = vi.fn()
-      .mockRejectedValueOnce(new Error('db error'));
+    const insertSpy = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true);
+    const updateSpy = vi.fn().mockRejectedValueOnce(new Error('db error'));
     accessor.insertRecord = insertSpy;
     accessor.updateRecord = updateSpy;
 

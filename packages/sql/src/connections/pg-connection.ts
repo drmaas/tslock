@@ -1,7 +1,7 @@
 import { DatabaseProduct } from '@tslock/sql-support';
 import type { Pool } from 'pg';
-import type { QueryResult, SqlConnection } from '../sql-connection.js';
 import { translateToPositional } from '../param-translator.js';
+import type { QueryResult, SqlConnection } from '../sql-connection.js';
 
 export class PgConnection implements SqlConnection {
   constructor(private readonly pool: Pool) {}
@@ -17,10 +17,6 @@ export class PgConnection implements SqlConnection {
   }
 
   isDuplicateKeyError(error: unknown): boolean {
-    return (
-      typeof error === 'object' &&
-      error !== null &&
-      (error as { code?: string }).code === '23505'
-    );
+    return typeof error === 'object' && error !== null && (error as { code?: string }).code === '23505';
   }
 }

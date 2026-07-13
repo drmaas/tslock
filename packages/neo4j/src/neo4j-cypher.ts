@@ -33,10 +33,7 @@ export function buildUpdateCypher(o: ResolvedOptions): string {
 }
 
 export function buildUnlockCypher(o: ResolvedOptions): string {
-  return (
-    `MATCH (lock:${q(o.label)} {${q(o.nameCol)}: $name}) ` +
-    `SET lock.${q(o.lockUntilCol)} = $unlockTime`
-  );
+  return `MATCH (lock:${q(o.label)} {${q(o.nameCol)}: $name}) ` + `SET lock.${q(o.lockUntilCol)} = $unlockTime`;
 }
 
 export function buildExtendCypher(o: ResolvedOptions): string {

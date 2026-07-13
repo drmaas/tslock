@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { longToBytes, bytesToLong } from '../src/long-utils.js';
+import { bytesToLong, longToBytes } from '../src/long-utils.js';
 
 describe('longToBytes / bytesToLong', () => {
   it('longToBytes(0) returns 8 zero bytes', () => {

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Storage } from '@google-cloud/storage';
 import { createLockConfig } from '@tslock/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GcsLockProvider } from '../src/gcs-lock-provider.js';
 import type { GcsProviderConfig } from '../src/gcs-provider-config.js';
 import { createGcsProviderConfig } from '../src/gcs-provider-config.js';

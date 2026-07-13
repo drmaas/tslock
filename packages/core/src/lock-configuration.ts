@@ -1,5 +1,5 @@
 import { ClockProvider } from './clock-provider.js';
-import { parseDuration, type DurationInput } from './duration.js';
+import { type DurationInput, parseDuration } from './duration.js';
 import { LockException } from './lock-exception.js';
 
 export interface LockConfiguration {

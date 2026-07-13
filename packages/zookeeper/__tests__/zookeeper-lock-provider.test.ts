@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { describe, expect, it, vi } from 'vitest';
 import { ZooKeeperLockProvider } from '../src/zookeeper-lock-provider.js';
 
 function makeClient(overrides: Record<string, unknown> = {}): any {
@@ -49,11 +49,7 @@ describe('ZooKeeperLockProvider', () => {
     const lock = await provider.lock(config());
     expect(lock).toBeDefined();
     expect(client.get).toHaveBeenCalledWith('/shedlock-test/test', false);
-    expect(client.set).toHaveBeenCalledWith(
-      '/shedlock-test/test',
-      expect.any(Buffer),
-      5,
-    );
+    expect(client.set).toHaveBeenCalledWith('/shedlock-test/test', expect.any(Buffer), 5);
   });
 
   it('lock() returns undefined when znode has future lockUntil', async () => {
@@ -75,11 +71,7 @@ describe('ZooKeeperLockProvider', () => {
     const provider = new ZooKeeperLockProvider(client, { basePath: '/shedlock-test' });
     const lock = await provider.lock(config());
     expect(lock).toBeDefined();
-    expect(client.create).toHaveBeenCalledWith(
-      '/shedlock-test/test',
-      expect.any(Buffer),
-      0,
-    );
+    expect(client.create).toHaveBeenCalledWith('/shedlock-test/test', expect.any(Buffer), 0);
   });
 
   it('lock() creates basePath on first use via mkdirp', async () => {
@@ -132,11 +124,7 @@ describe('ZooKeeperLockProvider', () => {
     const cfg = config('test', 60_000);
     await provider.lock(cfg);
     const expectedIso = new Date(1_060_000).toISOString();
-    expect(client.set).toHaveBeenCalledWith(
-      '/shedlock-test/test',
-      Buffer.from(expectedIso),
-      5,
-    );
+    expect(client.set).toHaveBeenCalledWith('/shedlock-test/test', Buffer.from(expectedIso), 5);
   });
 
   it('unlock() sets unlockTime with version -1', async () => {
@@ -150,11 +138,7 @@ describe('ZooKeeperLockProvider', () => {
     ClockProvider.setClock(() => BASE_NOW + 10_000);
     await lock.unlock();
     const expectedIso = new Date(BASE_NOW + 10_000).toISOString();
-    expect(client.set).toHaveBeenLastCalledWith(
-      '/shedlock-test/test',
-      Buffer.from(expectedIso),
-      -1,
-    );
+    expect(client.set).toHaveBeenLastCalledWith('/shedlock-test/test', Buffer.from(expectedIso), -1);
   });
 
   it('unlock() uses lockAtLeastFor when computing unlockTime', async () => {
@@ -168,11 +152,7 @@ describe('ZooKeeperLockProvider', () => {
     ClockProvider.setClock(() => BASE_NOW + 2_000);
     await lock.unlock();
     const expectedIso = new Date(BASE_NOW + 10_000).toISOString();
-    expect(client.set).toHaveBeenLastCalledWith(
-      '/shedlock-test/test',
-      Buffer.from(expectedIso),
-      -1,
-    );
+    expect(client.set).toHaveBeenLastCalledWith('/shedlock-test/test', Buffer.from(expectedIso), -1);
   });
 
   it('extend() throws LockException', async () => {

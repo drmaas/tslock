@@ -1,12 +1,8 @@
+import { ClockProvider, createLockConfig } from '@tslock/core';
+import { CasMismatchError, DocumentExistsError, DocumentNotFoundError } from 'couchbase';
 import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
-import {
-  DocumentExistsError,
-  DocumentNotFoundError,
-  CasMismatchError,
-} from 'couchbase';
-import { CouchbaseStorageAccessor } from '../src/couchbase-storage-accessor.js';
 import type { ResolvedOptions } from '../src/couchbase-lock-provider.js';
+import { CouchbaseStorageAccessor } from '../src/couchbase-storage-accessor.js';
 
 function opts(overrides?: Partial<ResolvedOptions>): ResolvedOptions {
   return {

@@ -1,11 +1,11 @@
-import { AbstractSimpleLock, type SimpleLock } from './simple-lock.js';
 import { ClockProvider } from './clock-provider.js';
+import type { LockConfiguration } from './lock-configuration.js';
 import { lockAtMostUntil } from './lock-configuration.js';
 import { LockException } from './lock-exception.js';
 import type { ExtensibleLockProvider } from './lock-provider.js';
-import type { LockConfiguration } from './lock-configuration.js';
 import type { Scheduler } from './scheduler.js';
 import { DefaultScheduler } from './scheduler.js';
+import { AbstractSimpleLock, type SimpleLock } from './simple-lock.js';
 
 export const MIN_LOCK_AT_MOST_FOR = 30_000;
 
@@ -44,7 +44,7 @@ class KeepAliveLock extends AbstractSimpleLock {
       return;
     }
     this.currentLock = newLock;
-    this.remainingLockAtLeastFor = Math.max(0, next - (this.baseConfig.lockAtMostFor / 2));
+    this.remainingLockAtLeastFor = Math.max(0, next - this.baseConfig.lockAtMostFor / 2);
   }
 
   protected override async doUnlock(): Promise<void> {

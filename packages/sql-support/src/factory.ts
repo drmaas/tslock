@@ -1,8 +1,6 @@
 import { DatabaseProduct } from './database-product.js';
 import { DefaultSqlStatementsSource } from './default-sql-statements-source.js';
 import { PostgresSqlStatementsSource } from './postgres-sql-statements-source.js';
-import type { SqlConfiguration } from './sql-configuration.js';
-import { SqlStatementsSource } from './sql-statements-source.js';
 import {
   Db2ServerTimeStatementsSource,
   H2ServerTimeStatementsSource,
@@ -13,6 +11,8 @@ import {
   PostgresServerTimeStatementsSource,
   SqliteServerTimeStatementsSource,
 } from './server-time-sql-statements-source.js';
+import type { SqlConfiguration } from './sql-configuration.js';
+import type { SqlStatementsSource } from './sql-statements-source.js';
 
 export function createSqlStatementsSource(config: SqlConfiguration): SqlStatementsSource {
   if (config.useDbTime) {
@@ -39,10 +39,7 @@ export function createSqlStatementsSource(config: SqlConfiguration): SqlStatemen
         throw new Error(`useDbTime not supported for ${config.databaseProduct}`);
     }
   }
-  if (
-    config.databaseProduct === DatabaseProduct.POSTGRES ||
-    config.databaseProduct === DatabaseProduct.COCKROACH_DB
-  ) {
+  if (config.databaseProduct === DatabaseProduct.POSTGRES || config.databaseProduct === DatabaseProduct.COCKROACH_DB) {
     return new PostgresSqlStatementsSource(config);
   }
   return new DefaultSqlStatementsSource(config);

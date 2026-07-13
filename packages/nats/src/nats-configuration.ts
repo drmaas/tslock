@@ -1,4 +1,4 @@
-import type { StorageType, ConnectionOptions } from 'nats';
+import type { ConnectionOptions, StorageType } from 'nats';
 
 export interface NatsLockProviderOptions {
   servers: string;

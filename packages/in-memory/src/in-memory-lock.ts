@@ -1,9 +1,9 @@
 import {
   AbstractSimpleLock,
   type LockConfiguration,
-  type SimpleLock,
   lockAtLeastUntil,
   lockAtMostUntil,
+  type SimpleLock,
 } from '@tslock/core';
 import type { InMemoryLockProvider } from './in-memory-lock-provider.js';
 

@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
 import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct, SqlConfiguration } from '@tslock/sql-support';
-import { SqlLockProvider } from '../src/sql-lock-provider.js';
+import { describe, expect, it, vi } from 'vitest';
 import type { SqlConnection } from '../src/sql-connection.js';
+import { SqlLockProvider } from '../src/sql-lock-provider.js';
 
 function makeConn(insertRows: number): SqlConnection {
   return {

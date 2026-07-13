@@ -1,11 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DefaultLockingTaskExecutor } from '../src/locking-task-executor.js';
-import {
-  NO_OP_LISTENER,
-  type LockingTaskExecutorListener,
-} from '../src/locking-task-executor-listener.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import type { LockProvider } from '../src/lock-provider.js';
+import { DefaultLockingTaskExecutor } from '../src/locking-task-executor.js';
+import { type LockingTaskExecutorListener, NO_OP_LISTENER } from '../src/locking-task-executor-listener.js';
 import type { SimpleLock } from '../src/simple-lock.js';
 
 function makeMockProvider(returnUndefined = false): {

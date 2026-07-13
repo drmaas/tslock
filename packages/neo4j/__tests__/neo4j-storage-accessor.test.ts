@@ -1,5 +1,5 @@
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
 import { Neo4jStorageAccessor } from '../src/neo4j-storage-accessor.js';
 
 function makeDriver(txRun: ReturnType<typeof vi.fn> = vi.fn()): any {
@@ -22,7 +22,11 @@ describe('Neo4jStorageAccessor', () => {
     const txRun = vi.fn().mockResolvedValue({ records: [] });
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     const result = await accessor.insertRecord(config());
     expect(result).toBe(true);
@@ -30,12 +34,16 @@ describe('Neo4jStorageAccessor', () => {
   });
 
   it('insertRecord returns false on constraint violation', async () => {
-    const err = new Error('already exists with label `ShedLock` and property `name` = \'test\'');
+    const err = new Error("already exists with label `ShedLock` and property `name` = 'test'");
     (err as any).code = 'Neo.ClientError.Schema.ConstraintValidationFailed';
     const txRun = vi.fn().mockRejectedValue(err);
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     const result = await accessor.insertRecord(config());
     expect(result).toBe(false);
@@ -45,18 +53,26 @@ describe('Neo4jStorageAccessor', () => {
     const txRun = vi.fn().mockRejectedValue(new Error('connection refused'));
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     await expect(accessor.insertRecord(config())).rejects.toThrow('connection refused');
   });
 
   it('insertRecord propagates constraint error for a different lock name', async () => {
-    const err = new Error('already exists with label `ShedLock` and property `name` = \'other-task\'');
+    const err = new Error("already exists with label `ShedLock` and property `name` = 'other-task'");
     (err as any).code = 'Neo.ClientError.Schema.ConstraintValidationFailed';
     const txRun = vi.fn().mockRejectedValue(err);
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     await expect(accessor.insertRecord(config('other-task'))).resolves.toBe(false);
   });
@@ -65,7 +81,11 @@ describe('Neo4jStorageAccessor', () => {
     const txRun = vi.fn().mockResolvedValue({ records: [{}, {}] });
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     const result = await accessor.updateRecord(config());
     expect(result).toBe(true);
@@ -75,7 +95,11 @@ describe('Neo4jStorageAccessor', () => {
     const txRun = vi.fn().mockResolvedValue({ records: [] });
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     const result = await accessor.updateRecord(config());
     expect(result).toBe(false);
@@ -85,7 +109,11 @@ describe('Neo4jStorageAccessor', () => {
     const txRun = vi.fn().mockResolvedValue({ records: [] });
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     await accessor.unlock(config());
     expect(txRun).toHaveBeenCalledOnce();
@@ -95,7 +123,11 @@ describe('Neo4jStorageAccessor', () => {
     const txRun = vi.fn().mockResolvedValue({ records: [{}] });
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     const result = await accessor.extend(config());
     expect(result).toBe(true);
@@ -105,7 +137,11 @@ describe('Neo4jStorageAccessor', () => {
     const txRun = vi.fn().mockResolvedValue({ records: [] });
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     const result = await accessor.extend(config());
     expect(result).toBe(false);
@@ -118,9 +154,17 @@ describe('Neo4jStorageAccessor', () => {
       close: vi.fn().mockResolvedValue(undefined),
     };
     const driver = { session: vi.fn().mockReturnValue(session) };
-    const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
-    }, 'my-host');
+    const accessor = new Neo4jStorageAccessor(
+      driver,
+      {
+        label: 'ShedLock',
+        nameCol: 'name',
+        lockUntilCol: 'lockUntil',
+        lockedAtCol: 'lockedAt',
+        lockedByCol: 'lockedBy',
+      },
+      'my-host',
+    );
     const cfg = config('my-task', 10_000);
     await accessor.insertRecord(cfg);
     const params = txRun.mock.calls[0][1];
@@ -136,7 +180,11 @@ describe('Neo4jStorageAccessor', () => {
     };
     const driver = { session: vi.fn().mockReturnValue(session) };
     const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock', nameCol: 'name', lockUntilCol: 'lockUntil', lockedAtCol: 'lockedAt', lockedByCol: 'lockedBy',
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
     });
     await expect(accessor.insertRecord(config())).rejects.toThrow('fail');
     expect(session.close).toHaveBeenCalledOnce();

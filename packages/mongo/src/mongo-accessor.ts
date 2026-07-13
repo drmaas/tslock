@@ -1,14 +1,8 @@
-import {
-  ClockProvider,
-  Utils,
-  type LockConfiguration,
-  lockAtMostUntil,
-  unlockTime,
-} from '@tslock/core';
-import { MongoServerError } from 'mongodb';
+import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
 import type { Collection, Filter, FindOneAndUpdateOptions } from 'mongodb';
-import type { MongoLockDocument } from './mongo-lock-document.js';
+import { MongoServerError } from 'mongodb';
 import { MongoLock } from './mongo-lock.js';
+import type { MongoLockDocument } from './mongo-lock-document.js';
 
 export class MongoAccessor {
   constructor(private readonly collection: Collection<MongoLockDocument>) {}

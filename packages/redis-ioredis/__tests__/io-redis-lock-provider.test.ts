@@ -1,9 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
 import { createLockConfig } from '@tslock/core';
-import {
-  DEL_IF_EQUALS_SCRIPT,
-  EXTEND_IF_EQUALS_SCRIPT,
-} from '@tslock/redis-core';
+import { DEL_IF_EQUALS_SCRIPT, EXTEND_IF_EQUALS_SCRIPT } from '@tslock/redis-core';
+import { describe, expect, it, vi } from 'vitest';
 import { IoRedisLockProvider } from '../src/io-redis-lock-provider.js';
 
 function makeClient() {

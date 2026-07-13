@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import { DatabaseProduct } from '@tslock/sql-support';
+import { describe, expect, it, vi } from 'vitest';
 import { PgConnection } from '../src/connections/pg-connection.js';
 
 describe('PgConnection', () => {
@@ -13,15 +13,9 @@ describe('PgConnection', () => {
       query: vi.fn().mockResolvedValue({ rowCount: 1 }),
     };
     const conn = new PgConnection(pool as never);
-    const result = await conn.query(
-      'INSERT INTO t(n) VALUES(:name)',
-      { name: 'foo' },
-    );
+    const result = await conn.query('INSERT INTO t(n) VALUES(:name)', { name: 'foo' });
     expect(result.affectedRows).toBe(1);
-    expect(pool.query).toHaveBeenCalledWith(
-      'INSERT INTO t(n) VALUES($1)',
-      ['foo'],
-    );
+    expect(pool.query).toHaveBeenCalledWith('INSERT INTO t(n) VALUES($1)', ['foo']);
   });
 
   it('query defaults affectedRows to 0 when rowCount is null', async () => {

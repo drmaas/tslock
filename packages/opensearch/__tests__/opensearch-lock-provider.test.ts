@@ -1,7 +1,7 @@
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
-import { OpenSearchLockProvider } from '../src/opensearch-lock-provider.js';
 import { FieldNames } from '../src/field-names.js';
+import { OpenSearchLockProvider } from '../src/opensearch-lock-provider.js';
 
 function client(overrides: Record<string, any> = {}) {
   return { update: vi.fn().mockResolvedValue({ body: { result: 'updated' } }), ...overrides } as any;
@@ -114,7 +114,8 @@ describe('OpenSearchLockProvider', () => {
 
   it('extend() returns undefined when update returns noop', async () => {
     const c = client({
-      update: vi.fn()
+      update: vi
+        .fn()
         .mockResolvedValueOnce({ body: { result: 'updated' } })
         .mockResolvedValue({ body: { result: 'noop' } }),
     });
@@ -126,7 +127,8 @@ describe('OpenSearchLockProvider', () => {
 
   it('extend() returns undefined on 404 / not_found', async () => {
     const c = client({
-      update: vi.fn()
+      update: vi
+        .fn()
         .mockResolvedValueOnce({ body: { result: 'updated' } })
         .mockRejectedValue({ meta: { statusCode: 404 } }),
     });
@@ -138,7 +140,8 @@ describe('OpenSearchLockProvider', () => {
 
   it('extend() propagates non-404/409 errors', async () => {
     const c = client({
-      update: vi.fn()
+      update: vi
+        .fn()
         .mockResolvedValueOnce({ body: { result: 'updated' } })
         .mockRejectedValue(new Error('network')),
     });
@@ -156,7 +159,8 @@ describe('OpenSearchLockProvider', () => {
 
   it('unlock() swallows 404 errors', async () => {
     const c = client({
-      update: vi.fn()
+      update: vi
+        .fn()
         .mockResolvedValueOnce({ body: { result: 'updated' } })
         .mockRejectedValue({ meta: { statusCode: 404 } }),
     });
@@ -167,7 +171,8 @@ describe('OpenSearchLockProvider', () => {
 
   it('unlock() propagates non-404 errors', async () => {
     const c = client({
-      update: vi.fn()
+      update: vi
+        .fn()
         .mockResolvedValueOnce({ body: { result: 'updated' } })
         .mockRejectedValue(new Error('network')),
     });

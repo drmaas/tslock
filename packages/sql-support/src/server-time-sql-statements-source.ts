@@ -22,7 +22,11 @@ export abstract class ServerTimeStatementsSource extends SqlStatementsSource {
 
   protected abstract nowExpression(): string;
 
-  protected buildInsert(_table: string, _cols: { name: string; lockUntil: string; lockedAt: string; lockedBy: string }, _nowExpr: string): string {
+  protected buildInsert(
+    _table: string,
+    _cols: { name: string; lockUntil: string; lockedAt: string; lockedBy: string },
+    _nowExpr: string,
+  ): string {
     throw new Error('buildInsert must be overridden by subclass');
   }
 

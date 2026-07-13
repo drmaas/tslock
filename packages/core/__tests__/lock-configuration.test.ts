@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { ClockProvider } from '../src/clock-provider.js';
-import {
-  createLockConfig,
-  lockAtLeastUntil,
-  lockAtMostUntil,
-  unlockTime,
-} from '../src/lock-configuration.js';
+import { createLockConfig, lockAtLeastUntil, lockAtMostUntil, unlockTime } from '../src/lock-configuration.js';
 import { LockException } from '../src/lock-exception.js';
 
 describe('LockConfiguration', () => {

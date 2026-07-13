@@ -14,27 +14,47 @@ export interface ResolvedCassandraOptions {
   readonly serialConsistencyLevel: number;
 }
 
-export function buildInsertCql(opts: { keyspace: string; tableName: string; columnNames: ResolvedColumnNames }): string {
+export function buildInsertCql(opts: {
+  keyspace: string;
+  tableName: string;
+  columnNames: ResolvedColumnNames;
+}): string {
   const { keyspace, tableName, columnNames } = opts;
   return `INSERT INTO ${keyspace}.${tableName} (${columnNames.name}, ${columnNames.lockUntil}, ${columnNames.lockedAt}, ${columnNames.lockedBy}) VALUES (?, ?, ?, ?) IF NOT EXISTS`;
 }
 
-export function buildUpdateCql(opts: { keyspace: string; tableName: string; columnNames: ResolvedColumnNames }): string {
+export function buildUpdateCql(opts: {
+  keyspace: string;
+  tableName: string;
+  columnNames: ResolvedColumnNames;
+}): string {
   const { keyspace, tableName, columnNames } = opts;
   return `UPDATE ${keyspace}.${tableName} SET ${columnNames.lockUntil} = ?, ${columnNames.lockedAt} = ?, ${columnNames.lockedBy} = ? WHERE ${columnNames.name} = ? IF ${columnNames.lockUntil} < ?`;
 }
 
-export function buildUnlockCql(opts: { keyspace: string; tableName: string; columnNames: ResolvedColumnNames }): string {
+export function buildUnlockCql(opts: {
+  keyspace: string;
+  tableName: string;
+  columnNames: ResolvedColumnNames;
+}): string {
   const { keyspace, tableName, columnNames } = opts;
   return `UPDATE ${keyspace}.${tableName} SET ${columnNames.lockUntil} = ? WHERE ${columnNames.name} = ? IF ${columnNames.lockedBy} = ? AND ${columnNames.lockUntil} >= ?`;
 }
 
-export function buildExtendCql(opts: { keyspace: string; tableName: string; columnNames: ResolvedColumnNames }): string {
+export function buildExtendCql(opts: {
+  keyspace: string;
+  tableName: string;
+  columnNames: ResolvedColumnNames;
+}): string {
   const { keyspace, tableName, columnNames } = opts;
   return `UPDATE ${keyspace}.${tableName} SET ${columnNames.lockUntil} = ? WHERE ${columnNames.name} = ? IF ${columnNames.lockedBy} = ? AND ${columnNames.lockUntil} >= ?`;
 }
 
-export function buildCreateTableCql(opts: { keyspace: string; tableName: string; columnNames: ResolvedColumnNames }): string {
+export function buildCreateTableCql(opts: {
+  keyspace: string;
+  tableName: string;
+  columnNames: ResolvedColumnNames;
+}): string {
   const { keyspace, tableName, columnNames } = opts;
   return `CREATE TABLE IF NOT EXISTS ${keyspace}.${tableName} (${columnNames.name} text PRIMARY KEY, ${columnNames.lockUntil} timestamp, ${columnNames.lockedAt} timestamp, ${columnNames.lockedBy} text)`;
 }

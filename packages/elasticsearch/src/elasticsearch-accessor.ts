@@ -1,13 +1,7 @@
-import {
-  ClockProvider,
-  Utils,
-  type LockConfiguration,
-  lockAtMostUntil,
-  unlockTime,
-} from '@tslock/core';
 import type { Client } from '@elastic/elasticsearch';
-import type { ElasticsearchFieldNames } from './field-names.js';
+import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
 import { ElasticsearchLock } from './elasticsearch-lock.js';
+import type { ElasticsearchFieldNames } from './field-names.js';
 
 const LOCK_SCRIPT = `
 if (ctx._source[params.lockUntilField] <= params.now) {

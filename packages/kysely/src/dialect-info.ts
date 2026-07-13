@@ -5,18 +5,14 @@ export type KyselyDialectName = 'postgresql' | 'mysql' | 'sqlite';
 export interface KyselyDialectInfo {
   dialect: KyselyDialectName;
   isDuplicateKeyError(error: unknown): boolean;
-  translateParams(
-    sql: string,
-    params: Record<string, unknown>,
-  ): { sql: string; values: unknown[] };
+  translateParams(sql: string, params: Record<string, unknown>): { sql: string; values: unknown[] };
   numAffectedRows(result: unknown): number;
 }
 
 const DIALECT_INFOS: Record<KyselyDialectName, KyselyDialectInfo> = {
   postgresql: {
     dialect: 'postgresql',
-    isDuplicateKeyError: (e) =>
-      typeof e === 'object' && e !== null && (e as { code?: string }).code === '23505',
+    isDuplicateKeyError: (e) => typeof e === 'object' && e !== null && (e as { code?: string }).code === '23505',
     translateParams: (sql, params) => translateNamedParams(sql, params, (i: number) => `$${i}`),
     numAffectedRows: (result) => {
       if (typeof result !== 'object' || result === null) return 0;
@@ -28,8 +24,7 @@ const DIALECT_INFOS: Record<KyselyDialectName, KyselyDialectInfo> = {
   },
   mysql: {
     dialect: 'mysql',
-    isDuplicateKeyError: (e) =>
-      typeof e === 'object' && e !== null && (e as { errno?: number }).errno === 1062,
+    isDuplicateKeyError: (e) => typeof e === 'object' && e !== null && (e as { errno?: number }).errno === 1062,
     translateParams: (sql, params) => translateNamedParams(sql, params, () => '?'),
     numAffectedRows: (result) => {
       if (typeof result !== 'object' || result === null) return 0;

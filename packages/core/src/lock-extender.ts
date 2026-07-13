@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { type DurationInput, parseDuration } from './duration.js';
 import { LockCanNotBeExtendedException, NoActiveLockException } from './lock-exception.js';
-import { parseDuration, type DurationInput } from './duration.js';
 import type { SimpleLock } from './simple-lock.js';
 
 const ACTIVE_LOCK_INDEX = 0;
@@ -8,10 +8,7 @@ const ACTIVE_LOCK_INDEX = 0;
 export class LockExtender {
   private static storage = new AsyncLocalStorage<{ stack: SimpleLock[] }>();
 
-  static async extendActiveLock(
-    lockAtMostFor: DurationInput,
-    lockAtLeastFor: DurationInput,
-  ): Promise<void> {
+  static async extendActiveLock(lockAtMostFor: DurationInput, lockAtLeastFor: DurationInput): Promise<void> {
     const store = LockExtender.storage.getStore();
     if (!store || store.stack.length === 0) {
       throw new NoActiveLockException();

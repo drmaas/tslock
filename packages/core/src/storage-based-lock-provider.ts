@@ -1,7 +1,7 @@
-import { AbstractSimpleLock, type SimpleLock } from './simple-lock.js';
-import { Utils } from './utils.js';
 import type { LockConfiguration } from './lock-configuration.js';
 import type { ExtensibleLockProvider } from './lock-provider.js';
+import { AbstractSimpleLock, type SimpleLock } from './simple-lock.js';
+import { Utils } from './utils.js';
 
 export interface StorageAccessor {
   insertRecord(config: LockConfiguration): Promise<boolean>;

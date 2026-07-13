@@ -1,13 +1,14 @@
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ClockProvider } from '@tslock/core';
-import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct } from '../src/database-product.js';
-import { SqlConfiguration } from '../src/sql-configuration.js';
 import { DefaultSqlStatementsSource } from '../src/default-sql-statements-source.js';
-import { PostgresSqlStatementsSource } from '../src/postgres-sql-statements-source.js';
 import { createSqlStatementsSource } from '../src/factory.js';
-import { PostgresServerTimeStatementsSource } from '../src/server-time-sql-statements-source.js';
-import { SqliteServerTimeStatementsSource } from '../src/server-time-sql-statements-source.js';
+import { PostgresSqlStatementsSource } from '../src/postgres-sql-statements-source.js';
+import {
+  PostgresServerTimeStatementsSource,
+  SqliteServerTimeStatementsSource,
+} from '../src/server-time-sql-statements-source.js';
+import { SqlConfiguration } from '../src/sql-configuration.js';
 
 describe('DefaultSqlStatementsSource', () => {
   afterEach(() => {

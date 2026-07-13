@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider, LockException } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
 import type { Client as HazelcastClient } from 'hazelcast-client';
+import { describe, expect, it, vi } from 'vitest';
 import { HazelcastLockProvider } from '../src/hazelcast-lock-provider.js';
 
 function makeStore(overrides: Record<string, any> = {}) {
@@ -35,7 +35,11 @@ describe('HazelcastLockProvider', () => {
     expect(store.lock).toHaveBeenCalledWith('test', 60_000);
     expect(store.put).toHaveBeenCalledWith(
       'test',
-      expect.objectContaining({ lockUntil: expect.any(String), lockedAt: expect.any(String), lockedBy: expect.any(String) }),
+      expect.objectContaining({
+        lockUntil: expect.any(String),
+        lockedAt: expect.any(String),
+        lockedBy: expect.any(String),
+      }),
       60_000,
     );
     expect(store.unlock).toHaveBeenCalledWith('test');

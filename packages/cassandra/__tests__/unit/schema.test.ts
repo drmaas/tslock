@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import type cassandra from 'cassandra-driver';
+import { describe, expect, it, vi } from 'vitest';
 import { createLockTable } from '../../src/cassandra-lock-provider.js';
 
 function makeClient(): cassandra.Client {

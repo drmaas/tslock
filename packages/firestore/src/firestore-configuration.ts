@@ -1,5 +1,5 @@
-import { Utils } from '@tslock/core';
 import type { Firestore } from '@google-cloud/firestore';
+import { Utils } from '@tslock/core';
 
 export interface FirestoreFieldNames {
   readonly lockUntil: string;

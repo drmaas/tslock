@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildInsertCypher,
-  buildUpdateCypher,
-  buildUnlockCypher,
-  buildExtendCypher,
   buildCreateConstraintCypher,
+  buildExtendCypher,
+  buildInsertCypher,
+  buildUnlockCypher,
+  buildUpdateCypher,
   type ResolvedOptions,
 } from '../src/neo4j-cypher.js';
 

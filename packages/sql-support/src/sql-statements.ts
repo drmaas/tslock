@@ -15,20 +15,14 @@ export const SQL_PARAM_NAMES = {
 
 export const NAMED_PARAM_PATTERN = /:([a-zA-Z_][a-zA-Z0-9_]*)/g;
 
-export function translateToPositional(
-  sql: string,
-  paramOrder: readonly string[],
-): string {
+export function translateToPositional(sql: string, paramOrder: readonly string[]): string {
   let index = 0;
   return sql.replace(NAMED_PARAM_PATTERN, () => {
     return `$${++index}`;
   });
 }
 
-export function buildPositionalParams(
-  params: Record<string, unknown>,
-  paramOrder: readonly string[],
-): unknown[] {
+export function buildPositionalParams(params: Record<string, unknown>, paramOrder: readonly string[]): unknown[] {
   return paramOrder.map((name) => params[name]);
 }
 

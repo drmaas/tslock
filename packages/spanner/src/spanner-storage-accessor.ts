@@ -1,12 +1,12 @@
+import type { Database } from '@google-cloud/spanner';
 import {
   AbstractStorageAccessor,
   ClockProvider,
-  Utils,
   type LockConfiguration,
   lockAtMostUntil,
+  Utils,
   unlockTime,
 } from '@tslock/core';
-import type { Database } from '@google-cloud/spanner';
 import type { SpannerColumnNames } from './spanner-configuration.js';
 
 export class SpannerStorageAccessor extends AbstractStorageAccessor {

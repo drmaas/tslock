@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import { createLockConfig } from '@tslock/core';
+import { describe, expect, it, vi } from 'vitest';
 import {
   DEL_IF_EQUALS_SCRIPT,
   EXTEND_IF_EQUALS_SCRIPT,

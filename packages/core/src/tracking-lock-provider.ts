@@ -17,10 +17,7 @@ class TrackingSimpleLock implements SimpleLock {
     await this.delegate.unlock();
   }
 
-  async extend(
-    lockAtMostFor: number,
-    lockAtLeastFor: number,
-  ): Promise<SimpleLock | undefined> {
+  async extend(lockAtMostFor: number, lockAtLeastFor: number): Promise<SimpleLock | undefined> {
     const newLock = await this.delegate.extend(lockAtMostFor, lockAtLeastFor);
     if (!newLock) return undefined;
     this.activeLocks.delete(this);

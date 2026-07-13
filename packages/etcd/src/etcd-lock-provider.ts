@@ -1,11 +1,7 @@
+import type { LockConfiguration, LockProvider, SimpleLock } from '@tslock/core';
 import type { Etcd3 } from 'etcd3';
-import {
-  type LockConfiguration,
-  type LockProvider,
-  type SimpleLock,
-} from '@tslock/core';
 import { EtcdAccessor } from './etcd-accessor.js';
-import { resolveOptions, type EtcdLockProviderOptions } from './etcd-lock-provider-options.js';
+import { type EtcdLockProviderOptions, resolveOptions } from './etcd-lock-provider-options.js';
 
 export class EtcdLockProvider implements LockProvider {
   private readonly accessor: EtcdAccessor;

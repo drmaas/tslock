@@ -1,12 +1,6 @@
 import type { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { UpdateItemCommand, ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import {
-  ClockProvider,
-  Utils,
-  type LockConfiguration,
-  lockAtMostUntil,
-  unlockTime,
-} from '@tslock/core';
+import { ConditionalCheckFailedException, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
+import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
 import { DynamoDBLock } from './dynamodb-lock.js';
 
 export class DynamoDBAccessor {
@@ -32,17 +26,19 @@ export class DynamoDBAccessor {
     const hostname = Utils.getHostname();
 
     try {
-      await this.client.send(new UpdateItemCommand({
-        TableName: this.tableName,
-        Key: this.buildKey(config.name),
-        UpdateExpression: 'SET lockUntil = :lockUntil, lockedAt = :lockedAt, lockedBy = :lockedBy',
-        ConditionExpression: 'lockUntil <= :lockedAt OR attribute_not_exists(lockUntil)',
-        ExpressionAttributeValues: {
-          ':lockUntil': { S: isoLockAtMostUntil },
-          ':lockedAt': { S: isoNow },
-          ':lockedBy': { S: hostname },
-        },
-      }));
+      await this.client.send(
+        new UpdateItemCommand({
+          TableName: this.tableName,
+          Key: this.buildKey(config.name),
+          UpdateExpression: 'SET lockUntil = :lockUntil, lockedAt = :lockedAt, lockedBy = :lockedBy',
+          ConditionExpression: 'lockUntil <= :lockedAt OR attribute_not_exists(lockUntil)',
+          ExpressionAttributeValues: {
+            ':lockUntil': { S: isoLockAtMostUntil },
+            ':lockedAt': { S: isoNow },
+            ':lockedBy': { S: hostname },
+          },
+        }),
+      );
       return new DynamoDBLock(config, this);
     } catch (e) {
       if (e instanceof ConditionalCheckFailedException) return undefined;
@@ -57,17 +53,19 @@ export class DynamoDBAccessor {
     const hostname = Utils.getHostname();
 
     try {
-      await this.client.send(new UpdateItemCommand({
-        TableName: this.tableName,
-        Key: this.buildKey(config.name),
-        UpdateExpression: 'SET lockUntil = :lockUntil',
-        ConditionExpression: 'lockedBy = :lockedBy AND lockUntil > :now',
-        ExpressionAttributeValues: {
-          ':lockUntil': { S: isoNewLockAtMostUntil },
-          ':lockedBy': { S: hostname },
-          ':now': { S: isoNow },
-        },
-      }));
+      await this.client.send(
+        new UpdateItemCommand({
+          TableName: this.tableName,
+          Key: this.buildKey(config.name),
+          UpdateExpression: 'SET lockUntil = :lockUntil',
+          ConditionExpression: 'lockedBy = :lockedBy AND lockUntil > :now',
+          ExpressionAttributeValues: {
+            ':lockUntil': { S: isoNewLockAtMostUntil },
+            ':lockedBy': { S: hostname },
+            ':now': { S: isoNow },
+          },
+        }),
+      );
       return new DynamoDBLock(config, this);
     } catch (e) {
       if (e instanceof ConditionalCheckFailedException) return undefined;
@@ -79,15 +77,17 @@ export class DynamoDBAccessor {
     const isoUnlock = Utils.toIsoString(unlockTime(config));
 
     try {
-      await this.client.send(new UpdateItemCommand({
-        TableName: this.tableName,
-        Key: this.buildKey(config.name),
-        UpdateExpression: 'SET lockUntil = :unlockTime',
-        ConditionExpression: `attribute_exists(${this.partitionKey})`,
-        ExpressionAttributeValues: {
-          ':unlockTime': { S: isoUnlock },
-        },
-      }));
+      await this.client.send(
+        new UpdateItemCommand({
+          TableName: this.tableName,
+          Key: this.buildKey(config.name),
+          UpdateExpression: 'SET lockUntil = :unlockTime',
+          ConditionExpression: `attribute_exists(${this.partitionKey})`,
+          ExpressionAttributeValues: {
+            ':unlockTime': { S: isoUnlock },
+          },
+        }),
+      );
     } catch (e) {
       if (e instanceof ConditionalCheckFailedException) return;
       throw e;

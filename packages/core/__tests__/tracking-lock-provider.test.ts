@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TrackingLockProviderWrapper } from '../src/tracking-lock-provider.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import type { LockProvider } from '../src/lock-provider.js';
 import type { SimpleLock } from '../src/simple-lock.js';
+import { TrackingLockProviderWrapper } from '../src/tracking-lock-provider.js';
 
 function makeLock(): SimpleLock & { unlock: ReturnType<typeof vi.fn>; extend: ReturnType<typeof vi.fn> } {
   return {

@@ -1,7 +1,7 @@
 import { DatabaseProduct } from '@tslock/sql-support';
 import type { ConnectionPool, Request } from 'mssql';
-import type { QueryResult, SqlConnection } from '../sql-connection.js';
 import { translateToNamed } from '../param-translator.js';
+import type { QueryResult, SqlConnection } from '../sql-connection.js';
 
 export class MssqlConnection implements SqlConnection {
   constructor(private readonly pool: ConnectionPool) {}

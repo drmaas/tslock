@@ -1,12 +1,12 @@
+import type { Datastore, Transaction } from '@google-cloud/datastore';
 import {
   AbstractStorageAccessor,
   ClockProvider,
-  Utils,
   type LockConfiguration,
   lockAtMostUntil,
+  Utils,
   unlockTime,
 } from '@tslock/core';
-import type { Datastore, Transaction } from '@google-cloud/datastore';
 import type { DatastoreFieldNames } from './datastore-configuration.js';
 
 type DatastoreEntity = Record<string, any>;
@@ -54,7 +54,10 @@ export class DatastoreStorageAccessor extends AbstractStorageAccessor {
   }
 
   private parseFieldValue(value: string | Date): number {
-    if (value instanceof Date || (typeof value === 'object' && value !== null && typeof (value as Date).getTime === 'function')) {
+    if (
+      value instanceof Date ||
+      (typeof value === 'object' && value !== null && typeof (value as Date).getTime === 'function')
+    ) {
       return (value as Date).getTime();
     }
     return Date.parse(value as string);

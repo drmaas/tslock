@@ -1,5 +1,5 @@
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
 import { ElasticsearchLockProvider } from '../src/elasticsearch-lock-provider.js';
 import { FieldNames } from '../src/field-names.js';
 
@@ -114,9 +114,7 @@ describe('ElasticsearchLockProvider', () => {
 
   it('extend() returns undefined when update returns noop', async () => {
     const c = client({
-      update: vi.fn()
-        .mockResolvedValueOnce({ result: 'updated' })
-        .mockResolvedValue({ result: 'noop' }),
+      update: vi.fn().mockResolvedValueOnce({ result: 'updated' }).mockResolvedValue({ result: 'noop' }),
     });
     const provider = new ElasticsearchLockProvider(c);
     const lock = (await provider.lock(config()))!;
@@ -126,7 +124,8 @@ describe('ElasticsearchLockProvider', () => {
 
   it('extend() returns undefined on 404 / not_found', async () => {
     const c = client({
-      update: vi.fn()
+      update: vi
+        .fn()
         .mockResolvedValueOnce({ result: 'updated' })
         .mockRejectedValue({ meta: { statusCode: 404 } }),
     });
@@ -138,9 +137,7 @@ describe('ElasticsearchLockProvider', () => {
 
   it('extend() propagates non-404/409 errors', async () => {
     const c = client({
-      update: vi.fn()
-        .mockResolvedValueOnce({ result: 'updated' })
-        .mockRejectedValue(new Error('network')),
+      update: vi.fn().mockResolvedValueOnce({ result: 'updated' }).mockRejectedValue(new Error('network')),
     });
     const provider = new ElasticsearchLockProvider(c);
     const lock = (await provider.lock(config()))!;
@@ -156,7 +153,8 @@ describe('ElasticsearchLockProvider', () => {
 
   it('unlock() swallows 404 errors', async () => {
     const c = client({
-      update: vi.fn()
+      update: vi
+        .fn()
         .mockResolvedValueOnce({ result: 'updated' })
         .mockRejectedValue({ meta: { statusCode: 404 } }),
     });
@@ -167,9 +165,7 @@ describe('ElasticsearchLockProvider', () => {
 
   it('unlock() propagates non-404 errors', async () => {
     const c = client({
-      update: vi.fn()
-        .mockResolvedValueOnce({ result: 'updated' })
-        .mockRejectedValue(new Error('network')),
+      update: vi.fn().mockResolvedValueOnce({ result: 'updated' }).mockRejectedValue(new Error('network')),
     });
     const provider = new ElasticsearchLockProvider(c);
     const lock = (await provider.lock(config()))!;

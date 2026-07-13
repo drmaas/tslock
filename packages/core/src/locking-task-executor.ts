@@ -1,12 +1,9 @@
 import { performance } from 'node:perf_hooks';
 import { LockAssert } from './lock-assert.js';
-import { LockExtender } from './lock-extender.js';
 import type { LockConfiguration } from './lock-configuration.js';
+import { LockExtender } from './lock-extender.js';
 import type { LockProvider } from './lock-provider.js';
-import {
-  NO_OP_LISTENER,
-  type LockingTaskExecutorListener,
-} from './locking-task-executor-listener.js';
+import { type LockingTaskExecutorListener, NO_OP_LISTENER } from './locking-task-executor-listener.js';
 import type { SimpleLock } from './simple-lock.js';
 
 export interface TaskResult<T> {
@@ -32,17 +29,13 @@ export namespace TaskResult {
 
 export interface LockingTaskExecutor {
   executeWithLock(task: () => Promise<void>, config: LockConfiguration): Promise<TaskResult<void>>;
-  executeWithLock<T>(
-    task: () => Promise<T>,
-    config: LockConfiguration,
-  ): Promise<TaskResult<T>>;
+  executeWithLock<T>(task: () => Promise<T>, config: LockConfiguration): Promise<TaskResult<T>>;
 }
 
 function safeEmit(emit: () => void): void {
   try {
     emit();
-  } catch {
-  }
+  } catch {}
 }
 
 async function executeTask<T>(
@@ -67,10 +60,7 @@ export class DefaultLockingTaskExecutor implements LockingTaskExecutor {
     private readonly listener: LockingTaskExecutorListener = NO_OP_LISTENER,
   ) {}
 
-  async executeWithLock<T>(
-    task: () => Promise<T>,
-    config: LockConfiguration,
-  ): Promise<TaskResult<T>> {
+  async executeWithLock<T>(task: () => Promise<T>, config: LockConfiguration): Promise<TaskResult<T>> {
     if (LockAssert.alreadyLockedBy(config.name)) {
       const result = await executeTask(task, config, this.listener);
       return TaskResult.result(result as T);
@@ -99,8 +89,7 @@ export class DefaultLockingTaskExecutor implements LockingTaskExecutor {
       } finally {
         try {
           await lock.unlock();
-        } catch {
-        }
+        } catch {}
       }
       return TaskResult.result(result as T);
     };

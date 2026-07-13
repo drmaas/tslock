@@ -1,10 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { S3Client } from '@aws-sdk/client-s3';
-import {
-  createLockConfig,
-  StorageBasedLockProvider,
-  type SimpleLock,
-} from '@tslock/core';
+import { createLockConfig, type SimpleLock, StorageBasedLockProvider } from '@tslock/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { S3LockProvider } from '../src/s3-lock-provider.js';
 import type { S3ProviderConfig } from '../src/s3-provider-config.js';
 import { createS3ProviderConfig } from '../src/s3-provider-config.js';

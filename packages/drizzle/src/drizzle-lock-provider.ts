@@ -1,13 +1,12 @@
 import { StorageBasedLockProvider } from '@tslock/core';
 import { createSqlStatementsSource, type SqlConfiguration } from '@tslock/sql-support';
-import { DrizzleStorageAccessor, type DrizzleExecutor } from './drizzle-storage-accessor.js';
 import type { DrizzleDialectInfo, DrizzleDialectName } from './dialect-info.js';
+import { type DrizzleExecutor, DrizzleStorageAccessor } from './drizzle-storage-accessor.js';
 
 export const DRIZZLE_DIALECT_INFOS: Record<DrizzleDialectName, DrizzleDialectInfo> = {
   postgresql: {
     dialect: 'postgresql',
-    isDuplicateKeyError: (e) =>
-      typeof e === 'object' && e !== null && (e as { code?: string }).code === '23505',
+    isDuplicateKeyError: (e) => typeof e === 'object' && e !== null && (e as { code?: string }).code === '23505',
     getAffectedRows: (result) => {
       if (typeof result !== 'object' || result === null) return 0;
       const r = result as { affectedRows?: number; rowCount?: number };
@@ -16,8 +15,7 @@ export const DRIZZLE_DIALECT_INFOS: Record<DrizzleDialectName, DrizzleDialectInf
   },
   mysql: {
     dialect: 'mysql',
-    isDuplicateKeyError: (e) =>
-      typeof e === 'object' && e !== null && (e as { errno?: number }).errno === 1062,
+    isDuplicateKeyError: (e) => typeof e === 'object' && e !== null && (e as { errno?: number }).errno === 1062,
     getAffectedRows: (result) => {
       if (typeof result !== 'object' || result === null) return 0;
       const r = result as { affectedRows?: number };

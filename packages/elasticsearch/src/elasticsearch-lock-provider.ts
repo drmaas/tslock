@@ -1,11 +1,7 @@
 import type { Client } from '@elastic/elasticsearch';
-import {
-  type ExtensibleLockProvider,
-  type LockConfiguration,
-  type SimpleLock,
-} from '@tslock/core';
+import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
 import { ElasticsearchAccessor } from './elasticsearch-accessor.js';
-import { FieldNames, type ElasticsearchFieldNames } from './field-names.js';
+import { type ElasticsearchFieldNames, FieldNames } from './field-names.js';
 
 export interface ElasticsearchLockProviderOptions {
   index?: string;

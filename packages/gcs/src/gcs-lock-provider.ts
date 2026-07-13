@@ -1,9 +1,9 @@
-import { Storage } from '@google-cloud/storage';
+import type { Storage } from '@google-cloud/storage';
 import {
-  StorageBasedLockProvider,
   type ExtensibleLockProvider,
   type LockConfiguration,
   type SimpleLock,
+  StorageBasedLockProvider,
 } from '@tslock/core';
 import type { GcsProviderConfig } from './gcs-provider-config.js';
 import { GcsStorageAccessor } from './gcs-storage-accessor.js';

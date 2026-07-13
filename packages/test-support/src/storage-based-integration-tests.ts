@@ -1,14 +1,7 @@
+import { ClockProvider, type StorageAccessor, type StorageBasedLockProvider } from '@tslock/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  ClockProvider,
-  type StorageAccessor,
-  type StorageBasedLockProvider,
-} from '@tslock/core';
 import { config, sleep, uniqueLockName } from './helpers.js';
-import {
-  lockProviderIntegrationTests,
-  type IntegrationTestOptions,
-} from './integration-tests.js';
+import { type IntegrationTestOptions, lockProviderIntegrationTests } from './integration-tests.js';
 
 export interface StorageBasedIntegrationTestOptions extends IntegrationTestOptions {
   getAccessor?: () => Promise<StorageAccessor>;

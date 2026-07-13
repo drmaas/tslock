@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AbstractSimpleLock } from '../src/simple-lock.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import { LockException } from '../src/lock-exception.js';
 import type { SimpleLock } from '../src/simple-lock.js';
+import { AbstractSimpleLock } from '../src/simple-lock.js';
 
 class TestLock extends AbstractSimpleLock {
   doUnlockMock = vi.fn();

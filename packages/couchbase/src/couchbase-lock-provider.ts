@@ -1,4 +1,9 @@
-import { StorageBasedLockProvider, type ExtensibleLockProvider, type SimpleLock, type LockConfiguration } from '@tslock/core';
+import {
+  type ExtensibleLockProvider,
+  type LockConfiguration,
+  type SimpleLock,
+  StorageBasedLockProvider,
+} from '@tslock/core';
 import type { Collection } from 'couchbase';
 import { CouchbaseStorageAccessor } from './couchbase-storage-accessor.js';
 import { buildDocumentId } from './document-id.js';
@@ -50,14 +55,9 @@ export function resolveOptions(options?: CouchbaseLockProviderOptions): Resolved
 export class CouchbaseLockProvider implements ExtensibleLockProvider {
   private readonly delegate: StorageBasedLockProvider;
 
-  constructor(
-    collection: Collection,
-    options?: CouchbaseLockProviderOptions,
-  ) {
+  constructor(collection: Collection, options?: CouchbaseLockProviderOptions) {
     const resolved = resolveOptions(options);
-    this.delegate = new StorageBasedLockProvider(
-      new CouchbaseStorageAccessor(collection, resolved),
-    );
+    this.delegate = new StorageBasedLockProvider(new CouchbaseStorageAccessor(collection, resolved));
   }
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {

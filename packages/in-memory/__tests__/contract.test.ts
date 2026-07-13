@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ClockProvider, createLockConfig } from '@tslock/core';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { InMemoryLockProvider } from '../src/in-memory-lock-provider.js';
 
 describe('InMemoryLockProvider integration', () => {

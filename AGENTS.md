@@ -56,6 +56,7 @@ Before implementing anything, read in this order:
 | Ignite | Deferred to v2 (immature Node.js driver) — 23 providers for v1 |
 | Framework integrations | Out of scope for v1 (no NestJS/Express/Fastify decorators) |
 | Metrics | Out of scope for v1 (`LockingTaskExecutorListener` is the extension point) |
+| Linting | Biome |
 
 ## Provider categories
 
@@ -72,6 +73,86 @@ Providers fall into categories that determine their implementation pattern:
 | **G — Memcached** | `add` (fails if exists) + `replace` | Memcached |
 | **H — NATS JetStream** | KeyValue bucket + create/update with revision | NATS |
 | **I — InMemory** | `Map<string, LockRecord>` | InMemory (only `ExtensibleLockProvider` among specialized) |
+
+## Development Workflow
+
+When the user requests a change, first classify it:
+
+| If the change... | Then... |
+|---|---|
+| Touches only existing patterns, follows provider templates, fixes a bug in one function, docs typos, chores | **Fast track** — implement directly, skip the workflow below |
+| Adds new concepts, changes cross-package contracts, requires 3+ files, or is architecturally substantial | **Full workflow** below |
+
+### Full workflow
+
+Execute these stages sequentially. Each stage produces artifacts and hands off to the next.
+
+#### 1. Interview
+
+Ask clarifying questions about scope, requirements, and constraints. Continue until all unknowns are resolved or the user delegates to your judgment.
+
+#### 2. Spec
+
+Write a specification document:
+- Path: `docs/specs/<NN>-<name>.md`
+- Content: behavior, API surface, edge cases, error handling, test expectations
+- Must align with the architecture (`docs/01-architecture.md`)
+
+#### 3. Plan
+
+Write an implementation plan:
+- Path: `docs/plans/<NN>-<name>.md`
+- Content: step-by-step implementation order, file changes, verification commands, documentation updates as a line item
+- Must follow from the spec
+
+#### 4. Implement
+
+Launch a builder subagent via `task` with fresh context. The builder:
+- Creates or modifies code per the plan
+- Writes unit and integration tests
+- Ensures the verification suite passes before handing off
+
+#### 5. Verify
+
+Run the full verification suite:
+- `pnpm -r typecheck`
+- `pnpm -r lint`
+- `pnpm -r test`
+- `pnpm -r test:integration` (at minimum, confirm integration tests exist)
+- `pnpm -r build`
+
+Fix any failures. If substantial code changes were needed, consider re-running the full suite.
+
+#### 6. Review
+
+Launch an independent reviewer subagent via `task` with fresh context. The reviewer:
+- Checks that the code matches the spec, the plan, and the architecture
+- Produces a review document: `docs/reviews/<NN>-<name>.md`
+
+#### 7. Feedback loop
+
+If the reviewer identifies discrepancies, send the work back to the lowest affected stage:
+
+| Issue | Return to |
+|---|---|
+| Architecture mismatch | **Block** — requires user intervention (architecture is immutable otherwise) |
+| Spec mismatch | Step 2 (Spec) |
+| Plan mismatch | Step 3 (Plan) |
+| Code or tests mismatch | Step 4 (Implement) |
+| Verification failing | Step 5 (Verify) |
+| Docs not updated | Step 5 (Verify) or inline fix |
+
+After the fix, cycle through Verify → Review again. Maximum **3 rounds** before escalating to the user.
+
+**Resolution hierarchy:** Architecture (immutable unless user says otherwise) > Spec > Plan > Code
+
+#### 8. Documentation
+
+Confirm that `README.md` and `AGENTS.md` were updated per the plan. If any doc change was missed, fix it.
+
+#### 9. Done
+
+Report completion to the user with a summary of what was built, verified, and reviewed.
 
 ## Implementation conventions
 
@@ -107,7 +188,7 @@ The reviews in `docs/reviews/` identified issues to fix. Key ones:
 
 Read the full review for each provider before implementing it.
 
-## Commands (once code exists)
+## Commands
 
 ```bash
 pnpm install              # install all workspace deps
@@ -115,6 +196,12 @@ pnpm -r typecheck         # tsc --noEmit across all packages
 pnpm -r test              # vitest run (unit tests) across all packages
 pnpm -r test:integration  # integration tests (requires Docker / emulators)
 pnpm -r build             # tsup build across all packages
+pnpm format               # auto-format all files with Biome
+pnpm format:check         # check formatting without writing
+pnpm lint                 # lint with Biome
+pnpm lint:fix             # lint and apply safe fixes
+pnpm check                # combined format check + lint
+pnpm check:fix            # combined format + lint with fixes
 ```
 
 ## Rules

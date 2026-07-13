@@ -6,8 +6,8 @@ import {
   unlockTime,
 } from '@tslock/core';
 import type cassandra from 'cassandra-driver';
-import { buildInsertCql, buildUpdateCql, buildUnlockCql, buildExtendCql } from './cassandra-cql.js';
 import type { ResolvedCassandraOptions } from './cassandra-cql.js';
+import { buildExtendCql, buildInsertCql, buildUnlockCql, buildUpdateCql } from './cassandra-cql.js';
 
 export class CassandraStorageAccessor extends AbstractStorageAccessor {
   constructor(

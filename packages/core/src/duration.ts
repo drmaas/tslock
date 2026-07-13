@@ -1,9 +1,6 @@
 import { LockException } from './lock-exception.js';
 
-export type DurationInput =
-  | number
-  | string
-  | { hours?: number; minutes?: number; seconds?: number; millis?: number };
+export type DurationInput = number | string | { hours?: number; minutes?: number; seconds?: number; millis?: number };
 
 const UNIT_MULTIPLIERS: Record<string, number> = {
   ms: 1,

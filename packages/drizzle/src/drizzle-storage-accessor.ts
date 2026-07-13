@@ -1,6 +1,6 @@
 import { AbstractStorageAccessor, type LockConfiguration } from '@tslock/core';
-import type { SQL } from 'drizzle-orm';
 import type { SqlStatementsSource } from '@tslock/sql-support';
+import type { SQL } from 'drizzle-orm';
 import type { DrizzleDialectInfo } from './dialect-info.js';
 import { buildDrizzleQuery } from './query-builder.js';
 

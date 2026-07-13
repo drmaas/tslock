@@ -1,7 +1,7 @@
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
-import { SpannerStorageAccessor } from '../src/spanner-storage-accessor.js';
 import type { SpannerColumnNames } from '../src/spanner-configuration.js';
+import { SpannerStorageAccessor } from '../src/spanner-storage-accessor.js';
 
 const NOW = 1_000_000;
 
@@ -64,9 +64,15 @@ describe('SpannerStorageAccessor', () => {
     it('returns false on ALREADY_EXISTS (code 6)', async () => {
       const tx = makeTx();
       tx.commit.mockRejectedValue({ code: 6 });
-      const db = makeDb({ runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
-        try { return await runTx(tx, fn); } catch (e: any) { throw e; }
-      }) });
+      const db = makeDb({
+        runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
+          try {
+            return await runTx(tx, fn);
+          } catch (e: any) {
+            throw e;
+          }
+        }),
+      });
       const accessor = new SpannerStorageAccessor(db, 'shedlock', cols(), 'my-host');
       expect(await accessor.insertRecord(cfg())).toBe(false);
     });
@@ -74,9 +80,15 @@ describe('SpannerStorageAccessor', () => {
     it('returns false on FAILED_PRECONDITION (code 9)', async () => {
       const tx = makeTx();
       tx.commit.mockRejectedValue({ code: 9, message: 'already exists' });
-      const db = makeDb({ runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
-        try { return await runTx(tx, fn); } catch (e: any) { throw e; }
-      }) });
+      const db = makeDb({
+        runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
+          try {
+            return await runTx(tx, fn);
+          } catch (e: any) {
+            throw e;
+          }
+        }),
+      });
       const accessor = new SpannerStorageAccessor(db, 'shedlock', cols(), 'my-host');
       expect(await accessor.insertRecord(cfg())).toBe(false);
     });
@@ -84,9 +96,15 @@ describe('SpannerStorageAccessor', () => {
     it('propagates other errors', async () => {
       const tx = makeTx();
       tx.commit.mockRejectedValue(new Error('network error'));
-      const db = makeDb({ runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
-        try { return await runTx(tx, fn); } catch (e: any) { throw e; }
-      }) });
+      const db = makeDb({
+        runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => {
+          try {
+            return await runTx(tx, fn);
+          } catch (e: any) {
+            throw e;
+          }
+        }),
+      });
       const accessor = new SpannerStorageAccessor(db, 'shedlock', cols(), 'my-host');
       await expect(accessor.insertRecord(cfg())).rejects.toThrow('network error');
     });
@@ -96,16 +114,24 @@ describe('SpannerStorageAccessor', () => {
       const db = makeDb({ runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => await runTx(tx, fn)) });
       const accessor = new SpannerStorageAccessor(db, 'shedlock', cols(), 'my-host');
       await accessor.insertRecord(cfg('my-lock', 30_000));
-      expect(tx.insert).toHaveBeenCalledWith('shedlock', expect.objectContaining({
-        name: 'my-lock',
-        lockedBy: 'my-host',
-      }));
+      expect(tx.insert).toHaveBeenCalledWith(
+        'shedlock',
+        expect.objectContaining({
+          name: 'my-lock',
+          lockedBy: 'my-host',
+        }),
+      );
     });
 
     it('uses custom column names', async () => {
       const tx = makeTx();
       const db = makeDb({ runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => await runTx(tx, fn)) });
-      const accessor = new SpannerStorageAccessor(db, 'custom_table', cols({ name: 'n', lockUntil: 'lu', lockedAt: 'la', lockedBy: 'lb' }), 'host1');
+      const accessor = new SpannerStorageAccessor(
+        db,
+        'custom_table',
+        cols({ name: 'n', lockUntil: 'lu', lockedAt: 'la', lockedBy: 'lb' }),
+        'host1',
+      );
       await accessor.insertRecord(cfg('test'));
       expect(tx.insert).toHaveBeenCalledWith('custom_table', {
         n: 'test',
@@ -167,9 +193,17 @@ describe('SpannerStorageAccessor', () => {
     it('generates SQL with backtick-quoted identifiers', async () => {
       const tx = makeTx();
       const captured: any[] = [];
-      tx.runUpdate.mockImplementation((q: any) => { captured.push(q); return [1]; });
+      tx.runUpdate.mockImplementation((q: any) => {
+        captured.push(q);
+        return [1];
+      });
       const db = makeDb({ runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => await runTx(tx, fn)) });
-      const accessor = new SpannerStorageAccessor(db, 'shedlock', cols({ name: 'n', lockUntil: 'lu', lockedBy: 'lb' }), 'my-host');
+      const accessor = new SpannerStorageAccessor(
+        db,
+        'shedlock',
+        cols({ name: 'n', lockUntil: 'lu', lockedBy: 'lb' }),
+        'my-host',
+      );
       await accessor.unlock(cfg('test'));
       expect(captured[0].sql).toContain('UPDATE `shedlock`');
       expect(captured[0].sql).toContain('SET `lu` = @unlockTime');
@@ -204,7 +238,10 @@ describe('SpannerStorageAccessor', () => {
     it('includes lockUntil > @now condition', async () => {
       const tx = makeTx();
       const captured: any[] = [];
-      tx.runUpdate.mockImplementation((q: any) => { captured.push(q); return [1]; });
+      tx.runUpdate.mockImplementation((q: any) => {
+        captured.push(q);
+        return [1];
+      });
       const db = makeDb({ runTransactionAsync: vi.fn().mockImplementation(async (fn: any) => await runTx(tx, fn)) });
       const accessor = new SpannerStorageAccessor(db, 'shedlock', cols(), 'my-host');
       await accessor.extend(cfg());

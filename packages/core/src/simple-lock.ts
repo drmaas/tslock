@@ -1,6 +1,6 @@
 import { ClockProvider } from './clock-provider.js';
-import { LockException } from './lock-exception.js';
 import type { LockConfiguration } from './lock-configuration.js';
+import { LockException } from './lock-exception.js';
 
 export interface SimpleLock {
   unlock(): Promise<void>;
@@ -18,10 +18,7 @@ export abstract class AbstractSimpleLock implements SimpleLock {
     this.valid = false;
   }
 
-  async extend(
-    lockAtMostFor: number,
-    lockAtLeastFor: number,
-  ): Promise<SimpleLock | undefined> {
+  async extend(lockAtMostFor: number, lockAtLeastFor: number): Promise<SimpleLock | undefined> {
     this.checkValidity();
     const newConfig: LockConfiguration = {
       name: this.config.name,

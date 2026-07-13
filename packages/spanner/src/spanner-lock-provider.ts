@@ -1,5 +1,5 @@
-import { StorageBasedLockProvider } from '@tslock/core';
 import type { Database } from '@google-cloud/spanner';
+import { StorageBasedLockProvider } from '@tslock/core';
 import type { SpannerColumnNames } from './spanner-configuration.js';
 import { SpannerStorageAccessor } from './spanner-storage-accessor.js';
 

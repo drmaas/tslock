@@ -8,9 +8,6 @@ export class IoRedisLockProvider extends InternalRedisLockProvider {
   }
 }
 
-export function createIoRedisLockProvider(
-  client: Redis,
-  config: RedisLockProviderConfig = {},
-): IoRedisLockProvider {
+export function createIoRedisLockProvider(client: Redis, config: RedisLockProviderConfig = {}): IoRedisLockProvider {
   return new IoRedisLockProvider(client, config);
 }

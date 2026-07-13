@@ -1,9 +1,5 @@
+import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
 import type { Collection, Db } from 'mongodb';
-import {
-  type ExtensibleLockProvider,
-  type LockConfiguration,
-  type SimpleLock,
-} from '@tslock/core';
 import { MongoAccessor } from './mongo-accessor.js';
 import type { MongoLockDocument } from './mongo-lock-document.js';
 
@@ -27,10 +23,7 @@ export class MongoLockProvider implements ExtensibleLockProvider {
   }
 }
 
-export function createMongoLockProvider(
-  db: Db,
-  options?: MongoLockProviderOptions,
-): MongoLockProvider {
+export function createMongoLockProvider(db: Db, options?: MongoLockProviderOptions): MongoLockProvider {
   const collectionName = options?.collection ?? 'shedLock';
   const writeConcern = { w: 'majority' as const, ...options?.collectionOptions?.writeConcern };
   const readConcern = { level: 'majority' as const, ...options?.collectionOptions?.readConcern };

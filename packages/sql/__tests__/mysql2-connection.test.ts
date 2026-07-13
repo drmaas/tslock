@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import { DatabaseProduct } from '@tslock/sql-support';
+import { describe, expect, it, vi } from 'vitest';
 import { Mysql2Connection } from '../src/connections/mysql2-connection.js';
 
 describe('Mysql2Connection', () => {
@@ -24,15 +24,9 @@ describe('Mysql2Connection', () => {
       query: vi.fn().mockResolvedValue([{ affectedRows: 1 }, []]),
     };
     const conn = await Mysql2Connection.create(pool as never);
-    const result = await conn.query(
-      'INSERT INTO t(n) VALUES(:name)',
-      { name: 'foo' },
-    );
+    const result = await conn.query('INSERT INTO t(n) VALUES(:name)', { name: 'foo' });
     expect(result.affectedRows).toBe(1);
-    expect(pool.query).toHaveBeenCalledWith(
-      'INSERT INTO t(n) VALUES(?)',
-      ['foo'],
-    );
+    expect(pool.query).toHaveBeenCalledWith('INSERT INTO t(n) VALUES(?)', ['foo']);
   });
 
   it('isDuplicateKeyError true for errno 1062', async () => {

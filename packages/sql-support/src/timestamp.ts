@@ -33,10 +33,10 @@ function getOffset(timeZone: string, epochMillis: number): string {
   });
   const parts = dtf.formatToParts(new Date(epochMillis));
   const offset = parts.find((p) => p.type === 'timeZoneName')?.value ?? '+00:00';
-  const match = /GMT([+\-]\d{1,2}):?(\d{2})?/.exec(offset);
+  const match = /GMT([+-]\d{1,2}):?(\d{2})?/.exec(offset);
   if (!match) return '+00:00';
   const sign = match[1]!.startsWith('-') ? '-' : '+';
-  const hours = match[1]!.replace(/[+\-]/, '').padStart(2, '0');
+  const hours = match[1]!.replace(/[+-]/, '').padStart(2, '0');
   const minutes = match[2] ?? '00';
   return `${sign}${hours}:${minutes}`;
 }

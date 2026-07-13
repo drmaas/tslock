@@ -1,9 +1,9 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
-import type { KV, KeyValueEntry } from 'nats';
-import { NatsLockProvider } from '../src/nats-lock-provider.js';
-import { NatsLock } from '../src/nats-lock.js';
+import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import type { KeyValueEntry, KV } from 'nats';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { longToBytes } from '../src/long-utils.js';
+import { NatsLock } from '../src/nats-lock.js';
+import { NatsLockProvider } from '../src/nats-lock-provider.js';
 
 function mockKv(): KV {
   return {

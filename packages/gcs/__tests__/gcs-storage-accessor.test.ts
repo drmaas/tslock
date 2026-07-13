@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Storage } from '@google-cloud/storage';
 import { ClockProvider } from '@tslock/core';
-import { GcsStorageAccessor } from '../src/gcs-storage-accessor.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GcsProviderConfig } from '../src/gcs-provider-config.js';
 import { createGcsProviderConfig } from '../src/gcs-provider-config.js';
+import { GcsStorageAccessor } from '../src/gcs-storage-accessor.js';
 
 function gcsError(code: number): Error {
   return Object.assign(new Error('GCS error'), { code });
@@ -126,9 +126,7 @@ describe('GcsStorageAccessor', () => {
     it('missing record: getMetadata throws 404 → throws (triggers cache clear)', async () => {
       mockFile.getMetadata.mockRejectedValue(gcsError(404));
 
-      await expect(accessor.updateRecord(defaultConfig)).rejects.toThrow(
-        'Lock record not found',
-      );
+      await expect(accessor.updateRecord(defaultConfig)).rejects.toThrow('Lock record not found');
     });
 
     it('concurrent modify: save throws 412 → returns false', async () => {
@@ -143,13 +141,9 @@ describe('GcsStorageAccessor', () => {
     });
 
     it('corrupt metadata: missing lockUntil → throws LockException', async () => {
-      mockFile.getMetadata.mockResolvedValue([
-        { generation: '1', metadata: {} },
-      ]);
+      mockFile.getMetadata.mockResolvedValue([{ generation: '1', metadata: {} }]);
 
-      await expect(accessor.updateRecord(defaultConfig)).rejects.toThrow(
-        'Corrupted lock record',
-      );
+      await expect(accessor.updateRecord(defaultConfig)).rejects.toThrow('Corrupted lock record');
     });
   });
 

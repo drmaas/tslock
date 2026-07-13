@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import type cassandra from 'cassandra-driver';
-import { CassandraStorageAccessor } from '../../src/cassandra-storage-accessor.js';
+import { describe, expect, it, vi } from 'vitest';
 import type { ResolvedCassandraOptions } from '../../src/cassandra-cql.js';
+import { CassandraStorageAccessor } from '../../src/cassandra-storage-accessor.js';
 
 const defaultOpts: ResolvedCassandraOptions = {
   keyspace: 'shedlock_test',

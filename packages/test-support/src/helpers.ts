@@ -1,10 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import {
-  createLockConfig,
-  parseDuration,
-  type LockConfiguration,
-  type LockProvider,
-} from '@tslock/core';
+import { createLockConfig, type LockConfiguration, type LockProvider, parseDuration } from '@tslock/core';
 
 export function config(
   name: string,
@@ -28,8 +23,7 @@ export async function cleanupLock(provider: LockProvider, name: string): Promise
     if (lock) {
       await lock.unlock();
     }
-  } catch {
-  }
+  } catch {}
 }
 
 export function uniqueLockName(prefix = 'lock'): string {

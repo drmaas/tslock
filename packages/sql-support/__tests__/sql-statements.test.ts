@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { translateToPositional, buildPositionalParams } from '../src/sql-statements.js';
+import { buildPositionalParams, translateToPositional } from '../src/sql-statements.js';
 
 describe('translateToPositional', () => {
   it('replaces named params with $1, $2, ...', () => {

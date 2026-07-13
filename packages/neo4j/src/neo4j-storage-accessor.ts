@@ -1,17 +1,17 @@
 import {
   AbstractStorageAccessor,
   ClockProvider,
-  Utils,
   type LockConfiguration,
   lockAtMostUntil,
+  Utils,
   unlockTime,
 } from '@tslock/core';
 import type { Driver, ManagedTransaction } from 'neo4j-driver';
 import {
-  buildInsertCypher,
-  buildUpdateCypher,
-  buildUnlockCypher,
   buildExtendCypher,
+  buildInsertCypher,
+  buildUnlockCypher,
+  buildUpdateCypher,
   type ResolvedOptions,
 } from './neo4j-cypher.js';
 
@@ -47,9 +47,7 @@ export class Neo4jStorageAccessor extends AbstractStorageAccessor {
   }
 
   private async withSession<T>(fn: (tx: ManagedTransaction) => Promise<T>): Promise<T> {
-    const session = this.driver.session(
-      this.database !== undefined ? { database: this.database } : undefined,
-    );
+    const session = this.driver.session(this.database !== undefined ? { database: this.database } : undefined);
     try {
       return await session.executeWrite(fn);
     } finally {

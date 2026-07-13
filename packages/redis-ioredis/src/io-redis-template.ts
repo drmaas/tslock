@@ -1,5 +1,5 @@
-import { type Redis } from 'ioredis';
 import type { RedisTemplate } from '@tslock/redis-core';
+import type { Redis } from 'ioredis';
 
 export class IoRedisTemplate implements RedisTemplate {
   constructor(private readonly client: Redis) {}

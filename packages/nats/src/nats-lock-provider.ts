@@ -2,14 +2,14 @@ import {
   ClockProvider,
   type LockConfiguration,
   type LockProvider,
-  type SimpleLock,
   lockAtMostUntil,
+  type SimpleLock,
 } from '@tslock/core';
 import type { KV } from 'nats';
 import { connect, StorageType } from 'nats';
 import { bytesToLong, longToBytes } from './long-utils.js';
-import { NatsLock } from './nats-lock.js';
 import type { NatsLockProviderOptions } from './nats-configuration.js';
+import { NatsLock } from './nats-lock.js';
 
 function isNatsConflictError(e: unknown): boolean {
   if (e && typeof e === 'object') {
@@ -52,9 +52,7 @@ export class NatsLockProvider implements LockProvider {
   }
 }
 
-export async function createNatsLockProvider(
-  options: NatsLockProviderOptions,
-): Promise<NatsLockProvider> {
+export async function createNatsLockProvider(options: NatsLockProviderOptions): Promise<NatsLockProvider> {
   const nc = await connect({ servers: options.servers, ...options.connectionOptions });
   const js = nc.jetstream();
   const bucketName = options.bucketName ?? 'shedlock-locks';

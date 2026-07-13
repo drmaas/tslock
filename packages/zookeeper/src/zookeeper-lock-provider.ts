@@ -1,5 +1,5 @@
 import type { LockConfiguration, LockProvider, SimpleLock } from '@tslock/core';
-import ZooKeeper from 'zookeeper';
+import type ZooKeeper from 'zookeeper';
 import { ZooKeeperAccessor } from './zookeeper-accessor.js';
 import type { ZooKeeperLockProviderOptions } from './zookeeper-lock-provider-options.js';
 import { resolveOptions } from './zookeeper-lock-provider-options.js';

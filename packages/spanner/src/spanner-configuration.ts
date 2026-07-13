@@ -1,5 +1,5 @@
-import { Utils } from '@tslock/core';
 import type { Database } from '@google-cloud/spanner';
+import { Utils } from '@tslock/core';
 
 export interface SpannerColumnNames {
   readonly name: string;

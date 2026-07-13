@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { LockExtender, NoActiveLockException, LockCanNotBeExtendedException } from '../src/lock-extender.js';
 import { createLockConfig } from '../src/lock-configuration.js';
+import { LockCanNotBeExtendedException, LockExtender, NoActiveLockException } from '../src/lock-extender.js';
 import type { SimpleLock } from '../src/simple-lock.js';
 
 function makeLock(): SimpleLock {
@@ -26,8 +26,8 @@ describe('LockExtender', () => {
   it('extendActiveLock throws LockCanNotBeExtendedException when extend returns undefined', async () => {
     const lock = makeLock();
     (lock.extend as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-    await expect(
-      LockExtender.runWithLock(lock, () => LockExtender.extendActiveLock('1m', 0)),
-    ).rejects.toThrow(LockCanNotBeExtendedException);
+    await expect(LockExtender.runWithLock(lock, () => LockExtender.extendActiveLock('1m', 0))).rejects.toThrow(
+      LockCanNotBeExtendedException,
+    );
   });
 });

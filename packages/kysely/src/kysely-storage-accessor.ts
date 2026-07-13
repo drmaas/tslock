@@ -1,6 +1,6 @@
 import { AbstractStorageAccessor, type LockConfiguration } from '@tslock/core';
-import { CompiledQuery, type Kysely } from 'kysely';
 import type { SqlStatementsSource } from '@tslock/sql-support';
+import { CompiledQuery, type Kysely } from 'kysely';
 import type { KyselyDialectInfo } from './dialect-info.js';
 
 export class KyselyStorageAccessor extends AbstractStorageAccessor {

@@ -1,7 +1,7 @@
-import { ClockProvider, Utils, type LockConfiguration } from '@tslock/core';
+import { ClockProvider, type LockConfiguration, Utils } from '@tslock/core';
 import type { Etcd3, Lease } from 'etcd3';
-import { MILLIS_IN_SECOND } from './etcd-lock-provider-options.js';
 import { EtcdLock } from './etcd-lock.js';
+import { MILLIS_IN_SECOND } from './etcd-lock-provider-options.js';
 
 export class EtcdAccessor {
   constructor(
@@ -21,7 +21,12 @@ export class EtcdAccessor {
     try {
       const result = await this.client
         .if(key, 'Version', '==', 0)
-        .then(this.client.put(key).value(value).lease((lease as any).leaseID))
+        .then(
+          this.client
+            .put(key)
+            .value(value)
+            .lease((lease as any).leaseID),
+        )
         .else(this.client.get(key))
         .commit();
 
@@ -32,7 +37,9 @@ export class EtcdAccessor {
       await lease.revoke();
       return undefined;
     } catch (e) {
-      try { await lease.revoke(); } catch { }
+      try {
+        await lease.revoke();
+      } catch {}
       throw e;
     }
   }
@@ -51,7 +58,11 @@ export class EtcdAccessor {
     const newTtlSeconds = Math.ceil(config.lockAtLeastFor / MILLIS_IN_SECOND);
 
     const newLease = this.client.lease(newTtlSeconds);
-    await this.client.put(key).value(value).lease((newLease as any).leaseID).exec();
+    await this.client
+      .put(key)
+      .value(value)
+      .lease((newLease as any).leaseID)
+      .exec();
     await lease.revoke();
   }
 }

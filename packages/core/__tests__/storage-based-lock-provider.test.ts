@@ -1,14 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { StorageBasedLockProvider } from '../src/storage-based-lock-provider.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import type { StorageAccessor } from '../src/storage-based-lock-provider.js';
+import { StorageBasedLockProvider } from '../src/storage-based-lock-provider.js';
 
-function makeAccessor(opts: {
-  insertReturn?: boolean;
-  updateReturn?: boolean;
-  extendReturn?: boolean;
-  updateThrows?: boolean;
-} = {}): {
+function makeAccessor(
+  opts: { insertReturn?: boolean; updateReturn?: boolean; extendReturn?: boolean; updateThrows?: boolean } = {},
+): {
   accessor: StorageAccessor;
   insertMock: ReturnType<typeof vi.fn>;
   updateMock: ReturnType<typeof vi.fn>;

@@ -1,5 +1,5 @@
+import type { LockProvider } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
-import { LockProvider } from '@tslock/core';
 import { cleanupLock, config, sleep, uniqueLockName } from '../src/helpers.js';
 
 describe('config', () => {

@@ -3,8 +3,8 @@ import { KeepAliveLockProvider } from '../src/keep-alive-lock-provider.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import { LockException } from '../src/lock-exception.js';
 import type { ExtensibleLockProvider } from '../src/lock-provider.js';
-import type { SimpleLock } from '../src/simple-lock.js';
 import type { Disposable, Scheduler } from '../src/scheduler.js';
+import type { SimpleLock } from '../src/simple-lock.js';
 
 class FakeScheduler implements Scheduler {
   callbacks = new Map<number, () => void>();
@@ -21,10 +21,7 @@ class FakeScheduler implements Scheduler {
   }
 }
 
-function makeProvider(opts: {
-  lockReturn?: 'lock' | 'undefined';
-  extendReturn?: 'newLock' | 'undefined';
-} = {}): {
+function makeProvider(opts: { lockReturn?: 'lock' | 'undefined'; extendReturn?: 'newLock' | 'undefined' } = {}): {
   provider: ExtensibleLockProvider;
   unlockMock: ReturnType<typeof vi.fn>;
   extendMock: ReturnType<typeof vi.fn>;

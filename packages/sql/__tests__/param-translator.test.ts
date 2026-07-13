@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { LockException } from '@tslock/core';
+import { describe, expect, it } from 'vitest';
 import { translateToNamed, translateToPositional } from '../src/param-translator.js';
 
 describe('translateToPositional', () => {
@@ -14,11 +14,7 @@ describe('translateToPositional', () => {
   });
 
   it('reuses same index for repeated :name', () => {
-    const { sql, values } = translateToPositional(
-      'WHERE x = :now AND y < :now',
-      { now: 100 },
-      (i) => `$${i}`,
-    );
+    const { sql, values } = translateToPositional('WHERE x = :now AND y < :now', { now: 100 }, (i) => `$${i}`);
     expect(sql).toBe('WHERE x = $1 AND y < $1');
     expect(values).toEqual([100]);
   });
@@ -30,26 +26,18 @@ describe('translateToPositional', () => {
   });
 
   it('throws on missing param', () => {
-    expect(() =>
-      translateToPositional('WHERE n = :name', {}, (i) => `$${i}`),
-    ).toThrow(LockException);
+    expect(() => translateToPositional('WHERE n = :name', {}, (i) => `$${i}`)).toThrow(LockException);
   });
 });
 
 describe('translateToNamed', () => {
   it('replaces :name with @name', () => {
-    const { sql, params } = translateToNamed(
-      'WHERE n=:name AND lb=:lockedBy',
-      { name: 'foo', lockedBy: 'host1' },
-      '@',
-    );
+    const { sql, params } = translateToNamed('WHERE n=:name AND lb=:lockedBy', { name: 'foo', lockedBy: 'host1' }, '@');
     expect(sql).toBe('WHERE n=@name AND lb=@lockedBy');
     expect(params).toEqual({ name: 'foo', lockedBy: 'host1' });
   });
 
   it('throws on missing param', () => {
-    expect(() =>
-      translateToNamed('WHERE n=:name', {}, '@'),
-    ).toThrow(LockException);
+    expect(() => translateToNamed('WHERE n=:name', {}, '@')).toThrow(LockException);
   });
 });

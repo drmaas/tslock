@@ -14,7 +14,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -30,9 +32,15 @@
     "redis": "^4.0.0"
   },
   "peerDependenciesMeta": {
-    "@tslock/core": { "optional": false },
-    "@tslock/redis-core": { "optional": false },
-    "redis": { "optional": false }
+    "@tslock/core": {
+      "optional": false
+    },
+    "@tslock/redis-core": {
+      "optional": false
+    },
+    "redis": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
@@ -41,5 +49,13 @@
     "tsup": "^8.0.0",
     "vitest": "^2.0.0",
     "redis": "^4.6.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/drmaas/tslock.git",
+    "directory": "packages/redis"
   }
 }

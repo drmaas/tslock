@@ -16,11 +16,7 @@ function getStatusCode(e: unknown): number | undefined {
 
 export function isNotFound(e: unknown): boolean {
   if (e instanceof S3ServiceException) {
-    return (
-      e.name === 'NotFound' ||
-      e.name === 'NoSuchKey' ||
-      e.$metadata?.httpStatusCode === 404
-    );
+    return e.name === 'NotFound' || e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404;
   }
   const name = getErrorName(e);
   if (name === 'NotFound' || name === 'NoSuchKey') return true;

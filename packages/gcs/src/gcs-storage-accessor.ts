@@ -1,15 +1,15 @@
-import { Storage } from '@google-cloud/storage';
+import type { Storage } from '@google-cloud/storage';
 import {
   AbstractStorageAccessor,
   ClockProvider,
-  LockException,
-  Utils,
-  lockAtMostUntil,
-  unlockTime,
   type LockConfiguration,
+  LockException,
+  lockAtMostUntil,
+  Utils,
+  unlockTime,
 } from '@tslock/core';
-import type { GcsProviderConfig } from './gcs-provider-config.js';
 import { isNotFound, isPreconditionFailed } from './gcs-errors.js';
+import type { GcsProviderConfig } from './gcs-provider-config.js';
 
 type GetResult = {
   generation: number;
@@ -50,17 +50,11 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     }
   }
 
-  private parseLockUntil(
-    metadata: Record<string, string> | undefined,
-  ): number {
+  private parseLockUntil(metadata: Record<string, string> | undefined): number {
     const raw = metadata?.lockUntil;
-    if (!raw)
-      throw new LockException('Corrupted lock record: missing lockUntil');
+    if (!raw) throw new LockException('Corrupted lock record: missing lockUntil');
     const ms = Date.parse(raw);
-    if (Number.isNaN(ms))
-      throw new LockException(
-        `Corrupted lock record: unparseable lockUntil '${raw}'`,
-      );
+    if (Number.isNaN(ms)) throw new LockException(`Corrupted lock record: unparseable lockUntil '${raw}'`);
     return ms;
   }
 
@@ -92,8 +86,7 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
 
   override async updateRecord(config: LockConfiguration): Promise<boolean> {
     const current = await this.getWithMetadata(config.name);
-    if (current === null)
-      throw new LockException('Lock record not found: ' + config.name);
+    if (current === null) throw new LockException('Lock record not found: ' + config.name);
     const lockUntil = this.parseLockUntil(current.metadata);
     if (lockUntil > ClockProvider.now()) return false;
     const file = this.file(config.name);
@@ -118,10 +111,8 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
       await file.setMetadata(
         {
           lockUntil: Utils.toIsoString(unlockTime(config)),
-          lockedAt:
-            current.metadata.lockedAt ?? Utils.toIsoString(config.createdAt),
-          lockedBy:
-            current.metadata.lockedBy ?? this.getHostname(),
+          lockedAt: current.metadata.lockedAt ?? Utils.toIsoString(config.createdAt),
+          lockedBy: current.metadata.lockedBy ?? this.getHostname(),
           lockName: current.metadata.lockName ?? config.name,
         } as any,
         { preconditionOpts: { ifGenerationMatch: current.generation } } as any,

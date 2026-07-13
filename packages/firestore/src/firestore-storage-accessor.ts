@@ -1,18 +1,13 @@
+import type { DocumentReference, Firestore, Timestamp, Transaction } from '@google-cloud/firestore';
+import { Timestamp as FirestoreTimestamp } from '@google-cloud/firestore';
 import {
   AbstractStorageAccessor,
   ClockProvider,
-  Utils,
   type LockConfiguration,
   lockAtMostUntil,
+  Utils,
   unlockTime,
 } from '@tslock/core';
-import type {
-  Firestore,
-  DocumentReference,
-  Transaction,
-  Timestamp,
-} from '@google-cloud/firestore';
-import { Timestamp as FirestoreTimestamp } from '@google-cloud/firestore';
 import type { FirestoreFieldNames } from './firestore-configuration.js';
 
 function toMillis(value: string | Timestamp): number {

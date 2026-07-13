@@ -1,12 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
-import { MongoServerError } from 'mongodb';
-import { MongoLockProvider } from '../src/mongo-lock-provider.js';
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import type { Collection } from 'mongodb';
+import { MongoServerError } from 'mongodb';
+import { describe, expect, it, vi } from 'vitest';
+import { MongoLockProvider } from '../src/mongo-lock-provider.js';
 
 function makeCol(overrides: Record<string, any> = {}): Collection<any> {
   return {
-    findOneAndUpdate: vi.fn().mockResolvedValue({ _id: 'test', lockUntil: new Date(), lockedAt: new Date(), lockedBy: 'host' }),
+    findOneAndUpdate: vi
+      .fn()
+      .mockResolvedValue({ _id: 'test', lockUntil: new Date(), lockedAt: new Date(), lockedBy: 'host' }),
     ...overrides,
   } as any;
 }
@@ -72,7 +74,8 @@ describe('MongoLockProvider', () => {
 
   it('extend() returns undefined when null result', async () => {
     const col = makeCol({
-      findOneAndUpdate: vi.fn()
+      findOneAndUpdate: vi
+        .fn()
         .mockResolvedValueOnce({ _id: 't', lockUntil: new Date(), lockedAt: new Date(), lockedBy: 'h' })
         .mockResolvedValue(null),
     });

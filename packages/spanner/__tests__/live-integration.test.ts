@@ -1,5 +1,5 @@
-import { describe, it } from 'vitest';
 import { Spanner } from '@google-cloud/spanner';
+import { describe, it } from 'vitest';
 
 const INSTANCE = process.env.TSLOCK_SPANNER_INSTANCE;
 const DATABASE = process.env.TSLOCK_SPANNER_DATABASE;

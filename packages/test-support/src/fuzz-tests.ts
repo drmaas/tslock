@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
 import { ClockProvider, type LockProvider, type SimpleLock } from '@tslock/core';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { config, sleep, uniqueLockName } from './helpers.js';
 
 export function fuzzTests(getProvider: () => Promise<LockProvider>): void {
@@ -14,9 +14,7 @@ export function fuzzTests(getProvider: () => Promise<LockProvider>): void {
     it('shouldHandleConcurrentLockAttempts', async () => {
       for (let i = 0; i < 10; i++) {
         const name = uniqueLockName('fuzz');
-        const promises = Array.from({ length: 50 }, () =>
-          provider.lock(config(name, '30s')),
-        );
+        const promises = Array.from({ length: 50 }, () => provider.lock(config(name, '30s')));
         const results = await Promise.all(promises);
         const locks = results.filter((r) => r !== undefined);
         expect(locks.length).toBe(1);
@@ -44,8 +42,7 @@ export function fuzzTests(getProvider: () => Promise<LockProvider>): void {
             try {
               const extended = await lock.extend(5_000, 0);
               if (extended) active = extended;
-            } catch {
-            }
+            } catch {}
             await sleep(Math.floor(Math.random() * 30));
             await active.unlock();
           } finally {

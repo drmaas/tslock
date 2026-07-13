@@ -2,12 +2,12 @@ import {
   AbstractSimpleLock,
   type ExtensibleLockProvider,
   type LockConfiguration,
-  type SimpleLock,
   lockAtMostUntil,
+  type SimpleLock,
   unlockTime,
 } from '@tslock/core';
-import { DEL_IF_EQUALS_SCRIPT, EXTEND_IF_EQUALS_SCRIPT } from './scripts.js';
 import type { RedisTemplate } from './redis-template.js';
+import { DEL_IF_EQUALS_SCRIPT, EXTEND_IF_EQUALS_SCRIPT } from './scripts.js';
 
 export const DEFAULT_KEY_PREFIX = 'job-lock';
 export const ENV_DEFAULT = 'default';

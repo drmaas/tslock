@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import { DatabaseProduct } from '@tslock/sql-support';
+import { describe, expect, it, vi } from 'vitest';
 import { MssqlConnection } from '../src/connections/mssql-connection.js';
 
 describe('MssqlConnection', () => {
@@ -14,16 +14,11 @@ describe('MssqlConnection', () => {
     const request = { input: inputMock, query: queryMock };
     const pool = { request: vi.fn().mockReturnValue(request) };
     const conn = new MssqlConnection(pool as never);
-    const result = await conn.query(
-      'INSERT INTO t(n, l) VALUES(@name, @lockUntil)',
-      { name: 'foo', lockUntil: 1234 },
-    );
+    const result = await conn.query('INSERT INTO t(n, l) VALUES(@name, @lockUntil)', { name: 'foo', lockUntil: 1234 });
     expect(result.affectedRows).toBe(1);
     expect(inputMock).toHaveBeenCalledWith('name', 'foo');
     expect(inputMock).toHaveBeenCalledWith('lockUntil', 1234);
-    expect(queryMock).toHaveBeenCalledWith(
-      'INSERT INTO t(n, l) VALUES(@name, @lockUntil)',
-    );
+    expect(queryMock).toHaveBeenCalledWith('INSERT INTO t(n, l) VALUES(@name, @lockUntil)');
   });
 
   it('query defaults affectedRows to 0 when rowsAffected is undefined', async () => {

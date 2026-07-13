@@ -1,17 +1,13 @@
 import {
   AbstractStorageAccessor,
   ClockProvider,
-  Utils,
   type LockConfiguration,
   lockAtMostUntil,
+  Utils,
   unlockTime,
 } from '@tslock/core';
-import {
-  DocumentExistsError,
-  DocumentNotFoundError,
-  CasMismatchError,
-} from 'couchbase';
 import type { Collection } from 'couchbase';
+import { CasMismatchError, DocumentExistsError, DocumentNotFoundError } from 'couchbase';
 import type { ResolvedOptions } from './couchbase-lock-provider.js';
 import { buildDocumentId } from './document-id.js';
 
@@ -61,12 +57,16 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
       return false;
     }
     try {
-      await this.collection.replace(this.docId(config.name), {
-        [this.opts.nameCol]: config.name,
-        [this.opts.lockUntilCol]: lockAtMostUntil(config),
-        [this.opts.lockedAtCol]: ClockProvider.now(),
-        [this.opts.lockedByCol]: this.lockedByValue,
-      }, { cas: getResult.cas });
+      await this.collection.replace(
+        this.docId(config.name),
+        {
+          [this.opts.nameCol]: config.name,
+          [this.opts.lockUntilCol]: lockAtMostUntil(config),
+          [this.opts.lockedAtCol]: ClockProvider.now(),
+          [this.opts.lockedByCol]: this.lockedByValue,
+        },
+        { cas: getResult.cas },
+      );
       return true;
     } catch (e) {
       if (e instanceof CasMismatchError) return false;
@@ -84,10 +84,14 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
     }
     const existing = getResult.content as Record<string, unknown>;
     try {
-      await this.collection.replace(this.docId(config.name), {
-        ...existing,
-        [this.opts.lockUntilCol]: unlockTime(config),
-      }, { cas: getResult.cas });
+      await this.collection.replace(
+        this.docId(config.name),
+        {
+          ...existing,
+          [this.opts.lockUntilCol]: unlockTime(config),
+        },
+        { cas: getResult.cas },
+      );
     } catch (e) {
       if (e instanceof CasMismatchError) return;
       throw e;
@@ -106,10 +110,14 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
     if (existing[this.opts.lockedByCol] !== this.lockedByValue) return false;
     if ((existing[this.opts.lockUntilCol] as number) <= ClockProvider.now()) return false;
     try {
-      await this.collection.replace(this.docId(config.name), {
-        ...existing,
-        [this.opts.lockUntilCol]: lockAtMostUntil(config),
-      }, { cas: getResult.cas });
+      await this.collection.replace(
+        this.docId(config.name),
+        {
+          ...existing,
+          [this.opts.lockUntilCol]: lockAtMostUntil(config),
+        },
+        { cas: getResult.cas },
+      );
       return true;
     } catch (e) {
       if (e instanceof CasMismatchError) return false;

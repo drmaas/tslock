@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
 import { createLockConfig } from '@tslock/core';
-import { CompiledQuery, type Kysely } from 'kysely';
 import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@tslock/sql-support';
-import { KyselyStorageAccessor } from '../src/kysely-storage-accessor.js';
+import type { CompiledQuery, Kysely } from 'kysely';
+import { describe, expect, it, vi } from 'vitest';
 import { getDialectInfo } from '../src/dialect-info.js';
+import { KyselyStorageAccessor } from '../src/kysely-storage-accessor.js';
 
 function makeDb(affectedRows: number | bigint): Kysely<unknown> {
   return {
@@ -18,9 +18,7 @@ function makeDbThrowing(error: unknown): Kysely<unknown> {
 }
 
 describe('KyselyStorageAccessor', () => {
-  const source = new DefaultSqlStatementsSource(
-    new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES }),
-  );
+  const source = new DefaultSqlStatementsSource(new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES }));
   const dialect = getDialectInfo('postgresql');
 
   it('insertRecord returns true when affectedRows > 0', async () => {

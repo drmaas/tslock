@@ -1,13 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
 import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@tslock/sql-support';
-import { SqlStorageAccessor } from '../src/sql-storage-accessor.js';
+import { describe, expect, it, vi } from 'vitest';
 import type { SqlConnection } from '../src/sql-connection.js';
+import { SqlStorageAccessor } from '../src/sql-storage-accessor.js';
 
-function makeConnection(opts: {
-  affectedRowsBySql?: Map<string, number>;
-  insertThrows?: unknown;
-} = {}): SqlConnection {
+function makeConnection(opts: { affectedRowsBySql?: Map<string, number>; insertThrows?: unknown } = {}): SqlConnection {
   const queryMock = vi.fn();
   queryMock.mockImplementation((sql: string) => {
     if (opts.insertThrows && sql.includes('INSERT')) {
@@ -53,9 +50,7 @@ describe('SqlStorageAccessor', () => {
     const source = DEFAULT_SOURCE();
     const conn = makeConnection({ insertThrows: new Error('connection lost') });
     const accessor = new SqlStorageAccessor(conn, source);
-    await expect(accessor.insertRecord(createLockConfig('test', 1000))).rejects.toThrow(
-      'connection lost',
-    );
+    await expect(accessor.insertRecord(createLockConfig('test', 1000))).rejects.toThrow('connection lost');
   });
 
   it('updateRecord returns true/false based on affectedRows', async () => {
@@ -63,21 +58,15 @@ describe('SqlStorageAccessor', () => {
     const updateSql = source.getUpdateStatement();
     const connTrue = makeConnection({ affectedRowsBySql: new Map([[updateSql, 1]]) });
     const connFalse = makeConnection({ affectedRowsBySql: new Map([[updateSql, 0]]) });
-    expect(
-      await new SqlStorageAccessor(connTrue, source).updateRecord(createLockConfig('t', 1000)),
-    ).toBe(true);
-    expect(
-      await new SqlStorageAccessor(connFalse, source).updateRecord(createLockConfig('t', 1000)),
-    ).toBe(false);
+    expect(await new SqlStorageAccessor(connTrue, source).updateRecord(createLockConfig('t', 1000))).toBe(true);
+    expect(await new SqlStorageAccessor(connFalse, source).updateRecord(createLockConfig('t', 1000))).toBe(false);
   });
 
   it('extend returns true/false based on affectedRows', async () => {
     const source = DEFAULT_SOURCE();
     const extendSql = source.getExtendStatement();
     const connTrue = makeConnection({ affectedRowsBySql: new Map([[extendSql, 1]]) });
-    expect(
-      await new SqlStorageAccessor(connTrue, source).extend(createLockConfig('t', 1000)),
-    ).toBe(true);
+    expect(await new SqlStorageAccessor(connTrue, source).extend(createLockConfig('t', 1000))).toBe(true);
   });
 
   it('unlock calls query and returns void', async () => {

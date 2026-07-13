@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { S3ServiceException } from '@aws-sdk/client-s3';
 import type { S3Client } from '@aws-sdk/client-s3';
+import { S3ServiceException } from '@aws-sdk/client-s3';
 import { ClockProvider } from '@tslock/core';
-import { S3StorageAccessor } from '../src/s3-storage-accessor.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { S3ProviderConfig } from '../src/s3-provider-config.js';
 import { createS3ProviderConfig } from '../src/s3-provider-config.js';
+import { S3StorageAccessor } from '../src/s3-storage-accessor.js';
 
 function mockS3Error(name: string, httpStatusCode: number): S3ServiceException {
   return new S3ServiceException({
@@ -132,9 +132,7 @@ describe('S3StorageAccessor', () => {
     it('missing record: HeadObject 404 → throws (triggers cache clear)', async () => {
       mockSend.mockRejectedValueOnce(mockS3Error('NotFound', 404));
 
-      await expect(accessor.updateRecord(defaultConfig)).rejects.toThrow(
-        'Lock record not found',
-      );
+      await expect(accessor.updateRecord(defaultConfig)).rejects.toThrow('Lock record not found');
     });
 
     it('concurrent modify: PutObject 412 → returns false', async () => {
@@ -158,9 +156,7 @@ describe('S3StorageAccessor', () => {
         $metadata: { httpStatusCode: 200 },
       });
 
-      await expect(accessor.updateRecord(defaultConfig)).rejects.toThrow(
-        'Corrupted lock record',
-      );
+      await expect(accessor.updateRecord(defaultConfig)).rejects.toThrow('Corrupted lock record');
     });
   });
 

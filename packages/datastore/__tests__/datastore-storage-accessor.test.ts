@@ -1,5 +1,5 @@
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig, ClockProvider } from '@tslock/core';
 import { DatastoreStorageAccessor } from '../src/datastore-storage-accessor.js';
 
 const NOW = 1_000_000;
@@ -54,13 +54,15 @@ describe('DatastoreStorageAccessor', () => {
       const datastore = makeDatastore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
       const accessor = makeAccessor({ datastore, lockedByValue: 'host1' });
       await accessor.insertRecord(cfg('my-lock', 30_000));
-      expect(txn.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        data: {
-          lockUntil: expect.any(String),
-          lockedAt: expect.any(String),
-          lockedBy: 'host1',
-        },
-      }));
+      expect(txn.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: {
+            lockUntil: expect.any(String),
+            lockedAt: expect.any(String),
+            lockedBy: 'host1',
+          },
+        }),
+      );
     });
   });
 
@@ -123,9 +125,11 @@ describe('DatastoreStorageAccessor', () => {
       const datastore = makeDatastore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
       await accessor.unlock(cfg());
-      expect(txn.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ foo: 'bar' }),
-      }));
+      expect(txn.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ foo: 'bar' }),
+        }),
+      );
     });
   });
 
@@ -171,9 +175,11 @@ describe('DatastoreStorageAccessor', () => {
       const datastore = makeDatastore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
       await accessor.extend(cfg());
-      expect(txn.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ foo: 'bar' }),
-      }));
+      expect(txn.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ foo: 'bar' }),
+        }),
+      );
     });
   });
 
@@ -243,13 +249,15 @@ describe('DatastoreStorageAccessor', () => {
         lockedByValue: 'custom-host',
       });
       await accessor.insertRecord(cfg('test'));
-      expect(txn.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        data: {
-          lu: expect.any(String),
-          la: expect.any(String),
-          lb: 'custom-host',
-        },
-      }));
+      expect(txn.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: {
+            lu: expect.any(String),
+            la: expect.any(String),
+            lb: 'custom-host',
+          },
+        }),
+      );
     });
   });
 });

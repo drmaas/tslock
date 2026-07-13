@@ -1,5 +1,5 @@
-import { Utils } from '@tslock/core';
 import type { Datastore } from '@google-cloud/datastore';
+import { Utils } from '@tslock/core';
 
 export interface DatastoreFieldNames {
   readonly lockUntil: string;

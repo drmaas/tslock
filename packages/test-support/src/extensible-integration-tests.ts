@@ -1,10 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
 import { ClockProvider, type ExtensibleLockProvider } from '@tslock/core';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { config, sleep, uniqueLockName } from './helpers.js';
-import {
-  lockProviderIntegrationTests,
-  type IntegrationTestOptions,
-} from './integration-tests.js';
+import { type IntegrationTestOptions, lockProviderIntegrationTests } from './integration-tests.js';
 
 export function extensibleLockProviderIntegrationTests(
   getProvider: () => Promise<ExtensibleLockProvider>,

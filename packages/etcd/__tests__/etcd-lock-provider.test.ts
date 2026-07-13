@@ -1,17 +1,8 @@
+import { ClockProvider, type LockConfiguration, LockException, Utils } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  ClockProvider,
-  LockException,
-  Utils,
-  type LockConfiguration,
-} from '@tslock/core';
 import { EtcdLockProvider } from '../src/etcd-lock-provider.js';
 
-function makeConfig(
-  name: string,
-  lockAtMostFor: number,
-  lockAtLeastFor = 0,
-): LockConfiguration {
+function makeConfig(name: string, lockAtMostFor: number, lockAtLeastFor = 0): LockConfiguration {
   return {
     name,
     lockAtMostFor,
@@ -59,12 +50,7 @@ describe('EtcdLockProvider', () => {
       const lock = await provider.lock(config);
 
       expect(lock).toBeDefined();
-      expect(client.if).toHaveBeenCalledWith(
-        'shedlock:default:test-lock',
-        'Version',
-        '==',
-        0,
-      );
+      expect(client.if).toHaveBeenCalledWith('shedlock:default:test-lock', 'Version', '==', 0);
       expect(client.lease).toHaveBeenCalledWith(30);
       expect(putBuilder.value).toHaveBeenCalled();
       expect(txnChain.then).toHaveBeenCalled();
@@ -80,12 +66,7 @@ describe('EtcdLockProvider', () => {
       const lock = await provider.lock(config);
 
       expect(lock).toBeDefined();
-      expect(client.if).toHaveBeenCalledWith(
-        'shedlock:prod:my-lock',
-        'Version',
-        '==',
-        0,
-      );
+      expect(client.if).toHaveBeenCalledWith('shedlock:prod:my-lock', 'Version', '==', 0);
     });
 
     it('uses Math.ceil for TTL seconds', async () => {
@@ -116,9 +97,7 @@ describe('EtcdLockProvider', () => {
 
       const provider = new EtcdLockProvider(client);
 
-      await expect(
-        provider.lock(makeConfig('fail', 30_000)),
-      ).rejects.toThrow('connection lost');
+      await expect(provider.lock(makeConfig('fail', 30_000))).rejects.toThrow('connection lost');
       expect(lease.revoke).toHaveBeenCalled();
     });
 
@@ -129,9 +108,7 @@ describe('EtcdLockProvider', () => {
 
       const provider = new EtcdLockProvider(client);
 
-      await expect(
-        provider.lock(makeConfig('fail', 30_000)),
-      ).rejects.toThrow('txn failed');
+      await expect(provider.lock(makeConfig('fail', 30_000))).rejects.toThrow('txn failed');
     });
 
     it('formats value as ADDED:isoTimestamp@hostname', async () => {

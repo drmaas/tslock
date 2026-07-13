@@ -25,11 +25,7 @@ export class NatsLock extends AbstractSimpleLock {
 
     const now = ClockProvider.now();
     if (lockAtLeastUntil(this.config) > now) {
-      await this.kv.update(
-        this.config.name,
-        longToBytes(lockAtLeastUntil(this.config)),
-        entry.revision,
-      );
+      await this.kv.update(this.config.name, longToBytes(lockAtLeastUntil(this.config)), entry.revision);
     } else {
       await this.kv.delete(this.config.name);
     }

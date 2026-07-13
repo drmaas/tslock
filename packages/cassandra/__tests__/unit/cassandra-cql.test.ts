@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildInsertCql,
-  buildUpdateCql,
-  buildUnlockCql,
-  buildExtendCql,
-  buildCreateTableCql,
-} from '../../src/cassandra-cql.js';
 import type { ResolvedColumnNames } from '../../src/cassandra-cql.js';
+import {
+  buildCreateTableCql,
+  buildExtendCql,
+  buildInsertCql,
+  buildUnlockCql,
+  buildUpdateCql,
+} from '../../src/cassandra-cql.js';
 
 const defaultCols: ResolvedColumnNames = {
   name: 'name',
@@ -32,9 +32,7 @@ describe('CQL builders', () => {
 
   it('buildInsertCql with custom column names', () => {
     const cql = buildInsertCql({ keyspace: 'ks', tableName: 'tbl', columnNames: customCols });
-    expect(cql).toBe(
-      'INSERT INTO ks.tbl (lock_name, expires_at, created_at, owner) VALUES (?, ?, ?, ?) IF NOT EXISTS',
-    );
+    expect(cql).toBe('INSERT INTO ks.tbl (lock_name, expires_at, created_at, owner) VALUES (?, ?, ?, ?) IF NOT EXISTS');
   });
 
   it('buildUpdateCql with default options', () => {
@@ -46,9 +44,7 @@ describe('CQL builders', () => {
 
   it('buildUnlockCql with default options', () => {
     const cql = buildUnlockCql({ keyspace: 'shedlock', tableName: 'shedlock', columnNames: defaultCols });
-    expect(cql).toBe(
-      'UPDATE shedlock.shedlock SET lock_until = ? WHERE name = ? IF locked_by = ? AND lock_until >= ?',
-    );
+    expect(cql).toBe('UPDATE shedlock.shedlock SET lock_until = ? WHERE name = ? IF locked_by = ? AND lock_until >= ?');
   });
 
   it('buildExtendCql produces same shape as buildUnlockCql', () => {

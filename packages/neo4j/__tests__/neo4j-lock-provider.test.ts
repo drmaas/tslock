@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveOptions, Neo4jLockProvider } from '../src/neo4j-lock-provider.js';
+import { Neo4jLockProvider, resolveOptions } from '../src/neo4j-lock-provider.js';
 
 describe('resolveOptions', () => {
   it('returns defaults when no options provided', () => {

@@ -1,7 +1,7 @@
+import type { LockConfiguration, LockProvider, SimpleLock } from '@tslock/core';
 import type { Client as HazelcastClient } from 'hazelcast-client';
-import { type LockConfiguration, type LockProvider, type SimpleLock } from '@tslock/core';
 import { HazelcastAccessor } from './hazelcast-accessor.js';
-import { resolveOptions, type HazelcastLockProviderOptions } from './hazelcast-lock-provider-options.js';
+import { type HazelcastLockProviderOptions, resolveOptions } from './hazelcast-lock-provider-options.js';
 
 export class HazelcastLockProvider implements LockProvider {
   private readonly accessor: HazelcastAccessor;

@@ -1,11 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest';
 import { LockException } from '@tslock/core';
+import { afterEach, describe, expect, it } from 'vitest';
 import { DatabaseProduct } from '../src/database-product.js';
 import { SqlConfiguration } from '../src/sql-configuration.js';
 
 describe('SqlConfiguration', () => {
-  afterEach(() => {
-  });
+  afterEach(() => {});
 
   it('defaults: tableName=shedlock, camelCase columns, hostname', () => {
     const c = new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES });

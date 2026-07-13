@@ -1,8 +1,8 @@
-import { ClockProvider, Utils, lockAtMostUntil, unlockTime } from '@tslock/core';
 import type { LockConfiguration, SimpleLock } from '@tslock/core';
-import ZooKeeper from 'zookeeper';
-import { ZooKeeperLock } from './zookeeper-lock.js';
+import { ClockProvider, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import type ZooKeeper from 'zookeeper';
 import { isBadVersionException, isNodeExistsException, isNoNodeException } from './zookeeper-errors.js';
+import { ZooKeeperLock } from './zookeeper-lock.js';
 
 const ZOO_PERSISTENT = 0;
 

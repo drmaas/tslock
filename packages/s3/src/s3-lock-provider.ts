@@ -1,9 +1,9 @@
-import { S3Client } from '@aws-sdk/client-s3';
+import type { S3Client } from '@aws-sdk/client-s3';
 import {
-  StorageBasedLockProvider,
   type ExtensibleLockProvider,
   type LockConfiguration,
   type SimpleLock,
+  StorageBasedLockProvider,
 } from '@tslock/core';
 import type { S3ProviderConfig } from './s3-provider-config.js';
 import { S3StorageAccessor } from './s3-storage-accessor.js';

@@ -1,14 +1,8 @@
-import {
-  type LockConfiguration,
-  type LockProvider,
-  type SimpleLock,
-  Utils,
-  ClockProvider,
-} from '@tslock/core';
-import { Client } from 'memjs';
+import { ClockProvider, type LockConfiguration, type LockProvider, type SimpleLock, Utils } from '@tslock/core';
 import type { Client as MemjsClient } from 'memjs';
-import { MemcachedLock } from './memcached-lock.js';
+import { Client } from 'memjs';
 import type { MemcachedLockProviderOptions } from './memcached-configuration.js';
+import { MemcachedLock } from './memcached-lock.js';
 
 const ENV_DEFAULT = 'default';
 

@@ -5,10 +5,7 @@ export interface S3ProviderConfig {
   objectPrefix: string;
 }
 
-export function createS3ProviderConfig(input: {
-  bucket: string;
-  objectPrefix?: string;
-}): S3ProviderConfig {
+export function createS3ProviderConfig(input: { bucket: string; objectPrefix?: string }): S3ProviderConfig {
   if (!input.bucket) {
     throw new LockException('bucket must be a non-empty string');
   }

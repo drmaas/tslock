@@ -1,15 +1,15 @@
 import {
-  LockException,
-  StorageBasedLockProvider,
-  Utils,
   type ExtensibleLockProvider,
   type LockConfiguration,
+  LockException,
   type SimpleLock,
+  StorageBasedLockProvider,
+  Utils,
 } from '@tslock/core';
 import type cassandra from 'cassandra-driver';
+import type { ResolvedCassandraOptions, ResolvedColumnNames } from './cassandra-cql.js';
 import { CassandraStorageAccessor } from './cassandra-storage-accessor.js';
 import { validateIdentifier, validateSerialConsistency } from './validation.js';
-import type { ResolvedCassandraOptions, ResolvedColumnNames } from './cassandra-cql.js';
 
 export interface CassandraColumnNames {
   readonly name: string;
@@ -72,9 +72,7 @@ export class CassandraLockProvider implements ExtensibleLockProvider {
 
   constructor(client: cassandra.Client, options: CassandraLockProviderOptions) {
     const opts = resolveOptions(options);
-    this.delegate = new StorageBasedLockProvider(
-      new CassandraStorageAccessor(client, opts),
-    );
+    this.delegate = new StorageBasedLockProvider(new CassandraStorageAccessor(client, opts));
   }
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
