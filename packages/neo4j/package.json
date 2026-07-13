@@ -1,6 +1,6 @@
 {
   "name": "@tslock/neo4j",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TSLock provider for Neo4j graph database",
   "license": "Apache-2.0",
   "type": "module",

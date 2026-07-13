@@ -16,9 +16,8 @@
     "check:fix": "biome check --write .",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
-    "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm check && pnpm build && pnpm test && changeset publish"
+    "release": "pnpm check && pnpm build && pnpm test && npx changeset publish"
   },
   "engines": {
     "node": ">=22"
