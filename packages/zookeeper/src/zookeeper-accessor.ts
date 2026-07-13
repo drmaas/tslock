@@ -1,8 +1,8 @@
 import type { LockConfiguration, SimpleLock } from '@tslock/core';
 import { ClockProvider, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
-import type ZooKeeper from 'zookeeper';
 import { isBadVersionException, isNodeExistsException, isNoNodeException } from './zookeeper-errors.js';
 import { ZooKeeperLock } from './zookeeper-lock.js';
+import type { ZooKeeperClient } from './zookeeper-types.js';
 
 const ZOO_PERSISTENT = 0;
 
@@ -10,7 +10,7 @@ export class ZooKeeperAccessor {
   private basePathEnsured = false;
 
   constructor(
-    private readonly client: InstanceType<typeof ZooKeeper>,
+    private readonly client: ZooKeeperClient,
     private readonly basePath: string,
   ) {}
 

@@ -27,14 +27,10 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
-    "zookeeper": "^5.0.0"
+    "@tslock/core": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
-      "optional": false
-    },
-    "zookeeper": {
       "optional": false
     }
   },
@@ -42,8 +38,7 @@
     "@tslock/core": "workspace:*",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
-    "vitest": "^2.0.0",
-    "zookeeper": "^5.0.0"
+    "vitest": "^2.0.0"
   },
   "publishConfig": {
     "access": "public"

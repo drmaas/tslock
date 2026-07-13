@@ -5,4 +5,4 @@ allowBuilds:
   couchbase: true
   esbuild: true
   protobufjs: true
-  zookeeper: true
+  zookeeper: set this to true or false
