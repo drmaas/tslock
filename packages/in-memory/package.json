@@ -1,6 +1,6 @@
 {
   "name": "@tslock/in-memory",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "TSLock in-memory provider — test/local use only",
   "license": "Apache-2.0",
   "type": "module",
@@ -14,7 +14,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

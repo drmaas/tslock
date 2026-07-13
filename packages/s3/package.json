@@ -1,6 +1,6 @@
 {
   "name": "@tslock/s3",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "S3-backed distributed lock provider for TSLock",
   "license": "Apache-2.0",
   "type": "module",
@@ -14,7 +14,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

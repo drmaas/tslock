@@ -1,6 +1,6 @@
 {
   "name": "@tslock/elasticsearch",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "TSLock provider for Elasticsearch",
   "license": "Apache-2.0",
   "type": "module",
@@ -14,7 +14,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

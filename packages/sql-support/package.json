@@ -1,6 +1,6 @@
 {
   "name": "@tslock/sql-support",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Shared SQL infrastructure for TSLock SQL providers",
   "license": "Apache-2.0",
   "type": "module",
@@ -14,7 +14,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
