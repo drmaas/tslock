@@ -2,7 +2,7 @@
 
 ## Overview
 
-TSLock uses [Changesets](https://github.com/changesets/changesets) for versioning and publishing all `@tslock/*` packages to npm. This spec defines the versioning strategy, release workflow (local and CI), and the configuration required to publish a 25+ package pnpm-workspace monorepo as public scoped npm packages.
+TSLock uses [Changesets](https://github.com/changesets/changesets) for versioning and publishing all `@tslock/*` packages to npm. Publishing is done **locally** (npm 2FA is handled interactively via `npm login`). CI runs verification (check, typecheck, test, build) on every push and PR.
 
 **Refinement of vision §10:** The vision doc states "Provider packages follow their own semver but track core's major." After analysis, this is impractical to enforce automatically and noisy at 25+ packages. This spec adopts **lockstep (fixed) versioning**: all `@tslock/*` packages share a single version number, bumped together on every release. Rationale in §Versioning Strategy below.
 
@@ -13,8 +13,8 @@ TSLock uses [Changesets](https://github.com/changesets/changesets) for versionin
 | **Tool** | `@changesets/cli` (root devDependency) |
 | **Strategy** | Lockstep (fixed) — all `@tslock/*` packages share one version |
 | **Registry** | npm (public scoped packages) |
-| **Local publish** | `pnpm release` |
-| **CI publish** | `changesets/action@v1` on push to `main` |
+| **Publish method** | Local (`pnpm publish -r`) |
+| **CI verification** | `pnpm check && pnpm typecheck && pnpm test && pnpm build` |
 | **Changelog** | `@changesets/changelog-github` (PR-linked entries) |
 
 ## Versioning Strategy
@@ -47,49 +47,75 @@ All packages ship at `1.0.0` for the initial release. Changesets treats 0.x vers
 
 ## Release Workflow
 
-### Local Publish
+All releases are performed **locally** — CI does not publish to npm because npm 2FA (required for the `@tslock` scope) is interactive and cannot be automated via tokens.
+
+### Local Publish (validated workflow)
 
 ```bash
-# 1. Describe the change (interactive — select packages + semver bump + summary)
+# 1. Authenticate with npm (handles 2FA interactively)
+pnpm login
+
+# 2. Create a changeset — select all packages, pick major/minor/patch, write summary
 pnpm changeset
 
-# 2. Consume changeset files, bump all @tslock/* to the same version, update CHANGELOGs
+# 3. Consume changeset files — bumps all @tslock/* versions, updates CHANGELOGs
 pnpm version-packages
 
-# 3. Review the diff (package.json version bumps + CHANGELOG.md updates)
+# 4. Review the diff
 git diff
 
-# 4. Build, test, and publish to npm
-pnpm release
+# 5. Commit the version bump
+git add -A && git commit -m "chore: release v<version>"
 
-# 5. Commit the version bump and tag
-git add -A
-git commit -m "chore: release v$(node -p "require('./packages/core/package.json').version")"
-git tag "v$(node -p "require('./packages/core/package.json').version")"
-git push --follow-tags
+# 6. Publish all packages to npm
+pnpm publish -r
+
+# 7. Tag and push
+git tag v<version> && git push --follow-tags
 ```
 
-The `pnpm release` script runs `pnpm test && pnpm build && changeset publish`. Publishing requires `npm login` to have been run (or `NPM_TOKEN` set in `.npmrc` for CI).
+Step 6 (`pnpm publish -r`) publishes every `@tslock/*` package to npm under the same version. Because packages use `files: ["dist"]` in their `package.json` and `tsup clean: true`, only the built artifacts are published.
 
-### CI Publish (GitHub Actions)
+## Verification (CI)
 
-On every push to `main`, the `changesets/action`:
+On every push to any branch and on every pull request to `main`, GitHub Actions runs the full verification suite:
 
-1. **If unreleased changeset files exist** — creates/updates a "Version Packages" PR that bumps versions and updates CHANGELOGs.
-2. **If the Version Packages PR was just merged** (no unreleased changesets, version bump in package.json) — runs `pnpm release` to build, test, and publish to npm.
+```yaml
+name: CI
 
-The Version Packages PR is the gate: a human reviews the version bump and changelog before merging, which triggers the publish.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable && pnpm install
+        env:
+          CI: true
+      - run: pnpm check      # Biome format + lint
+      - run: pnpm typecheck   # tsc --noEmit across all packages
+      - run: pnpm test        # vitest run across all packages
+      - run: pnpm build       # tsup across all packages
+```
+
+This catches formatting issues, type errors, test failures, and build breaks before they reach `main`.
 
 ## Configuration
 
 ### `.changeset/config.json`
 
-Created by `changeset init`, then edited:
-
 ```json
 {
   "$schema": "https://unpkg.com/@changesets/config@3/schema.json",
-  "changelog": "@changesets/changelog-github",
+  "changelog": ["@changesets/changelog-github", { "repo": "drmaas/tslock" }],
   "commit": false,
   "fixed": [["@tslock/*"]],
   "linked": [],
@@ -103,9 +129,9 @@ Created by `changeset init`, then edited:
 Key settings:
 - `"fixed": [["@tslock/*"]]` — all `@tslock/*` packages share one version (lockstep).
 - `"access": "public"` — scoped packages on npm default to private; must be public.
-- `"changelog": "@changesets/changelog-github"` — changelogs include GitHub PR links (requires `GITHUB_TOKEN`).
+- `"changelog": ["@changesets/changelog-github", { "repo": "drmaas/tslock" }]` — changelogs include GitHub PR links.
 - `"baseBranch": "main"` — changesets evaluates changes relative to `main`.
-- `"commit": false` — changesets does not auto-commit; the `changesets/action` handles commits in CI.
+- `"commit": false` — changesets does not auto-commit.
 - `"updateInternalDependencies": "patch"` — when a dependency changes, dependents get at least a patch bump (moot under lockstep — all bump together).
 
 ### Root `package.json`
@@ -120,31 +146,23 @@ Key settings:
     "build": "pnpm -r build",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm test && pnpm build && changeset publish"
+    "release": "pnpm check && pnpm build && pnpm test && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.28.0",
-    "@changesets/changelog-github": "^0.5.0",
-    "typescript": "^5.5.0",
-    "tsup": "^8.0.0",
-    "vitest": "^2.0.0",
-    "@types/node": "^22.0.0"
+    "@changesets/cli": "^2.31.0",
+    "@changesets/changelog-github": "^0.7.0"
   }
 }
 ```
 
-Three new scripts:
+Scripts:
 - `changeset` — interactive changeset creation.
 - `version-packages` — `changeset version` (bump versions + changelogs).
-- `release` — `test + build + changeset publish`.
+- `release` — local convenience: `check + build + test + publish`.
 
-Two new devDeps:
-- `@changesets/cli` — the tool.
-- `@changesets/changelog-github` — PR-linked changelogs.
+### Per-package `package.json` (all 25+)
 
-### Per-package `package.json` (all 25)
-
-Each `packages/*/package.json` needs two additions:
+Each `packages/*/package.json` has:
 
 ```json
 {
@@ -160,7 +178,7 @@ Each `packages/*/package.json` needs two additions:
 ```
 
 - `publishConfig.access: "public"` — required for scoped packages; npm defaults scoped to private.
-- `repository` — npm listing quality; enables "homepage" and "bugs" links on the npm page; points to the subdirectory in the monorepo.
+- `repository` — enables npm links to the repo subdirectory.
 
 The root `package.json` stays `"private": true` — the monorepo root is never published.
 
@@ -170,85 +188,33 @@ The root `package.json` stays `"private": true` — the monorepo root is never p
 tslock/
 ├── .changeset/
 │   ├── config.json          # changesets config (fixed mode)
-│   └── README.md            # generated by changeset init — explains the workflow
+│   └── README.md            # generated by changeset init
 ├── .github/
 │   └── workflows/
-│       └── release.yml      # changesets/action for CI versioning + publishing
-├── package.json             # root — adds changeset scripts + devDeps
+│       └── ci.yml           # CI verification (check, typecheck, test, build)
+├── package.json             # root — changeset scripts + devDeps
 └── packages/*/
-    └── package.json         # each — adds publishConfig + repository
+    └── package.json         # each — publishConfig + repository
 ```
-
-## GitHub Actions Workflow
-
-**File:** `.github/workflows/release.yml`
-
-```yaml
-name: Release
-
-on:
-  push:
-    branches: [main]
-
-permissions:
-  contents: write
-  pull-requests: write
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
-      - run: corepack enable && pnpm install
-      - uses: changesets/action@v1
-        with:
-          publish: pnpm release
-          commit: 'chore: version packages'
-          title: 'chore: version packages'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-```
-
-Notes:
-- `fetch-depth: 0` — changesets needs full git history to compute changes since the last release.
-- `registry-url` — configures `.npmrc` with the npm registry for `pnpm publish`.
-- `corepack enable && pnpm install` — enables pnpm via corepack, installs all workspace deps.
-- `GITHUB_REPOSITORY` env — required by `@changesets/changelog-github` to generate PR links (format: `owner/repo`).
-- `NPM_TOKEN` — npm auth token; must be set in the GitHub repo's secrets.
-- `GITHUB_TOKEN` — automatically provided by GitHub Actions; used for creating the Version Packages PR.
-
-## Secrets Required
-
-| Secret | Where | Purpose |
-|---|---|---|
-| `NPM_TOKEN` | GitHub repo settings → Secrets | `npm publish` authentication |
-| `GITHUB_TOKEN` | Auto-provided by GitHub Actions | Creating the Version Packages PR |
 
 ## Error Handling Summary
 
 | Situation | Behavior |
 |---|---|
-| Local publish without `npm login` | `npm publish` fails with `ENEEDAUTH` — run `npm login` first |
-| CI publish without `NPM_TOKEN` secret | `changeset publish` fails with auth error — add `NPM_TOKEN` to repo secrets |
-| CI publish without `GITHUB_TOKEN` permission | Action fails to create Version PR — ensure `permissions: pull-requests: write` is set |
-| Package already at target version | `changeset publish` skips it (no-op) |
-| `pnpm test` fails before publish | `pnpm release` exits non-zero; publish does not run |
-| `pnpm build` fails before publish | `changeset publish` runs on stale dist or fails — `pnpm release` exits non-zero |
+| `pnpm login` not yet run | `pnpm publish -r` fails with `ENEEDAUTH` — run `pnpm login` first |
+| npm 2FA challenge during publish | Handled interactively via `pnpm login` session — no token-based auth |
+| `pnpm check` fails in CI | CI workflow fails; push/PR is blocked |
+| `pnpm typecheck` fails in CI | CI workflow fails; push/PR is blocked |
+| `pnpm test` failures in CI | CI workflow fails; push/PR is blocked |
+| `pnpm build` failures in CI | CI workflow fails; push/PR is blocked |
 | Changeset file has invalid frontmatter | `changeset version` fails with a parse error |
-| Version PR already open for the same changesets | Action updates the existing PR (no duplicate) |
+| Package already published at target version | `pnpm publish -r` skips it (no-op) |
+| Wrong version bump applied | Amend the commit or revert and recreate the changeset |
 
 ## Non-Goals (for this spec)
 
-- No automatic git tagging on local publish — the user runs `git tag` manually (CI handles tags via `changeset publish`).
-- No npm provenance / sigstore signing — can be added later via `npm publish --provenance` in the workflow.
-- No beta/alpha channel — all releases go to the `latest` tag. Pre-release channels can be added via changesets' `pre` mode if needed.
-- No automatic GitHub Release creation — the Version Packages PR serves as the release record. A `gh release create` step can be added later.
+- No CI publish — all publishing is local due to npm 2FA requirements.
+- No automatic git tagging — the user tags manually as part of the local publish workflow.
+- No npm provenance / sigstore signing — can be added later.
+- No beta/alpha channel — all releases go to the `latest` tag.
 - No independent versioning — explicitly rejected in favor of lockstep (see Versioning Strategy).

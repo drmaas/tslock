@@ -190,7 +190,22 @@ All design docs are in [`docs/`](./docs):
 
 ## Project status
 
-**Docs-only phase.** All vision, architecture, specs, plans, and reviews are complete. No code has been written yet. Implementation will follow the plans in `docs/plans/`.
+All 25 packages are implemented and verified. See `docs/` for design documentation.
+
+## Publishing
+
+Releases are performed locally (npm 2FA is interactive and cannot be automated via tokens):
+
+```bash
+pnpm login                              # one-time — handles 2FA
+pnpm changeset                          # describe changes, pick semver bump
+pnpm version-packages                   # bump versions + update CHANGELOGs
+git add -A && git commit -m "chore: release v<version>"
+pnpm publish -r                         # publish all packages to npm
+git tag v<version> && git push --follow-tags
+```
+
+All `@tslock/*` packages share a single version (lockstep via Changesets fixed mode).
 
 ## Tech stack
 

@@ -204,6 +204,22 @@ pnpm check                # combined format check + lint
 pnpm check:fix            # combined format + lint with fixes
 ```
 
+## Publishing
+
+All releases are done locally (npm 2FA is interactive):
+
+```bash
+pnpm login                              # one-time auth with 2FA
+pnpm changeset                          # describe changes, pick semver bump
+pnpm version-packages                   # bump versions + update CHANGELOGs
+git add -A && git commit -m "chore: release v<version>"
+pnpm publish -r                         # publish all packages to npm
+git tag v<version> && git push --follow-tags
+```
+
+All `@tslock/*` packages share one version (lockstep via Changesets fixed mode).
+CI only runs verification (`pnpm check && pnpm typecheck && pnpm test && pnpm build`).
+
 ## Rules
 
 - **No code until explicitly asked.** The user's current task is docs-only. When implementation begins, follow the plans in `docs/plans/`.
