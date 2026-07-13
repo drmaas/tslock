@@ -34,6 +34,10 @@ class RedisLock extends AbstractSimpleLock {
     super(config);
   }
 
+  static buildValue(parts: RedisLockValueParts): string {
+    return `ADDED:${parts.isoNow}@${parts.hostname}:${parts.randomId}`;
+  }
+
   protected override async doUnlock(): Promise<void> {
     if (this.safeUpdate) {
       await this.redis.eval(DEL_IF_EQUALS_SCRIPT, [this.key], [this.value]);
