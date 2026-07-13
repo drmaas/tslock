@@ -45,7 +45,7 @@ packages/firestore/
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
     "@google-cloud/firestore": "^7.0.0"

@@ -52,7 +52,7 @@ packages/gcs/
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
     "@google-cloud/storage": "^7.7.0"
@@ -68,7 +68,7 @@ packages/gcs/
     "vitest": "^2.0.0",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^22.0.0"
   }
 }
 ```

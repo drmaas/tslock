@@ -40,7 +40,7 @@ packages/in-memory/
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*" },
   "peerDependenciesMeta": { "@tslock/core": { "optional": false } },
   "devDependencies": { "vitest": "^2.0.0", "typescript": "^5.5.0" }

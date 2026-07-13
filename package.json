@@ -4,13 +4,8 @@
   "private": true,
   "description": "TSLock monorepo — distributed locks for scheduled tasks in TypeScript",
   "license": "Apache-2.0",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "couchbase",
-      "zookeeper",
-      "protobufjs"
-    ]
-  },
+  "packageManager": "pnpm@11.12.0",
+
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "format": "biome format --write .",
@@ -26,12 +21,12 @@
     "release": "pnpm check && pnpm test && pnpm build && changeset publish"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"

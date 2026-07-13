@@ -211,3 +211,4 @@ pnpm check:fix            # combined format + lint with fixes
 - **Prompt before deleting files or directories.**
 - **No unrequested abstractions.** No interface with one implementation, no factory for one product, no config for a value that never changes.
 - **Shortest working diff wins** — but only after understanding the problem. Read the spec, plan, and review for the area you're touching first.
+- **Specs, plans, and reviews in `docs/` are immutable once written.** New work gets new files (`docs/specs/<NN>-<name>.md`, etc.). Never edit, update, or backport changes into existing `docs/specs/`, `docs/plans/`, or `docs/reviews/`. The only exception is a user explicitly saying otherwise.

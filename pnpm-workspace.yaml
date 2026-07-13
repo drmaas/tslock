@@ -1,2 +1,8 @@
 packages:
   - 'packages/*'
+minimumReleaseAge: 0
+allowBuilds:
+  couchbase: true
+  esbuild: true
+  protobufjs: true
+  zookeeper: true

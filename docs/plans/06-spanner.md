@@ -38,7 +38,7 @@ packages/spanner/
   "exports": { ".": { "import": "./dist/index.js", "require": "./dist/index.cjs", "types": "./dist/index.d.ts" } },
   "files": ["dist"],
   "scripts": { "build": "tsup", "test": "vitest run", "typecheck": "tsc --noEmit" },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
     "@google-cloud/spanner": "^7.0.0"

@@ -54,7 +54,7 @@ packages/sql/
     "test:integration": "vitest run __tests__/integration",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
     "@tslock/sql-support": "workspace:*",
@@ -73,7 +73,7 @@ packages/sql/
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^2.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "pg": "^8.0.0",
     "mysql2": "^3.0.0",
     "mssql": "^10.0.0",

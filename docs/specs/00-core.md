@@ -10,7 +10,7 @@ The `@tslock/core` package provides the fundamental abstractions for distributed
 |---|---|
 | **Name** | `@tslock/core` |
 | **Dependencies** | None (zero runtime deps) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

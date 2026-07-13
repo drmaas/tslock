@@ -43,7 +43,7 @@ packages/neo4j/
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
     "neo4j-driver": "^5.0.0"
@@ -56,7 +56,7 @@ packages/neo4j/
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^2.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "neo4j-driver": "^5.0.0",
     "testcontainers": "^10.0.0",
     "@tslock/core": "workspace:*",

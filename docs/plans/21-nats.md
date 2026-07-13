@@ -43,7 +43,7 @@ packages/nats/
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*", "nats": "^2.0.0" },
   "peerDependenciesMeta": { "@tslock/core": { "optional": false } },
   "devDependencies": { "nats": "^2.0.0", "testcontainers": "^10.0.0", "vitest": "^2.0.0", "typescript": "^5.5.0" }

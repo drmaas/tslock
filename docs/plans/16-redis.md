@@ -46,7 +46,7 @@ packages/redis-core/
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*" },
   "peerDependenciesMeta": { "@tslock/core": { "optional": false } },
   "devDependencies": { "vitest": "^2.0.0", "typescript": "^5.5.0" }
@@ -252,7 +252,7 @@ packages/redis/
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*", "@tslock/redis-core": "workspace:*", "redis": "^4.0.0" },
   "peerDependenciesMeta": { "@tslock/core": { "optional": false }, "@tslock/redis-core": { "optional": false } },
   "devDependencies": { "redis": "^4.0.0", "testcontainers": "^10.0.0", "vitest": "^2.0.0", "typescript": "^5.5.0" }
@@ -369,7 +369,7 @@ packages/redis-ioredis/
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*", "@tslock/redis-core": "workspace:*", "ioredis": "^5.0.0" },
   "peerDependenciesMeta": { "@tslock/core": { "optional": false }, "@tslock/redis-core": { "optional": false } },
   "devDependencies": { "ioredis": "^5.0.0", "testcontainers": "^10.0.0", "vitest": "^2.0.0", "typescript": "^5.5.0" }

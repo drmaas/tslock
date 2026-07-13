@@ -43,7 +43,7 @@ packages/cassandra/
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
     "cassandra-driver": "^4.6.0"
@@ -56,7 +56,7 @@ packages/cassandra/
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^2.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "cassandra-driver": "^4.6.0",
     "testcontainers": "^10.0.0",
     "@tslock/core": "workspace:*",

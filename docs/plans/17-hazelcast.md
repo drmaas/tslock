@@ -42,7 +42,7 @@ packages/hazelcast/
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*", "hazelcast-client": "^5.0.0" },
   "peerDependenciesMeta": { "@tslock/core": { "optional": false } },
   "devDependencies": {

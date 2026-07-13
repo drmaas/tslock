@@ -42,7 +42,7 @@ packages/elasticsearch/
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*", "@elastic/elasticsearch": "^8.0.0" },
   "peerDependenciesMeta": { "@tslock/core": { "optional": false } },
   "devDependencies": {
@@ -226,7 +226,7 @@ packages/opensearch/
   "exports": { ".": { "import": "./dist/index.js", "require": "./dist/index.cjs", "types": "./dist/index.d.ts" } },
   "files": ["dist"],
   "scripts": { "build": "tsup", "test": "vitest run", "test:integration": "vitest run --config vitest.integration.config.ts", "typecheck": "tsc --noEmit" },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*", "@opensearch-project/opensearch": "^2.0.0" },
   "devDependencies": { "@opensearch-project/opensearch": "^2.0.0", "testcontainers": "^10.0.0", "vitest": "^2.0.0" }
 }

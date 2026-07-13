@@ -128,7 +128,7 @@ Key settings:
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^2.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^22.0.0"
   }
 }
 ```
@@ -203,7 +203,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
       - run: corepack enable && pnpm install
       - uses: changesets/action@v1

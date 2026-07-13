@@ -48,7 +48,7 @@ packages/core/
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" }
+  "engines": { "node": ">=22" }
 }
 ```
 

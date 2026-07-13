@@ -48,7 +48,7 @@ packages/sql-support/
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "peerDependencies": {
     "@tslock/core": "workspace:*"
   },
@@ -59,7 +59,7 @@ packages/sql-support/
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^2.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^22.0.0"
   }
 }
 ```
