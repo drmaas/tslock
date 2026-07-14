@@ -13,7 +13,7 @@ Fields (`lockUntil`, `lockedAt`, `lockedBy`) are persisted as ISO-8601 strings; 
 | **Name** | `@tslock/arangodb` |
 | **Driver** | `arangojs` (official ArangoDB JavaScript driver) — peer dependency |
 | **Dependencies** | `@tslock/core` (peer), `arangojs` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

@@ -13,7 +13,7 @@ The `@tslock/memcached` package provides a DIRECT `LockProvider` implementation 
 | **Name** | `@tslock/memcached` |
 | **Driver** | `memjs` (pure-JS memcached client) — peer dependency |
 | **Dependencies** | `@tslock/core` (peer), `memjs` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

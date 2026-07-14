@@ -31,7 +31,7 @@ All three also depend on `@tslock/core` and `@tslock/sql-support` (peer).
 | **Name** | `@tslock/sql` |
 | **Dependencies** | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
 | **Peer deps** | `pg` or `mysql2` or `mssql` (user installs one) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 
 ### 1.2 SqlConnection Interface
@@ -251,7 +251,7 @@ packages/sql/
 | **Name** | `@tslock/kysely` |
 | **Dependencies** | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
 | **Peer deps** | `kysely` |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 
 ### 2.2 KyselyStorageAccessor
@@ -395,7 +395,7 @@ packages/kysely/
 | **Name** | `@tslock/drizzle` |
 | **Dependencies** | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
 | **Peer deps** | `drizzle-orm` |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 
 ### 3.2 DrizzleStorageAccessor

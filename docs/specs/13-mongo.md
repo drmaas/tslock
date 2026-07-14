@@ -11,7 +11,7 @@ The `@tslock/mongo` package provides a DIRECT `LockProvider` implementation back
 | **Name** | `@tslock/mongo` |
 | **Driver** | `mongodb` (official Node.js MongoDB driver) — peer dependency |
 | **Dependencies** | `@tslock/core` (peer), `mongodb` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

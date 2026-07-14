@@ -46,7 +46,7 @@ Before implementing anything, read in this order:
 | Monorepo | pnpm workspaces |
 | Package scope | `@tslock/*` |
 | Module format | Dual ESM + CJS (tsup) |
-| Node.js minimum | 20+ |
+| Node.js minimum | 22+ |
 | Test framework | Vitest |
 | Config API | Plain typed objects + `parseDuration()` — no builder classes |
 | Concurrency model | `AsyncLocalStorage` (replaces Java's `ThreadLocal`) |

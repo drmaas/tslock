@@ -11,7 +11,7 @@ The `@tslock/dynamodb` package provides a DIRECT `LockProvider` backed by Amazon
 | **Name** | `@tslock/dynamodb` |
 | **Driver** | `@aws-sdk/client-dynamodb` (AWS SDK v3) — peer dependency |
 | **Dependencies** | `@tslock/core` (peer), `@aws-sdk/client-dynamodb` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

@@ -13,7 +13,7 @@ The `@tslock/in-memory` package provides a DIRECT `LockProvider` implementation 
 | **Name** | `@tslock/in-memory` |
 | **Driver** | None (pure TypeScript) |
 | **Dependencies** | `@tslock/core` (peer) only |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

@@ -13,7 +13,7 @@ Unlock revokes the lease (deleting the key) when `lockAtLeastFor <= 0`, or re-pu
 | **Name** | `@tslock/etcd` |
 | **Driver** | `etcd3` (official etcd v3 Node.js client) — peer dependency |
 | **Dependencies** | `@tslock/core` (peer), `etcd3` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

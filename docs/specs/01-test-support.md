@@ -12,7 +12,7 @@ This is a direct port of ShedLock's `shedlock-test-support` module: `AbstractLoc
 |---|---|
 | **Name** | `@tslock/test-support` |
 | **Dependencies** | `@tslock/core` (peer), `vitest` (dev) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 
 ## Design

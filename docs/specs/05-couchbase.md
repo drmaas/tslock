@@ -16,7 +16,7 @@ This is a direct port of ShedLock's `CouchbaseLockProvider`.
 |---|---|
 | **Name** | `@tslock/couchbase` |
 | **Dependencies** | `@tslock/core` (peer), `couchbase` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

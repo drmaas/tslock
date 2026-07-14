@@ -17,7 +17,7 @@ Both adapter packages depend on `@tslock/redis-core` and their respective driver
 | **Name** | `@tslock/redis-core` | `@tslock/redis` | `@tslock/redis-ioredis` |
 | **Driver** | none (zero Redis client deps) | `redis` (node-redis, official) — peer | `ioredis` — peer |
 | **Dependencies** | `@tslock/core` (peer) | `@tslock/core` (peer), `@tslock/redis-core` (peer), `redis` (peer) | `@tslock/core` (peer), `@tslock/redis-core` (peer), `ioredis` (peer) |
-| **Node.js** | >= 20 | >= 20 | >= 20 |
+| **Node.js** | >= 22 | >= 22 | >= 22 |
 | **Module format** | Dual ESM + CJS | Dual ESM + CJS | Dual ESM + CJS |
 | **Build** | tsup | tsup | tsup |
 

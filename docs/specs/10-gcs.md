@@ -14,7 +14,7 @@ This is a direct port of ShedLock's `GcsStorageAccessor` / `GcsLockProvider` to 
 |---|---|
 | **Name** | `@tslock/gcs` |
 | **Dependencies** | `@tslock/core` (peer), `@google-cloud/storage` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

@@ -13,7 +13,7 @@ This is the ShedLock `ZooKeeperLockProvider` algorithm. It deliberately uses PER
 | **Name** | `@tslock/zookeeper` |
 | **Driver** | `zookeeper` (node-zookeeper, a.k.a. the `zk` npm package) — peer dependency |
 | **Dependencies** | `@tslock/core` (peer), `zookeeper` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

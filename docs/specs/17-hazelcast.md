@@ -11,7 +11,7 @@ The `@tslock/hazelcast` package provides a DIRECT `LockProvider` implementation 
 | **Name** | `@tslock/hazelcast` |
 | **Driver** | `hazelcast-client` (Hazelcast Node.js client) — peer dependency |
 | **Dependencies** | `@tslock/core` (peer), `hazelcast-client` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

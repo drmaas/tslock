@@ -13,7 +13,7 @@ The script compares the stored `lockUntil` against `params.now`; if the lock has
 | **Name** | `@tslock/elasticsearch` | `@tslock/opensearch` |
 | **Driver** | `@elastic/elasticsearch` (v8+) — peer | `@opensearch-project/opensearch` — peer |
 | **Dependencies** | `@tslock/core` (peer) | `@tslock/core` (peer) |
-| **Node.js** | >= 20 | >= 20 |
+| **Node.js** | >= 22 | >= 22 |
 | **Module format** | Dual ESM + CJS | Dual ESM + CJS |
 | **Build** | tsup | tsup |
 

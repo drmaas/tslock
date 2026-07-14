@@ -208,7 +208,7 @@ The mapping:
 
 - **v1.0.0**: Initial release with all providers and core abstractions.
 - **Semver**: Breaking changes to the core API require a major version bump. Provider packages follow their own semver but track core's major.
-- **Node.js support**: LTS strategy — support the current LTS and the previous LTS. At launch: Node 20+ and Node 22+.
+- **Node.js support**: LTS strategy — support the current LTS. At launch: Node 22+ (current LTS).
 - **TypeScript**: Target TS 5.x. Emit ESM + CJS dual format.
 
 ## 11. License
@@ -227,5 +227,5 @@ Apache 2.0, matching ShedLock.
 | **Cloud integration tests** | LocalStack + emulators | LocalStack for S3/DynamoDB, GCP emulators for Firestore/Datastore. Skip Spanner/GCS (no emulator) — unit tests only. |
 | **Package scope** | `@tslock/*` | Short, memorable, matches project name |
 | **Module format** | Dual ESM + CJS | Maximum compatibility. tsup handles both. |
-| **Node.js minimum** | Node 20+ | Current LTS, AsyncLocalStorage fully stable |
+| **Node.js minimum** | Node 22+ | Current LTS, AsyncLocalStorage fully stable |
 | **Config API** | Plain object + `parseDuration()` | Simplest, TypeScript validates shape. No builder class. |

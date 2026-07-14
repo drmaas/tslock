@@ -18,7 +18,7 @@ This is a direct port of ShedLock's `CassandraLockProvider`.
 |---|---|
 | **Name** | `@tslock/cassandra` |
 | **Dependencies** | `@tslock/core` (peer), `cassandra-driver` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

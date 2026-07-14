@@ -13,7 +13,7 @@ This is a port of ShedLock's `DatastoreLockProvider` (Java), adapted to TypeScri
 | **Name** | `@tslock/datastore` |
 | **Driver** | `@google-cloud/datastore` (peer dependency) |
 | **Core dependency** | `@tslock/core` (peer dependency) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS (tsup) |
 | **Test strategy** | Integration tests against Datastore emulator (`gcloud beta emulators datastore`) |
 

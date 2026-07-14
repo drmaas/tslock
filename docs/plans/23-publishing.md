@@ -8,7 +8,7 @@ Set up Changesets for the TSLock monorepo: lockstep versioning across all `@tslo
 
 - All 25 packages implemented, building, and passing tests (✅ done)
 - npm account with publish rights to the `@tslock` scope (or ownership to create it)
-- Node 20+, pnpm 10+ via corepack
+- Node 22+, pnpm 10+ via corepack
 
 ## Steps
 

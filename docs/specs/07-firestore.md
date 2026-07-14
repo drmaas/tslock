@@ -13,7 +13,7 @@ This is a port of ShedLock's `FirestoreLockProvider` (Java), adapted to TypeScri
 | **Name** | `@tslock/firestore` |
 | **Driver** | `@google-cloud/firestore` (peer dependency) |
 | **Core dependency** | `@tslock/core` (peer dependency) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS (tsup) |
 | **Test strategy** | Integration tests against Firestore emulator (`@firebase/rules-unit-testing` or `gcloud emulators firestore`) |
 

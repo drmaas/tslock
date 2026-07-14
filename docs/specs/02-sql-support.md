@@ -12,7 +12,7 @@ This is a direct port of ShedLock's `shedlock-sql` module, adapted for TypeScrip
 |---|---|
 | **Name** | `@tslock/sql-support` |
 | **Dependencies** | `@tslock/core` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

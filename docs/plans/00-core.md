@@ -8,7 +8,7 @@ This plan covers building the `@tslock/core` package from scratch. It is the fou
 
 - pnpm workspace initialized at repo root
 - `tsconfig.base.json` at repo root
-- Node 20+ installed
+- Node 22+ installed
 
 ## Steps
 
@@ -364,7 +364,7 @@ All must pass with zero errors.
 | `enterWith` vs `run` for `makeAllAssertsPass` | Research Node.js docs; prefer `run()` where possible, `enterWith()` for push/pop semantics. Test thoroughly. |
 | KeepAliveLock extend race conditions | Single-threaded event loop makes `active` flag safe. Document the single-threaded assumption. |
 | `LockRecordRegistry` interleaving across async operations | Acceptable — it's an optimization. Storage operations are atomic. Document this. |
-| `performance.now()` availability | Available since Node 8. No concern for Node 20+. |
+| `performance.now()` availability | Available since Node 8. No concern for Node 22+. |
 
 ## Estimation
 

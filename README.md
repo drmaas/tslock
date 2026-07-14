@@ -202,7 +202,7 @@ pnpm changeset                          # describe changes, pick semver bump
 pnpm version-packages                   # bump versions + update CHANGELOGs
 git add -A && git commit -m "chore: release v<version>"
 pnpm publish -r                         # publish all packages to npm
-git tag v<version> && git push --follow-tags
+git tag v<version> && git push origin v<version> 
 ```
 
 All `@tslock/*` packages share a single version (lockstep via Changesets fixed mode).
@@ -213,7 +213,7 @@ All `@tslock/*` packages share a single version (lockstep via Changesets fixed m
 |---|---|
 | Language | TypeScript 5.x |
 | Module format | Dual ESM + CJS (tsup) |
-| Node.js | >= 20 |
+| Node.js | >= 22 |
 | Monorepo | pnpm workspaces |
 | Test framework | Vitest |
 | Integration tests | LocalStack + emulators + testcontainers |

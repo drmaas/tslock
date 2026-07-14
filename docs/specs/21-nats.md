@@ -13,7 +13,7 @@ The KV bucket is auto-created (default `shedlock-locks`, `StorageType.Memory`) o
 | **Name** | `@tslock/nats` |
 | **Driver** | `nats` (official NATS Node.js client) — peer dependency |
 | **Dependencies** | `@tslock/core` (peer), `nats` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

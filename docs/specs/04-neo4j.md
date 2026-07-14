@@ -14,7 +14,7 @@ This is a direct port of ShedLock's `Neo4jLockProvider`.
 |---|---|
 | **Name** | `@tslock/neo4j` |
 | **Dependencies** | `@tslock/core` (peer), `neo4j-driver` (peer) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS |
 | **Build** | tsup |
 

@@ -13,7 +13,7 @@ This is a port of ShedLock's `SpannerLockProvider` (Java), adapted to TypeScript
 | **Name** | `@tslock/spanner` |
 | **Driver** | `@google-cloud/spanner` (peer dependency) |
 | **Core dependency** | `@tslock/core` (peer dependency) |
-| **Node.js** | >= 20 |
+| **Node.js** | >= 22 |
 | **Module format** | Dual ESM + CJS (tsup) |
 | **Test strategy** | Unit tests only — no reliable Spanner emulator exists |
 
