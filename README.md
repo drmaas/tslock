@@ -27,18 +27,18 @@ When you run multiple instances of a Node.js/TypeScript application — in Kuber
 ## Quick start
 
 ```bash
-pnpm add @tslock/core @tslock/redis ioredis
+pnpm add @tslock/core @tslock/redis redis
 ```
 
 ```typescript
 import { createLockConfig, DefaultLockingTaskExecutor } from '@tslock/core';
-import { createRedisLockProvider } from '@tslock/redis';
+import { createNodeRedisLockProvider } from '@tslock/redis';
 import { createClient } from 'redis';
 
 const redisClient = createClient({ url: 'redis://localhost:6379' });
 await redisClient.connect();
 
-const provider = createRedisLockProvider(redisClient);
+const provider = createNodeRedisLockProvider(redisClient);
 const executor = new DefaultLockingTaskExecutor(provider);
 
 // Wrap your scheduled task:
@@ -58,65 +58,67 @@ await executor.executeWithLock(
 | Milliseconds (number) | `30000` | 30 seconds |
 | Duration object | `{ minutes: 5 }` | 5 minutes |
 
-## Provider matrix
+## Packages
 
-TSLock supports 23 providers for v1 (Ignite deferred). Each uses the canonical TS/JS driver.
+TSLock is a pnpm-workspaces monorepo. Install the core plus one or more providers. Each provider's README has setup steps, configuration options, and a copy-pasteable example.
 
-### SQL (3 packages + shared infrastructure)
+### Core & infra
 
-| Package | Driver | Mechanism |
+| Package | Description | README |
 |---|---|---|
-| `@tslock/sql` | `pg` / `mysql2` / `mssql` | Raw driver adapters |
-| `@tslock/kysely` | `kysely` | Type-safe query builder |
-| `@tslock/drizzle` | `drizzle-orm` | TS-native ORM |
-| `@tslock/sql-support` | — | Shared SQL infra (`DatabaseProduct`, `SqlConfiguration`) |
+| `@tslock/core` | Lock model, executor, `LockAssert`, `LockExtender`, `KeepAliveLockProvider`. Zero runtime deps. | [README](./packages/core/README.md) |
+| `@tslock/sql-support` | Shared SQL infra (`DatabaseProduct`, `SqlConfiguration`, statements). | [README](./packages/sql-support/README.md) |
+| `@tslock/redis-core` | Shared Redis locking logic (`InternalRedisLockProvider`, Lua scripts). | [README](./packages/redis-core/README.md) |
+| `@tslock/test-support` | Shared integration test contracts + fuzz tests (dev-only). | [README](./packages/test-support/README.md) |
+| `@tslock/in-memory` | In-memory provider — testing/local only, **not** for production. | [README](./packages/in-memory/README.md) |
 
-### Storage-based (8 — insert-or-update pattern)
+### SQL providers
 
-| Package | Driver |
-|---|---|
-| `@tslock/neo4j` | `neo4j-driver` |
-| `@tslock/couchbase` | `couchbase` |
-| `@tslock/spanner` | `@google-cloud/spanner` |
-| `@tslock/firestore` | `@google-cloud/firestore` |
-| `@tslock/datastore` | `@google-cloud/datastore` |
-| `@tslock/s3` | `@aws-sdk/client-s3` |
-| `@tslock/gcs` | `@google-cloud/storage` |
-| `@tslock/cassandra` | `cassandra-driver` |
+| Package | Driver | README |
+|---|---|---|
+| `@tslock/sql` | `pg` / `mysql2` / `mssql` | [README](./packages/sql/README.md) |
+| `@tslock/kysely` | `kysely` | [README](./packages/kysely/README.md) |
+| `@tslock/drizzle` | `drizzle-orm` | [README](./packages/drizzle/README.md) |
 
-### Direct (5)
+### Storage-based providers
 
-| Package | Driver |
-|---|---|
-| `@tslock/mongo` | `mongodb` |
-| `@tslock/dynamodb` | `@aws-sdk/client-dynamodb` |
-| `@tslock/elasticsearch` | `@elastic/elasticsearch` |
-| `@tslock/opensearch` | `@opensearch-project/opensearch` |
-| `@tslock/arangodb` | `arangojs` |
+| Package | Driver | README |
+|---|---|---|
+| `@tslock/neo4j` | `neo4j-driver` | [README](./packages/neo4j/README.md) |
+| `@tslock/couchbase` | `couchbase` | [README](./packages/couchbase/README.md) |
+| `@tslock/spanner` | `@google-cloud/spanner` | [README](./packages/spanner/README.md) |
+| `@tslock/firestore` | `@google-cloud/firestore` | [README](./packages/firestore/README.md) |
+| `@tslock/datastore` | `@google-cloud/datastore` | [README](./packages/datastore/README.md) |
+| `@tslock/s3` | `@aws-sdk/client-s3` | [README](./packages/s3/README.md) |
+| `@tslock/gcs` | `@google-cloud/storage` | [README](./packages/gcs/README.md) |
+| `@tslock/cassandra` | `cassandra-driver` | [README](./packages/cassandra/README.md) |
 
-### Redis (2 packages + shared core)
+### Direct providers
 
-| Package | Driver |
-|---|---|
-| `@tslock/redis` | `redis` (node-redis, official) |
-| `@tslock/redis-ioredis` | `ioredis` |
-| `@tslock/redis-core` | — (shared `InternalRedisLockProvider`) |
+| Package | Driver | README |
+|---|---|---|
+| `@tslock/mongo` | `mongodb` | [README](./packages/mongo/README.md) |
+| `@tslock/dynamodb` | `@aws-sdk/client-dynamodb` | [README](./packages/dynamodb/README.md) |
+| `@tslock/elasticsearch` | `@elastic/elasticsearch` | [README](./packages/elasticsearch/README.md) |
+| `@tslock/opensearch` | `@opensearch-project/opensearch` | [README](./packages/opensearch/README.md) |
+| `@tslock/arangodb` | `arangojs` | [README](./packages/arangodb/README.md) |
 
-### Specialized (5)
+### Redis providers
 
-| Package | Driver |
-|---|---|
-| `@tslock/hazelcast` | `hazelcast-client` |
-| `@tslock/zookeeper` | `zk` (node-zookeeper) |
-| `@tslock/etcd` | `etcd3` |
-| `@tslock/memcached` | `memjs` |
-| `@tslock/nats` | `nats` (JetStream KV) |
+| Package | Driver | README |
+|---|---|---|
+| `@tslock/redis` | `redis` (node-redis, official) | [README](./packages/redis/README.md) |
+| `@tslock/redis-ioredis` | `ioredis` | [README](./packages/redis-ioredis/README.md) |
 
-### In-memory (1)
+### Specialized providers
 
-| Package | Use case |
-|---|---|
-| `@tslock/in-memory` | Testing and local development only — **not** for production distributed locking. |
+| Package | Driver | README |
+|---|---|---|
+| `@tslock/hazelcast` | `hazelcast-client` | [README](./packages/hazelcast/README.md) |
+| `@tslock/zookeeper` | `zookeeper` (node-zookeeper) | [README](./packages/zookeeper/README.md) |
+| `@tslock/etcd` | `etcd3` | [README](./packages/etcd/README.md) |
+| `@tslock/memcached` | `memjs` | [README](./packages/memcached/README.md) |
+| `@tslock/nats` | `nats` (JetStream KV) | [README](./packages/nats/README.md) |
 
 ## Core abstractions
 
@@ -163,7 +165,7 @@ Wrap a `LockProvider` with a tenant-keyed map:
 const providers = new Map<string, LockProvider>();
 function getProvider(tenant: string): LockProvider {
   let p = providers.get(tenant);
-  if (!p) { p = createRedisLockProvider(redisClient, { env: tenant }); providers.set(tenant, p); }
+  if (!p) { p = createNodeRedisLockProvider(redisClient, { env: tenant }); providers.set(tenant, p); }
   return p;
 }
 ```
@@ -176,6 +178,62 @@ function getProvider(tenant: string): LockProvider {
 - **Clocks must be synchronized** (NTP) — lock validity depends on wall-clock time.
 - **Memcached can evict locks early** if the cache is full — use a dedicated memcached instance or a different provider for critical locks.
 
+## Local development
+
+Contributions are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full guide. The short version:
+
+### Prerequisites
+
+- **Node.js >= 22** (check with `node -v`; manage versions with [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) — the repo pins `22.x` in [`.nvmrc`](./.nvmrc))
+- **pnpm 11+** (enable via corepack: `corepack enable`)
+- **Docker** (only for integration tests, which use testcontainers / emulators)
+
+### Clone & install
+
+```bash
+git clone https://github.com/drmaas/tslock.git
+cd tslock
+corepack enable
+pnpm install
+```
+
+### Common commands
+
+```bash
+pnpm -r typecheck       # tsc --noEmit across all packages
+pnpm -r test            # vitest run (unit tests) across all packages
+pnpm -r test:integration # integration tests (requires Docker / emulators)
+pnpm -r build           # tsup build across all packages
+pnpm check              # combined format check + lint (Biome)
+pnpm check:fix          # combined format + lint, applying safe fixes
+pnpm format             # auto-format all files with Biome
+pnpm lint               # lint with Biome
+```
+
+CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` on every push.
+
+### Adding a new provider
+
+The repo follows a spec → plan → implement → verify → review workflow. See [`AGENTS.md`](./AGENTS.md) for the full process and `docs/plans/` for per-provider implementation plans. In short:
+
+1. Read `docs/00-vision.md`, `docs/01-architecture.md`, and an existing provider's spec/plan/review as a template.
+2. Create `docs/specs/<NN>-<name>.md` and `docs/plans/<NN>-<name>.md`.
+3. Implement under `packages/<name>/` following the package conventions in `AGENTS.md`.
+4. Add the shared integration test contract from `@tslock/test-support`.
+5. Run the full verification suite above and fix any failures.
+
+### Project layout
+
+```
+tslock/
+├── packages/        # @tslock/* packages (core + 23 providers + infra)
+├── docs/            # vision, architecture, per-provider specs/plans/reviews
+├── .changeset/      # changesets config
+├── .github/         # CI workflow
+├── AGENTS.md        # instructions for AI agents + contributor conventions
+└── README.md        # this file
+```
+
 ## Documentation
 
 All design docs are in [`docs/`](./docs):
@@ -184,17 +242,17 @@ All design docs are in [`docs/`](./docs):
 |---|---|
 | [`docs/00-vision.md`](./docs/00-vision.md) | Product vision, scope, provider matrix, design decisions |
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
-| [`docs/specs/`](./docs/specs/) | Per-provider specifications (23 specs) |
-| [`docs/plans/`](./docs/plans/) | Per-provider implementation plans (23 plans) |
-| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo (23 reviews) |
+| [`docs/specs/`](./docs/specs/) | Per-provider specifications |
+| [`docs/plans/`](./docs/plans/) | Per-provider implementation plans |
+| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo |
 
 ## Project status
 
-All 25 packages are implemented and verified. See `docs/` for design documentation.
+All packages are implemented and verified. See `docs/` for design documentation.
 
 ## Publishing
 
-Releases are performed locally (npm 2FA is interactive and cannot be automated via tokens):
+Releases are performed locally (npm 2FA is interactive and cannot be automated via tokens). **Admin only.**
 
 ```bash
 pnpm login                              # one-time — handles 2FA
@@ -202,7 +260,7 @@ pnpm changeset                          # describe changes, pick semver bump
 pnpm version-packages                   # bump versions + update CHANGELOGs
 git add -A && git commit -m "chore: release v<version>"
 pnpm publish -r                         # publish all packages to npm
-git tag v<version> && git push origin v<version> 
+git tag v<version> && git push --follow-tags
 ```
 
 All `@tslock/*` packages share a single version (lockstep via Changesets fixed mode).
@@ -217,9 +275,14 @@ All `@tslock/*` packages share a single version (lockstep via Changesets fixed m
 | Monorepo | pnpm workspaces |
 | Test framework | Vitest |
 | Integration tests | LocalStack + emulators + testcontainers |
+| Linting / formatting | Biome |
 | Package scope | `@tslock/*` |
 | License | Apache 2.0 |
 
+## Contributing
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md). By participating you agree to abide by its guidelines.
+
 ## License
 
-Apache 2.0, matching [ShedLock](https://github.com/lukas-krecan/ShedLock).
+Apache 2.0, matching [ShedLock](https://github.com/lukas-krecan/ShedLock). See [LICENSE](./LICENSE) for details.
