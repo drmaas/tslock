@@ -1,6 +1,6 @@
 {
   "name": "@tslock/sql",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "TSLock SQL provider for raw Node.js drivers (pg, mysql2, mssql)",
   "license": "Apache-2.0",
   "type": "module",
@@ -14,7 +14,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

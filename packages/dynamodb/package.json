@@ -1,6 +1,6 @@
 {
   "name": "@tslock/dynamodb",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "TSLock provider for Amazon DynamoDB",
   "license": "Apache-2.0",
   "type": "module",
@@ -14,7 +14,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
