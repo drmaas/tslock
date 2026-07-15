@@ -135,6 +135,7 @@ pnpm changeset
 # Select all packages, choose major/minor/patch, write summary
 
 pnpm version-packages
+pnpm format                             # reformat package.json (changeset uses JSON.stringify)
 git add -A && git commit -m "chore: release v<version>"
 pnpm publish -r         # handles 2FA interactively via pnpm login session
 git tag v<version> && git push --follow-tags
@@ -146,6 +147,7 @@ git tag v<version> && git push --follow-tags
 pnpm login                                       # one-time — handles 2FA
 pnpm changeset                                   # describe changes, pick semver bump
 pnpm version-packages                            # bump versions + changelogs
+pnpm format                                      # reformat package.json
 git add -A && git commit -m "chore: release v<version>"
 pnpm publish -r                                  # publish all packages
 git tag v<version> && git push --follow-tags     # tag + push

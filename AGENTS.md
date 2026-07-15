@@ -212,6 +212,7 @@ All releases are done locally (npm 2FA is interactive):
 pnpm login                              # one-time auth with 2FA
 pnpm changeset                          # describe changes, pick semver bump
 pnpm version-packages                   # bump versions + update CHANGELOGs
+pnpm format                             # reformat package.json (changeset uses JSON.stringify)
 git add -A && git commit -m "chore: release v<version>"
 pnpm publish -r                         # publish all packages to npm
 git tag v<version> && git push --follow-tags

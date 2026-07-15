@@ -61,20 +61,23 @@ pnpm changeset
 # 3. Consume changeset files — bumps all @tslock/* versions, updates CHANGELOGs
 pnpm version-packages
 
-# 4. Review the diff
+# 4. Reformat package.json (changeset uses JSON.stringify which can compact formatting)
+pnpm format
+
+# 6. Review the diff
 git diff
 
-# 5. Commit the version bump
+# 7. Commit the version bump
 git add -A && git commit -m "chore: release v<version>"
 
-# 6. Publish all packages to npm
+# 8. Publish all packages to npm
 pnpm publish -r
 
-# 7. Tag and push
+# 9. Tag and push
 git tag v<version> && git push --follow-tags
 ```
 
-Step 6 (`pnpm publish -r`) publishes every `@tslock/*` package to npm under the same version. Because packages use `files: ["dist"]` in their `package.json` and `tsup clean: true`, only the built artifacts are published.
+Step 8 (`pnpm publish -r`) publishes every `@tslock/*` package to npm under the same version. Because packages use `files: ["dist"]` in their `package.json` and `tsup clean: true`, only the built artifacts are published.
 
 ## Verification (CI)
 
