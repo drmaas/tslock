@@ -1,4 +1,4 @@
-import type { Datastore, Transaction } from '@google-cloud/datastore';
+import type { Datastore, Key, Transaction } from '@google-cloud/datastore';
 import {
   AbstractStorageAccessor,
   ClockProvider,
@@ -9,12 +9,14 @@ import {
 } from '@tslock/core';
 import type { DatastoreFieldNames } from './datastore-configuration.js';
 
-type DatastoreEntity = Record<string, any>;
+type DatastoreEntity = Record<string, string | Date>;
 
-function isNotFound(e: any): boolean {
-  if (e?.code === 5) return true;
-  if (typeof e?.message === 'string') {
-    const msg = e.message.toLowerCase();
+function isNotFound(e: unknown): boolean {
+  if (typeof e !== 'object' || e === null) return false;
+  const err = e as Record<string, unknown>;
+  if (err.code === 5) return true;
+  if (typeof err.message === 'string') {
+    const msg = err.message.toLowerCase();
     return msg.includes('not found') || msg.includes('no entity') || msg.includes('no matching');
   }
   return false;
@@ -42,7 +44,7 @@ export class DatastoreStorageAccessor extends AbstractStorageAccessor {
     this.useDate = useDate;
   }
 
-  private key(lockName: string): any {
+  private key(lockName: string): Key {
     return this.datastore.key([this.entityName, lockName]);
   }
 
@@ -71,11 +73,11 @@ export class DatastoreStorageAccessor extends AbstractStorageAccessor {
     };
   }
 
-  private async safeGet(txn: Transaction, key: any): Promise<DatastoreEntity | undefined> {
+  private async safeGet(txn: Transaction, key: Key): Promise<DatastoreEntity | undefined> {
     try {
       const [entity] = await txn.get(key);
       return entity;
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (isNotFound(e)) return undefined;
       throw e;
     }
@@ -96,7 +98,7 @@ export class DatastoreStorageAccessor extends AbstractStorageAccessor {
     return await this.datastore.runTransaction(async (txn: Transaction) => {
       const existing = await this.safeGet(txn, key);
       if (!existing) return false;
-      const current = this.parseFieldValue(existing[this.fieldNames.lockUntil]);
+      const current = this.parseFieldValue(existing[this.fieldNames.lockUntil]!);
       if (current > ClockProvider.now()) return false;
       txn.upsert({ key, data: this.toData(config) });
       return true;
@@ -125,7 +127,7 @@ export class DatastoreStorageAccessor extends AbstractStorageAccessor {
       const existing = await this.safeGet(txn, key);
       if (!existing) return false;
       if (existing[this.fieldNames.lockedBy] !== this.lockedByValue) return false;
-      const current = this.parseFieldValue(existing[this.fieldNames.lockUntil]);
+      const current = this.parseFieldValue(existing[this.fieldNames.lockUntil]!);
       if (current < ClockProvider.now()) return false;
       txn.upsert({
         key,

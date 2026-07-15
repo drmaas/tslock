@@ -1,6 +1,6 @@
 import { ClockProvider, createLockConfig } from '@tslock/core';
 import type cassandra from 'cassandra-driver';
-import { describe, expect, it, vi } from 'vitest';
+import { type MockInstance, describe, expect, it, vi } from 'vitest';
 import type { ResolvedCassandraOptions } from '../../src/cassandra-cql.js';
 import { CassandraStorageAccessor } from '../../src/cassandra-storage-accessor.js';
 
@@ -16,7 +16,7 @@ const defaultOpts: ResolvedCassandraOptions = {
 function makeClient(): cassandra.Client {
   return {
     execute: vi.fn(),
-  } as any;
+  } as unknown as cassandra.Client;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {
@@ -27,7 +27,7 @@ function config(name = 'test', most = 60_000, least = 0) {
 describe('CassandraStorageAccessor', () => {
   it('insertRecord returns true when [applied] = true', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': true }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     const result = await accessor.insertRecord(config());
     expect(result).toBe(true);
@@ -40,7 +40,7 @@ describe('CassandraStorageAccessor', () => {
 
   it('insertRecord returns false when [applied] = false', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': false }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': false }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     const result = await accessor.insertRecord(config());
     expect(result).toBe(false);
@@ -48,14 +48,14 @@ describe('CassandraStorageAccessor', () => {
 
   it('insertRecord propagates errors', async () => {
     const client = makeClient();
-    (client.execute as any).mockRejectedValue(new Error('connection failed'));
+    (client.execute as unknown as MockInstance).mockRejectedValue(new Error('connection failed'));
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     await expect(accessor.insertRecord(config())).rejects.toThrow('connection failed');
   });
 
   it('updateRecord returns true when [applied] = true', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': true }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     const result = await accessor.updateRecord(config());
     expect(result).toBe(true);
@@ -68,7 +68,7 @@ describe('CassandraStorageAccessor', () => {
 
   it('updateRecord returns false when [applied] = false', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': false }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': false }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     const result = await accessor.updateRecord(config());
     expect(result).toBe(false);
@@ -76,14 +76,14 @@ describe('CassandraStorageAccessor', () => {
 
   it('unlock does not throw when [applied] = false', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': false }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': false }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     await expect(accessor.unlock(config())).resolves.toBeUndefined();
   });
 
   it('unlock passes correct params', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': true }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     await accessor.unlock(config());
     expect(client.execute).toHaveBeenCalledWith(
@@ -95,7 +95,7 @@ describe('CassandraStorageAccessor', () => {
 
   it('extend returns true when [applied] = true', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': true }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     const result = await accessor.extend(config());
     expect(result).toBe(true);
@@ -103,7 +103,7 @@ describe('CassandraStorageAccessor', () => {
 
   it('extend returns false when [applied] = false', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': false }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': false }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     const result = await accessor.extend(config());
     expect(result).toBe(false);
@@ -111,7 +111,7 @@ describe('CassandraStorageAccessor', () => {
 
   it('uses prepare:true and correct consistency levels', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': true }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     await accessor.insertRecord(config());
     expect(client.execute).toHaveBeenCalledWith(
@@ -123,11 +123,11 @@ describe('CassandraStorageAccessor', () => {
 
   it('Date parameters are Date instances', async () => {
     const client = makeClient();
-    (client.execute as any).mockResolvedValue({ rows: [{ '[applied]': true }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     await accessor.insertRecord(config());
-    const params = (client.execute as any).mock.calls[0][1];
-    params.slice(1, 3).forEach((p: any) => {
+    const params = (client.execute as unknown as MockInstance).mock.calls[0][1];
+    params.slice(1, 3).forEach((p: unknown) => {
       expect(p instanceof Date).toBe(true);
     });
   });

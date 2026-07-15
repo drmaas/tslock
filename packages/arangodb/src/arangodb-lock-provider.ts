@@ -4,7 +4,7 @@ import type { Database } from 'arangojs/database';
 import { ArangoDbAccessor } from './arangodb-accessor.js';
 import type { ArangoDbLockDocument } from './arangodb-lock-document.js';
 
-type ArangoCollection<T extends Record<string, any>> = DocumentCollection<T> & EdgeCollection<T>;
+type ArangoCollection<T extends Record<string, unknown>> = DocumentCollection<T> & EdgeCollection<T>;
 
 export interface ArangoDbLockProviderOptions {
   collection?: string;

@@ -6,7 +6,7 @@ import {
   lockAtMostUntil,
   unlockTime,
 } from '@tslock/core';
-import type { Collection } from 'couchbase';
+import type { Collection, GetResult } from 'couchbase';
 import { CasMismatchError, DocumentExistsError, DocumentNotFoundError } from 'couchbase';
 import type { ResolvedOptions } from './couchbase-lock-provider.js';
 import { buildDocumentId } from './document-id.js';
@@ -45,7 +45,7 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
   }
 
   async updateRecord(config: LockConfiguration): Promise<boolean> {
-    let getResult: any;
+    let getResult: GetResult;
     try {
       getResult = await this.collection.get(this.docId(config.name));
     } catch (e) {
@@ -75,7 +75,7 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
   }
 
   async unlock(config: LockConfiguration): Promise<void> {
-    let getResult: any;
+    let getResult: GetResult;
     try {
       getResult = await this.collection.get(this.docId(config.name));
     } catch (e) {
@@ -99,7 +99,7 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
   }
 
   async extend(config: LockConfiguration): Promise<boolean> {
-    let getResult: any;
+    let getResult: GetResult;
     try {
       getResult = await this.collection.get(this.docId(config.name));
     } catch (e) {

@@ -260,7 +260,7 @@ pnpm changeset                          # describe changes, pick semver bump
 pnpm version-packages                   # bump versions + update CHANGELOGs
 git add -A && git commit -m "chore: release v<version>"
 pnpm publish -r                         # publish all packages to npm
-git tag v<version> && git push --follow-tags
+git tag v<version> && git push origin v<version>
 ```
 
 All `@tslock/*` packages share a single version (lockstep via Changesets fixed mode).

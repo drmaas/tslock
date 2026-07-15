@@ -1,28 +1,29 @@
+import type { Firestore } from '@google-cloud/firestore';
 import { ClockProvider, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import { FirestoreStorageAccessor } from '../src/firestore-storage-accessor.js';
 
 const NOW = 1_000_000;
 
-function makeFirestore(overrides: Record<string, any> = {}) {
+function makeFirestore(overrides: Record<string, unknown> = {}) {
   const runTransaction = vi.fn();
   const doc = vi.fn((name: string) => ({ id: name }));
   const collection = vi.fn(() => ({ doc }));
-  return { runTransaction, collection, ...overrides } as any;
+  return { runTransaction, collection, ...overrides } as unknown as Firestore;
 }
 
-function makeSnapshot(exists: boolean, data: Record<string, any> = {}) {
+function makeSnapshot(exists: boolean, data: Record<string, unknown> = {}) {
   return {
     exists,
     get: vi.fn((field: string) => data[field]),
-  } as any;
+  };
 }
 
-function makeTxn(overrides: Record<string, any> = {}) {
+function makeTxn(overrides: Record<string, unknown> = {}) {
   const get = vi.fn();
   const create = vi.fn();
   const update = vi.fn();
-  return { get, create, update, ...overrides } as any;
+  return { get, create, update, ...overrides };
 }
 
 function cfg(name = 'test', most = 60_000, least = 0) {
@@ -30,7 +31,13 @@ function cfg(name = 'test', most = 60_000, least = 0) {
   return createLockConfig(name, most, least);
 }
 
-function makeAccessor(overrides?: Record<string, any>) {
+function makeAccessor(overrides?: {
+  firestore?: Firestore;
+  collectionName?: string;
+  fieldNames?: { lockUntil: string; lockedAt: string; lockedBy: string };
+  lockedByValue?: string;
+  useTimestamps?: boolean;
+}) {
   return new FirestoreStorageAccessor(
     overrides?.firestore ?? makeFirestore(),
     overrides?.collectionName ?? 'shedlock',
@@ -44,7 +51,9 @@ describe('FirestoreStorageAccessor', () => {
   describe('insertRecord', () => {
     it('returns true when document does not exist', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(false)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore });
       expect(await accessor.insertRecord(cfg())).toBe(true);
       expect(txn.create).toHaveBeenCalledOnce();
@@ -52,7 +61,9 @@ describe('FirestoreStorageAccessor', () => {
 
     it('returns false when document already exists', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(true)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore });
       expect(await accessor.insertRecord(cfg())).toBe(false);
       expect(txn.create).not.toHaveBeenCalled();
@@ -60,7 +71,9 @@ describe('FirestoreStorageAccessor', () => {
 
     it('writes correct data on insert', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(false)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'host1' });
       await accessor.insertRecord(cfg('my-lock', 30_000));
       expect(txn.create).toHaveBeenCalledWith(expect.anything(), {
@@ -76,7 +89,9 @@ describe('FirestoreStorageAccessor', () => {
       const txn = makeTxn({
         get: vi.fn().mockResolvedValue(makeSnapshot(true, { lockUntil: '1970-01-01T00:00:00.500Z' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore });
       expect(await accessor.updateRecord(cfg())).toBe(true);
       expect(txn.update).toHaveBeenCalledOnce();
@@ -86,7 +101,9 @@ describe('FirestoreStorageAccessor', () => {
       const txn = makeTxn({
         get: vi.fn().mockResolvedValue(makeSnapshot(true, { lockUntil: '2000-01-01T00:00:00.000Z' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore });
       expect(await accessor.updateRecord(cfg())).toBe(false);
       expect(txn.update).not.toHaveBeenCalled();
@@ -94,7 +111,9 @@ describe('FirestoreStorageAccessor', () => {
 
     it('returns false when document missing', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(false)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore });
       expect(await accessor.updateRecord(cfg())).toBe(false);
       expect(txn.update).not.toHaveBeenCalled();
@@ -108,7 +127,9 @@ describe('FirestoreStorageAccessor', () => {
           .fn()
           .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
       await accessor.unlock(cfg());
       expect(txn.update).toHaveBeenCalledOnce();
@@ -120,7 +141,9 @@ describe('FirestoreStorageAccessor', () => {
           .fn()
           .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'other-host' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
       await accessor.unlock(cfg());
       expect(txn.update).not.toHaveBeenCalled();
@@ -132,7 +155,9 @@ describe('FirestoreStorageAccessor', () => {
           .fn()
           .mockResolvedValue(makeSnapshot(true, { lockUntil: '1970-01-01T00:00:00.500Z', lockedBy: 'my-host' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
       await accessor.unlock(cfg());
       expect(txn.update).not.toHaveBeenCalled();
@@ -140,7 +165,9 @@ describe('FirestoreStorageAccessor', () => {
 
     it('skips when document missing', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(false)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore });
       await accessor.unlock(cfg());
       expect(txn.update).not.toHaveBeenCalled();
@@ -154,7 +181,9 @@ describe('FirestoreStorageAccessor', () => {
           .fn()
           .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
       expect(await accessor.extend(cfg())).toBe(true);
       expect(txn.update).toHaveBeenCalledOnce();
@@ -166,7 +195,9 @@ describe('FirestoreStorageAccessor', () => {
           .fn()
           .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'other-host' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
       expect(await accessor.extend(cfg())).toBe(false);
       expect(txn.update).not.toHaveBeenCalled();
@@ -178,7 +209,9 @@ describe('FirestoreStorageAccessor', () => {
           .fn()
           .mockResolvedValue(makeSnapshot(true, { lockUntil: '1970-01-01T00:00:00.500Z', lockedBy: 'my-host' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
       expect(await accessor.extend(cfg())).toBe(false);
       expect(txn.update).not.toHaveBeenCalled();
@@ -186,7 +219,9 @@ describe('FirestoreStorageAccessor', () => {
 
     it('returns false when document missing', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(false)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
       expect(await accessor.extend(cfg())).toBe(false);
       expect(txn.update).not.toHaveBeenCalled();
@@ -196,7 +231,9 @@ describe('FirestoreStorageAccessor', () => {
   describe('field encoding', () => {
     it('writes ISO strings by default', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(false)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, useTimestamps: false });
       await accessor.insertRecord(cfg());
       const data = txn.create.mock.calls[0][1];
@@ -206,14 +243,16 @@ describe('FirestoreStorageAccessor', () => {
 
     it('writes Timestamp objects when useTimestamps is true', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(false)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, useTimestamps: true });
       await accessor.insertRecord(cfg());
       const data = txn.create.mock.calls[0][1];
       expect(typeof data.lockUntil).toBe('object');
-      expect(typeof (data.lockUntil as any).toMillis).toBe('function');
+      expect(typeof (data.lockUntil as { toMillis: unknown }).toMillis).toBe('function');
       expect(typeof data.lockedAt).toBe('object');
-      expect(typeof (data.lockedAt as any).toMillis).toBe('function');
+      expect(typeof (data.lockedAt as { toMillis: unknown }).toMillis).toBe('function');
     });
 
     it('parses ISO strings correctly', async () => {
@@ -222,7 +261,9 @@ describe('FirestoreStorageAccessor', () => {
           .fn()
           .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' })),
       });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host', useTimestamps: false });
       expect(await accessor.extend(cfg())).toBe(true);
       expect(txn.update).toHaveBeenCalledOnce();
@@ -232,7 +273,9 @@ describe('FirestoreStorageAccessor', () => {
   describe('custom configuration', () => {
     it('uses custom collection name and field names', async () => {
       const txn = makeTxn({ get: vi.fn().mockResolvedValue(makeSnapshot(false)) });
-      const firestore = makeFirestore({ runTransaction: vi.fn().mockImplementation(async (fn: any) => await fn(txn)) });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
       const accessor = makeAccessor({
         firestore,
         collectionName: 'locks',

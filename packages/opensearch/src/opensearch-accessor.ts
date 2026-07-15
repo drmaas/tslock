@@ -24,11 +24,17 @@ if (ctx._source[params.lockedByField] == params.lockedBy && ctx._source[params.l
 `;
 
 function isConflictError(e: unknown): boolean {
-  return (e as any)?.meta?.statusCode === 409 || (e as any)?.statusCode === 409;
+  const err = e as Record<string, unknown> | null;
+  return (
+    ((err?.meta as Record<string, unknown> | null)?.statusCode as number) === 409 || (err?.statusCode as number) === 409
+  );
 }
 
 function isNotFoundError(e: unknown): boolean {
-  return (e as any)?.meta?.statusCode === 404 || (e as any)?.statusCode === 404;
+  const err = e as Record<string, unknown> | null;
+  return (
+    ((err?.meta as Record<string, unknown> | null)?.statusCode as number) === 404 || (err?.statusCode as number) === 404
+  );
 }
 
 export class OpenSearchAccessor {

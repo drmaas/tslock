@@ -13,16 +13,24 @@ function cfg(name = 'test', most = 60_000, least = 0) {
   return createLockConfig(name, most, least);
 }
 
-function makeAccessor(overrides?: Record<string, any>) {
+interface MockStorageAccessor {
+  insertRecord: ReturnType<typeof vi.fn>;
+  updateRecord: ReturnType<typeof vi.fn>;
+  unlock: ReturnType<typeof vi.fn>;
+  extend: ReturnType<typeof vi.fn>;
+  [key: string]: unknown;
+}
+
+function makeAccessor(overrides?: Record<string, unknown>): MockStorageAccessor {
   const insertRecord = vi.fn();
   const updateRecord = vi.fn();
   const unlock = vi.fn();
   const extend = vi.fn();
-  return { insertRecord, updateRecord, unlock, extend, ...overrides } as any;
+  return { insertRecord, updateRecord, unlock, extend, ...overrides } as MockStorageAccessor;
 }
 
 describe('SpannerLockProvider', () => {
-  let accessor: ReturnType<typeof makeAccessor>;
+  let accessor: MockStorageAccessor;
   let provider: StorageBasedLockProvider;
 
   beforeEach(() => {

@@ -1,7 +1,7 @@
 function getCode(e: unknown): number | undefined {
   if (e && typeof e === 'object') {
     const obj = e as Record<string, unknown>;
-    const code = obj.code ?? (obj as any).status;
+    const code = obj.code ?? obj.status;
     return typeof code === 'number' ? code : undefined;
   }
   return undefined;

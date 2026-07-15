@@ -4,7 +4,7 @@ import type { Database } from 'arangojs/database';
 import type { ArangoDbLockDocument } from './arangodb-lock-document.js';
 import { ArangoDbLock } from './arangodb-lock.js';
 
-type ArangoCollection<T extends Record<string, any>> = DocumentCollection<T> & EdgeCollection<T>;
+type ArangoCollection<T extends Record<string, unknown>> = DocumentCollection<T> & EdgeCollection<T>;
 
 function isDocumentNotFoundError(e: unknown): boolean {
   const err = e as Record<string, unknown> | null | undefined;

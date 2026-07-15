@@ -3,7 +3,7 @@ import type { Client as HazelcastClient } from 'hazelcast-client';
 import { describe, expect, it, vi } from 'vitest';
 import { HazelcastLockProvider } from '../src/hazelcast-lock-provider.js';
 
-function makeStore(overrides: Record<string, any> = {}) {
+function makeStore(overrides: Record<string, unknown> = {}) {
   const get = overrides.get ?? vi.fn().mockResolvedValue(null);
   return {
     lock: vi.fn().mockResolvedValue(undefined),
@@ -15,9 +15,9 @@ function makeStore(overrides: Record<string, any> = {}) {
   };
 }
 
-function makeClient(store?: any): HazelcastClient {
+function makeClient(store?: Record<string, unknown>): HazelcastClient {
   const s = store ?? makeStore();
-  return { getMap: vi.fn().mockResolvedValue(s) } as any;
+  return { getMap: vi.fn().mockResolvedValue(s) } as unknown as HazelcastClient;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {

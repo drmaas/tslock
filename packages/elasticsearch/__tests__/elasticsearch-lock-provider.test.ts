@@ -1,10 +1,11 @@
+import type { Client } from '@elastic/elasticsearch';
 import { ClockProvider, createLockConfig } from '@tslock/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ElasticsearchLockProvider } from '../src/elasticsearch-lock-provider.js';
 import { FieldNames } from '../src/field-names.js';
 
-function client(overrides: Record<string, any> = {}) {
-  return { update: vi.fn().mockResolvedValue({ result: 'updated' }), ...overrides } as any;
+function client(overrides: Record<string, unknown> = {}): Client {
+  return { update: vi.fn().mockResolvedValue({ result: 'updated' }), ...overrides } as unknown as Client;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {

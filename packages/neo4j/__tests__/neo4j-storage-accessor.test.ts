@@ -1,15 +1,18 @@
 import { ClockProvider, createLockConfig } from '@tslock/core';
+import type { Driver } from 'neo4j-driver';
 import { describe, expect, it, vi } from 'vitest';
 import { Neo4jStorageAccessor } from '../src/neo4j-storage-accessor.js';
 
-function makeDriver(txRun: ReturnType<typeof vi.fn> = vi.fn()): any {
+function makeDriver(txRun: ReturnType<typeof vi.fn> = vi.fn()) {
   const session = {
-    executeWrite: vi.fn().mockImplementation(async (fn: any) => fn({ run: txRun })),
+    executeWrite: vi
+      .fn()
+      .mockImplementation(async (fn: (tx: { run: ReturnType<typeof vi.fn> }) => unknown) => fn({ run: txRun })),
     close: vi.fn().mockResolvedValue(undefined),
   };
   return {
     session: vi.fn().mockReturnValue(session),
-  };
+  } as unknown as Driver;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {
@@ -35,7 +38,7 @@ describe('Neo4jStorageAccessor', () => {
 
   it('insertRecord returns false on constraint violation', async () => {
     const err = new Error("already exists with label `ShedLock` and property `name` = 'test'");
-    (err as any).code = 'Neo.ClientError.Schema.ConstraintValidationFailed';
+    (err as unknown as { code: string }).code = 'Neo.ClientError.Schema.ConstraintValidationFailed';
     const txRun = vi.fn().mockRejectedValue(err);
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
@@ -64,7 +67,7 @@ describe('Neo4jStorageAccessor', () => {
 
   it('insertRecord propagates constraint error for a different lock name', async () => {
     const err = new Error("already exists with label `ShedLock` and property `name` = 'other-task'");
-    (err as any).code = 'Neo.ClientError.Schema.ConstraintValidationFailed';
+    (err as unknown as { code: string }).code = 'Neo.ClientError.Schema.ConstraintValidationFailed';
     const txRun = vi.fn().mockRejectedValue(err);
     const driver = makeDriver(txRun);
     const accessor = new Neo4jStorageAccessor(driver, {
@@ -150,10 +153,12 @@ describe('Neo4jStorageAccessor', () => {
   it('executesWrite passes parameters correctly', async () => {
     const txRun = vi.fn().mockResolvedValue({ records: [] });
     const session = {
-      executeWrite: vi.fn().mockImplementation(async (fn: any) => fn({ run: txRun })),
+      executeWrite: vi
+        .fn()
+        .mockImplementation(async (fn: (tx: { run: ReturnType<typeof vi.fn> }) => unknown) => fn({ run: txRun })),
       close: vi.fn().mockResolvedValue(undefined),
     };
-    const driver = { session: vi.fn().mockReturnValue(session) };
+    const driver = { session: vi.fn().mockReturnValue(session) } as unknown as Driver;
     const accessor = new Neo4jStorageAccessor(
       driver,
       {
@@ -178,7 +183,7 @@ describe('Neo4jStorageAccessor', () => {
       executeWrite: vi.fn().mockRejectedValue(new Error('fail')),
       close: vi.fn().mockResolvedValue(undefined),
     };
-    const driver = { session: vi.fn().mockReturnValue(session) };
+    const driver = { session: vi.fn().mockReturnValue(session) } as unknown as Driver;
     const accessor = new Neo4jStorageAccessor(driver, {
       label: 'ShedLock',
       nameCol: 'name',

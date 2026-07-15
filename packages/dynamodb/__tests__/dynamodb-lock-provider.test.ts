@@ -3,11 +3,11 @@ import { ClockProvider, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoDBLockProvider } from '../src/dynamodb-lock-provider.js';
 
-function makeClient(overrides: Record<string, any> = {}): DynamoDBClient {
+function makeClient(overrides: Record<string, unknown> = {}): DynamoDBClient {
   return {
     send: vi.fn().mockResolvedValue({}),
     ...overrides,
-  } as any;
+  } as unknown as DynamoDBClient;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {

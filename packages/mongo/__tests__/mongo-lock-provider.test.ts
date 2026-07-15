@@ -1,16 +1,17 @@
 import { ClockProvider, createLockConfig } from '@tslock/core';
-import type { Collection } from 'mongodb';
+import type { Collection, Document } from 'mongodb';
 import { MongoServerError } from 'mongodb';
 import { describe, expect, it, vi } from 'vitest';
+import type { MongoLockDocument } from '../src/mongo-lock-document.js';
 import { MongoLockProvider } from '../src/mongo-lock-provider.js';
 
-function makeCol(overrides: Record<string, any> = {}): Collection<any> {
+function makeCol(overrides: Record<string, unknown> = {}): Collection<MongoLockDocument> {
   return {
     findOneAndUpdate: vi
       .fn()
       .mockResolvedValue({ _id: 'test', lockUntil: new Date(), lockedAt: new Date(), lockedBy: 'host' }),
     ...overrides,
-  } as any;
+  } as unknown as Collection<MongoLockDocument>;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {
@@ -34,7 +35,9 @@ describe('MongoLockProvider', () => {
   });
 
   it('lock() returns undefined on duplicate key (code 11000)', async () => {
-    const col = makeCol({ findOneAndUpdate: vi.fn().mockRejectedValue(new MongoServerError({ code: 11000 } as any)) });
+    const col = makeCol({
+      findOneAndUpdate: vi.fn().mockRejectedValue(new MongoServerError({ code: 11000 } as unknown as Document)),
+    });
     const provider = new MongoLockProvider(col);
     const lock = await provider.lock(config());
     expect(lock).toBeUndefined();

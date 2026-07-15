@@ -1,4 +1,5 @@
 import { ClockProvider, createLockConfig } from '@tslock/core';
+import type { Collection } from 'couchbase';
 import { CasMismatchError, DocumentExistsError, DocumentNotFoundError } from 'couchbase';
 import { describe, expect, it, vi } from 'vitest';
 import type { ResolvedOptions } from '../src/couchbase-lock-provider.js';
@@ -16,13 +17,13 @@ function opts(overrides?: Partial<ResolvedOptions>): ResolvedOptions {
   };
 }
 
-function makeCollection(overrides: Record<string, any> = {}) {
+function makeCollection(overrides: Record<string, unknown> = {}) {
   return {
     insert: vi.fn().mockResolvedValue({}),
     get: vi.fn().mockResolvedValue({ content: {}, cas: '0' }),
     replace: vi.fn().mockResolvedValue({}),
     ...overrides,
-  } as any;
+  } as unknown as Collection;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {
@@ -40,7 +41,7 @@ describe('CouchbaseStorageAccessor', () => {
     });
 
     it('returns false on DocumentExistsError', async () => {
-      const col = makeCollection({ insert: vi.fn().mockRejectedValue(new DocumentExistsError('exists')) });
+      const col = makeCollection({ insert: vi.fn().mockRejectedValue(new DocumentExistsError(new Error('exists'))) });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       expect(await accessor.insertRecord(config())).toBe(false);
     });
@@ -70,7 +71,7 @@ describe('CouchbaseStorageAccessor', () => {
     });
 
     it('propagates DocumentNotFoundError', async () => {
-      const col = makeCollection({ get: vi.fn().mockRejectedValue(new DocumentNotFoundError('not found')) });
+      const col = makeCollection({ get: vi.fn().mockRejectedValue(new DocumentNotFoundError(new Error('not found'))) });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       await expect(accessor.updateRecord(config())).rejects.toThrow(DocumentNotFoundError);
     });
@@ -78,7 +79,7 @@ describe('CouchbaseStorageAccessor', () => {
     it('returns false on CasMismatchError', async () => {
       const col = makeCollection({
         get: vi.fn().mockResolvedValue({ content: { lockUntil: 999_999 }, cas: '1' }),
-        replace: vi.fn().mockRejectedValue(new CasMismatchError('cas mismatch')),
+        replace: vi.fn().mockRejectedValue(new CasMismatchError(new Error('cas mismatch'))),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       expect(await accessor.updateRecord(config())).toBe(false);
@@ -95,7 +96,7 @@ describe('CouchbaseStorageAccessor', () => {
     });
 
     it('no-ops on DocumentNotFoundError', async () => {
-      const col = makeCollection({ get: vi.fn().mockRejectedValue(new DocumentNotFoundError('not found')) });
+      const col = makeCollection({ get: vi.fn().mockRejectedValue(new DocumentNotFoundError(new Error('not found'))) });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       await expect(accessor.unlock(config())).resolves.toBeUndefined();
     });
@@ -103,7 +104,7 @@ describe('CouchbaseStorageAccessor', () => {
     it('no-ops on CasMismatchError', async () => {
       const col = makeCollection({
         get: vi.fn().mockResolvedValue({ content: { lockUntil: 1_050_000 }, cas: '1' }),
-        replace: vi.fn().mockRejectedValue(new CasMismatchError('cas mismatch')),
+        replace: vi.fn().mockRejectedValue(new CasMismatchError(new Error('cas mismatch'))),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       await expect(accessor.unlock(config())).resolves.toBeUndefined();
@@ -136,7 +137,7 @@ describe('CouchbaseStorageAccessor', () => {
     });
 
     it('returns false on DocumentNotFoundError', async () => {
-      const col = makeCollection({ get: vi.fn().mockRejectedValue(new DocumentNotFoundError('not found')) });
+      const col = makeCollection({ get: vi.fn().mockRejectedValue(new DocumentNotFoundError(new Error('not found'))) });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       expect(await accessor.extend(config())).toBe(false);
     });
@@ -144,7 +145,7 @@ describe('CouchbaseStorageAccessor', () => {
     it('returns false on CasMismatchError', async () => {
       const col = makeCollection({
         get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_050_000 }, cas: '1' }),
-        replace: vi.fn().mockRejectedValue(new CasMismatchError('cas mismatch')),
+        replace: vi.fn().mockRejectedValue(new CasMismatchError(new Error('cas mismatch'))),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       expect(await accessor.extend(config())).toBe(false);

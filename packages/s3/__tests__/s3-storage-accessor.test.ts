@@ -214,7 +214,7 @@ describe('S3StorageAccessor', () => {
     });
 
     it('happy path: matching lockedBy + future lockUntil → PutObject succeeds → true', async () => {
-      vi.spyOn(accessor, 'getHostname' as any).mockReturnValue('host1');
+      vi.spyOn(accessor as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host1');
       mockSend
         .mockResolvedValueOnce({
           ETag: '"etag1"',
@@ -236,7 +236,7 @@ describe('S3StorageAccessor', () => {
     });
 
     it('wrong owner: lockedBy mismatch → returns false', async () => {
-      vi.spyOn(accessor, 'getHostname' as any).mockReturnValue('host2');
+      vi.spyOn(accessor as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host2');
       mockSend.mockResolvedValueOnce({
         ETag: '"etag1"',
         Metadata: {
@@ -253,7 +253,7 @@ describe('S3StorageAccessor', () => {
     });
 
     it('expired: lockUntil in past → returns false', async () => {
-      vi.spyOn(accessor, 'getHostname' as any).mockReturnValue('host1');
+      vi.spyOn(accessor as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host1');
       mockSend.mockResolvedValueOnce({
         ETag: '"etag1"',
         Metadata: {
@@ -278,7 +278,7 @@ describe('S3StorageAccessor', () => {
     });
 
     it('concurrent modify: PutObject 412 → returns false', async () => {
-      vi.spyOn(accessor, 'getHostname' as any).mockReturnValue('host1');
+      vi.spyOn(accessor as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host1');
       mockSend
         .mockResolvedValueOnce({
           ETag: '"etag1"',

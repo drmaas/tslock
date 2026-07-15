@@ -8,12 +8,12 @@ function cfg(name = 'test', most = 60_000, least = 0) {
   return createLockConfig(name, most, least);
 }
 
-function makeAccessor(overrides?: Record<string, any>) {
+function makeAccessor(overrides?: Record<string, unknown>) {
   const insertRecord = vi.fn();
   const updateRecord = vi.fn();
   const unlock = vi.fn();
   const extend = vi.fn();
-  return { insertRecord, updateRecord, unlock, extend, ...overrides } as any;
+  return { insertRecord, updateRecord, unlock, extend, ...overrides };
 }
 
 describe('DatastoreLockProvider', () => {

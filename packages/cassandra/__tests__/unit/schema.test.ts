@@ -1,9 +1,9 @@
 import type cassandra from 'cassandra-driver';
-import { describe, expect, it, vi } from 'vitest';
+import { type MockInstance, describe, expect, it, vi } from 'vitest';
 import { createLockTable } from '../../src/cassandra-lock-provider.js';
 
 function makeClient(): cassandra.Client {
-  return { execute: vi.fn() } as any;
+  return { execute: vi.fn() } as unknown as cassandra.Client;
 }
 
 describe('createLockTable', () => {
@@ -36,7 +36,7 @@ describe('createLockTable', () => {
 
   it('propagates errors', async () => {
     const client = makeClient();
-    (client.execute as any).mockRejectedValue(new Error('query failed'));
+    (client.execute as unknown as MockInstance).mockRejectedValue(new Error('query failed'));
     await expect(createLockTable(client, { keyspace: 'ks' })).rejects.toThrow('query failed');
   });
 });

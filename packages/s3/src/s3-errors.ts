@@ -9,7 +9,9 @@ function getErrorName(e: unknown): string | undefined {
 
 function getStatusCode(e: unknown): number | undefined {
   if (e && typeof e === 'object') {
-    return (e as any).$metadata?.httpStatusCode as number | undefined;
+    return ((e as Record<string, unknown>).$metadata as Record<string, unknown> | undefined)?.httpStatusCode as
+      | number
+      | undefined;
   }
   return undefined;
 }

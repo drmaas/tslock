@@ -1,4 +1,4 @@
-import type { Storage } from '@google-cloud/storage';
+import type { FileMetadata, SaveOptions, Storage } from '@google-cloud/storage';
 import {
   AbstractStorageAccessor,
   ClockProvider,
@@ -73,10 +73,10 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     if (exists) return false;
     try {
       await file.save('', {
-        metadata: this.buildMetadata(config) as any,
+        metadata: this.buildMetadata(config),
         gzip: false,
         preconditionOpts: { ifGenerationMatch: 0 },
-      } as any);
+      } as SaveOptions);
       return true;
     } catch (e) {
       if (isPreconditionFailed(e)) return false;
@@ -92,10 +92,10 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     const file = this.file(config.name);
     try {
       await file.save('', {
-        metadata: this.buildMetadata(config) as any,
+        metadata: this.buildMetadata(config),
         gzip: false,
         preconditionOpts: { ifGenerationMatch: current.generation },
-      } as any);
+      } as SaveOptions);
       return true;
     } catch (e) {
       if (isPreconditionFailed(e)) return false;
@@ -114,8 +114,8 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
           lockedAt: current.metadata.lockedAt ?? Utils.toIsoString(config.createdAt),
           lockedBy: current.metadata.lockedBy ?? this.getHostname(),
           lockName: current.metadata.lockName ?? config.name,
-        } as any,
-        { preconditionOpts: { ifGenerationMatch: current.generation } } as any,
+        } as FileMetadata,
+        { preconditionOpts: { ifGenerationMatch: current.generation } },
       );
     } catch (e) {
       if (isPreconditionFailed(e)) return;
@@ -138,8 +138,8 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
           lockedAt: current.metadata.lockedAt,
           lockedBy: current.metadata.lockedBy,
           lockName: current.metadata.lockName,
-        } as any,
-        { preconditionOpts: { ifGenerationMatch: current.generation } } as any,
+        } as FileMetadata,
+        { preconditionOpts: { ifGenerationMatch: current.generation } },
       );
       return true;
     } catch (e) {

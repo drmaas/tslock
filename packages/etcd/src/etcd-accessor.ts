@@ -21,12 +21,7 @@ export class EtcdAccessor {
     try {
       const result = await this.client
         .if(key, 'Version', '==', 0)
-        .then(
-          this.client
-            .put(key)
-            .value(value)
-            .lease((lease as any).leaseID),
-        )
+        .then(this.client.put(key).value(value).lease(lease.grant()))
         .else(this.client.get(key))
         .commit();
 
@@ -58,11 +53,7 @@ export class EtcdAccessor {
     const newTtlSeconds = Math.ceil(config.lockAtLeastFor / MILLIS_IN_SECOND);
 
     const newLease = this.client.lease(newTtlSeconds);
-    await this.client
-      .put(key)
-      .value(value)
-      .lease((newLease as any).leaseID)
-      .exec();
+    await this.client.put(key).value(value).lease(newLease.grant()).exec();
     await lease.revoke();
   }
 }

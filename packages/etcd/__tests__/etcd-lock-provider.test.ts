@@ -1,4 +1,5 @@
 import { ClockProvider, type LockConfiguration, LockException, Utils } from '@tslock/core';
+import type { Etcd3 } from 'etcd3';
 import { describe, expect, it, vi } from 'vitest';
 import { EtcdLockProvider } from '../src/etcd-lock-provider.js';
 
@@ -11,9 +12,15 @@ function makeConfig(name: string, lockAtMostFor: number, lockAtLeastFor = 0): Lo
   };
 }
 
+interface MockTxn {
+  then: ReturnType<typeof vi.fn>;
+  else: ReturnType<typeof vi.fn>;
+  commit: ReturnType<typeof vi.fn>;
+}
+
 function makeClient() {
   const commit_ = vi.fn().mockResolvedValue({ succeeded: true });
-  const txnChain: Record<string, any> = {};
+  const txnChain = {} as MockTxn;
   Object.defineProperty(txnChain, 'then', { value: vi.fn().mockReturnValue(txnChain) });
   txnChain.else = vi.fn().mockReturnValue(txnChain);
   txnChain.commit = commit_;
@@ -26,7 +33,7 @@ function makeClient() {
   };
 
   const lease = {
-    leaseID: Promise.resolve(12345),
+    grant: vi.fn().mockResolvedValue(12345),
     revoke: vi.fn().mockResolvedValue(undefined),
   };
 
@@ -37,7 +44,7 @@ function makeClient() {
     lease: vi.fn().mockReturnValue(lease),
   };
 
-  return { client: client as any, txnChain, putBuilder, lease };
+  return { client: client as unknown as Etcd3, txnChain, putBuilder, lease };
 }
 
 describe('EtcdLockProvider', () => {
@@ -139,15 +146,15 @@ describe('EtcdLockProvider', () => {
     it('puts with new lease then revokes old lease when lockAtLeastFor > 0', async () => {
       const { client } = makeClient();
       const oldLease = {
-        leaseID: Promise.resolve(12345),
+        grant: vi.fn().mockResolvedValue(12345),
         revoke: vi.fn().mockResolvedValue(undefined),
       };
       const newLease = {
-        leaseID: Promise.resolve(67890),
+        grant: vi.fn().mockResolvedValue(67890),
         revoke: vi.fn().mockResolvedValue(undefined),
       };
       client.lease = vi.fn().mockReturnValueOnce(oldLease).mockReturnValueOnce(newLease);
-      const altTxn: Record<string, any> = {};
+      const altTxn = {} as MockTxn;
       Object.defineProperty(altTxn, 'then', { value: vi.fn().mockReturnValue(altTxn) });
       altTxn.else = vi.fn().mockReturnValue(altTxn);
       altTxn.commit = vi.fn().mockResolvedValue({ succeeded: true });

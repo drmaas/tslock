@@ -1,3 +1,4 @@
+import type { Driver } from 'neo4j-driver';
 import { describe, expect, it } from 'vitest';
 import { Neo4jLockProvider, resolveOptions } from '../src/neo4j-lock-provider.js';
 
@@ -33,13 +34,13 @@ describe('resolveOptions', () => {
 
 describe('Neo4jLockProvider', () => {
   it('constructs with a mocked driver', () => {
-    const driver = {} as any;
+    const driver = {} as unknown as Driver;
     const provider = new Neo4jLockProvider(driver);
     expect(provider).toBeInstanceOf(Neo4jLockProvider);
   });
 
   it('constructs with options', () => {
-    const driver = {} as any;
+    const driver = {} as unknown as Driver;
     const provider = new Neo4jLockProvider(driver, { label: 'CustomLock' });
     expect(provider).toBeInstanceOf(Neo4jLockProvider);
   });

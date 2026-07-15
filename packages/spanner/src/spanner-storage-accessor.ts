@@ -35,8 +35,8 @@ export class SpannerStorageAccessor extends AbstractStorageAccessor {
         await tx.commit();
         return true;
       });
-    } catch (e: any) {
-      if (e && (e.code === 6 || e.code === 9)) return false;
+    } catch (e: unknown) {
+      if ((e && (e as Record<string, unknown>).code === 6) || (e as Record<string, unknown>).code === 9) return false;
       throw e;
     }
   }
@@ -49,7 +49,7 @@ export class SpannerStorageAccessor extends AbstractStorageAccessor {
         json: true,
       });
       if (rows.length === 0) return false;
-      const currentLockUntil = Date.parse((rows[0] as any)[this.colNames.lockUntil] as string);
+      const currentLockUntil = Date.parse((rows[0] as Record<string, unknown>)[this.colNames.lockUntil] as string);
       if (currentLockUntil > ClockProvider.now()) return false;
       tx.update(this.tableName, {
         [this.colNames.name]: config.name,

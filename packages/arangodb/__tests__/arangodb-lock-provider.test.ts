@@ -2,11 +2,26 @@ import { ClockProvider, Utils, createLockConfig } from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collection';
 import type { Database } from 'arangojs/database';
 import { describe, expect, it, vi } from 'vitest';
+import type { ArangoDbLockDocument } from '../src/arangodb-lock-document.js';
 import { ArangoDbLockProvider } from '../src/arangodb-lock-provider.js';
 
-type ArangoCollection<T> = DocumentCollection<T> & EdgeCollection<T>;
+type ArangoCollection<T extends Record<string, unknown>> = DocumentCollection<T> & EdgeCollection<T>;
+type MockFn = ReturnType<typeof vi.fn>;
 
-function makeTxn(overrides: Record<string, any> = {}) {
+interface MockTxn {
+  step: MockFn;
+  commit: MockFn;
+  abort: MockFn;
+}
+
+interface MockCol {
+  name: string;
+  document: MockFn;
+  save: MockFn;
+  update: MockFn;
+}
+
+function makeTxn(overrides: Partial<MockTxn> = {}): MockTxn {
   return {
     step: vi.fn().mockImplementation((fn: () => void) => fn()),
     commit: vi.fn().mockResolvedValue(undefined),
@@ -15,19 +30,19 @@ function makeTxn(overrides: Record<string, any> = {}) {
   };
 }
 
-function makeDb(txn?: any): Database {
+function makeDb(txn?: MockTxn): Database {
   const t = txn ?? makeTxn();
-  return { beginTransaction: vi.fn().mockResolvedValue(t) } as any;
+  return { beginTransaction: vi.fn().mockResolvedValue(t) } as unknown as Database;
 }
 
-function makeCol(overrides: Record<string, any> = {}): ArangoCollection<any> {
+function makeCol(overrides: Partial<MockCol> = {}): ArangoCollection<ArangoDbLockDocument> {
   return {
     name: 'shedLock',
     document: vi.fn(),
     save: vi.fn().mockResolvedValue({}),
     update: vi.fn().mockResolvedValue({}),
     ...overrides,
-  } as any;
+  } as unknown as ArangoCollection<ArangoDbLockDocument>;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {

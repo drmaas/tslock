@@ -1,10 +1,11 @@
+import type { Client } from '@opensearch-project/opensearch';
 import { ClockProvider, createLockConfig } from '@tslock/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FieldNames } from '../src/field-names.js';
 import { OpenSearchLockProvider } from '../src/opensearch-lock-provider.js';
 
-function client(overrides: Record<string, any> = {}) {
-  return { update: vi.fn().mockResolvedValue({ body: { result: 'updated' } }), ...overrides } as any;
+function client(overrides: Record<string, unknown> = {}) {
+  return { update: vi.fn().mockResolvedValue({ body: { result: 'updated' } }), ...overrides } as unknown as Client;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {

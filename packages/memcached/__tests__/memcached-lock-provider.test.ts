@@ -1,8 +1,9 @@
 import { ClockProvider, createLockConfig } from '@tslock/core';
+import type { Client as MemjsClient } from 'memjs';
 import { describe, expect, it, vi } from 'vitest';
 import { MemcachedLockProvider } from '../src/memcached-lock-provider.js';
 
-function makeClient(overrides: Record<string, any> = {}): any {
+function makeClient(overrides: Record<string, unknown> = {}): MemjsClient {
   return {
     add: vi.fn().mockResolvedValue({ success: true }),
     delete: vi.fn().mockResolvedValue({ success: true }),
