@@ -188,6 +188,15 @@ The reviews in `docs/reviews/` identified issues to fix. Key ones:
 
 Read the full review for each provider before implementing it.
 
+## Setup
+
+Before running any commands, ensure the correct Node.js version and pnpm are active:
+
+```bash
+nvm use                # match the version in .nvmrc
+corepack enable pnpm   # ensure pnpm is available via corepack
+```
+
 ## Commands
 
 ```bash
@@ -228,4 +237,5 @@ CI only runs verification (`pnpm check && pnpm typecheck && pnpm test && pnpm bu
 - **Prompt before deleting files or directories.**
 - **No unrequested abstractions.** No interface with one implementation, no factory for one product, no config for a value that never changes.
 - **Shortest working diff wins** — but only after understanding the problem. Read the spec, plan, and review for the area you're touching first.
+- **Commit messages must reference an issue.** Every commit must include `#<NN>` or `Closes #<NN>` in the footer. Commits without an issue reference will be rejected.
 - **Specs, plans, and reviews in `docs/` are immutable once written.** New work gets new files (`docs/specs/<NN>-<name>.md`, etc.). Never edit, update, or backport changes into existing `docs/specs/`, `docs/plans/`, or `docs/reviews/`. The only exception is a user explicitly saying otherwise.

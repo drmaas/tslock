@@ -33,7 +33,6 @@ Be kind and professional. Treat everyone with respect. Harassment, personal atta
 
 - **Node.js >= 22** (the repo pins `22.x` in [`.nvmrc`](./.nvmrc); use [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) to match it)
 - **pnpm 11+** (enable via corepack: `corepack enable`)
-- **Docker** — only needed for integration tests (which use testcontainers / emulators)
 
 ### Clone and install
 
@@ -80,7 +79,8 @@ TSLock classifies changes into two tracks (see [`AGENTS.md`](./AGENTS.md) for th
 3. **Plan** — write `docs/plans/<NN>-<name>.md` with step-by-step implementation order.
 4. **Implement** — write the code + unit and integration tests.
 5. **Verify** — run the full suite (below) and fix failures.
-6. **Review** — request a review against the spec, plan, and architecture.
+6. **Review** — request an independent review against the spec, plan, and architecture.
+7. **Repeat** - loop to previous steps until done.
 
 > **Immutable docs:** specs, plans, and reviews in `docs/` are written once and not edited after the fact. New work gets new files. The only exception is an explicit maintainer decision.
 
