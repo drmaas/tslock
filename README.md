@@ -120,6 +120,16 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/memcached` | `memjs` | [README](./packages/memcached/README.md) |
 | `@tslock/nats` | `nats` (JetStream KV) | [README](./packages/nats/README.md) |
 
+### Middleware integrations (v2 — spec & plan only, not yet implemented)
+
+| Package | Framework | Spec |
+|---|---|---|
+| `@tslock/middleware-core` | (shared logic) | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/express` | Express 4.x / 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/fastify` | Fastify 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/koa` | Koa 2.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/hono` | Hono 4.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+
 ## Core abstractions
 
 | Abstraction | Description |
@@ -242,9 +252,9 @@ All design docs are in [`docs/`](./docs):
 |---|---|
 | [`docs/00-vision.md`](./docs/00-vision.md) | Product vision, scope, provider matrix, design decisions |
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
-| [`docs/specs/`](./docs/specs/) | Per-provider specifications |
-| [`docs/plans/`](./docs/plans/) | Per-provider implementation plans |
-| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo |
+| [`docs/specs/`](./docs/specs/) | Per-provider and middleware specifications (24 docs) |
+| [`docs/plans/`](./docs/plans/) | Per-provider and middleware implementation plans (24 docs) |
+| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo (24 docs) |
 
 ## Project status
 

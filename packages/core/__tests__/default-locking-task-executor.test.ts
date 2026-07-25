@@ -51,7 +51,7 @@ describe('DefaultLockingTaskExecutor', () => {
   });
 
   it('reentrant: runs task without acquiring lock', async () => {
-    const { provider, unlockMock } = makeMockProvider();
+    const { provider } = makeMockProvider();
     const executor = new DefaultLockingTaskExecutor(provider);
     const task = vi.fn().mockResolvedValue('ok');
     const outerResult = await executor.executeWithLock(
