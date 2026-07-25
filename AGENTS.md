@@ -6,7 +6,7 @@ Instructions for AI agents working on the TSLock codebase.
 
 TSLock is a TypeScript port of [ShedLock](https://github.com/lukas-krecan/ShedLock) — a distributed lock library for scheduled tasks. It is a pnpm-workspaces monorepo with a small core package and 23+ provider packages, each backed by a different storage engine.
 
-**Current state: docs-only.** All design docs (vision, architecture, specs, plans, reviews) are complete in `docs/`. No implementation code exists yet. Implementation follows the plans in `docs/plans/`.
+**Current state: docs-only.** All design docs (vision, architecture, specs, plans, reviews) are complete in `docs/`. No implementation code exists yet. Implementation follows the plans in `docs/plans/`. Includes middleware integration specs (Express/Fastify/Koa/Hono) for v2 exploration.
 
 ## Repository layout
 
@@ -15,10 +15,10 @@ tslock/
 ├── docs/
 │   ├── 00-vision.md          # product vision, scope, provider matrix
 │   ├── 01-architecture.md    # monorepo structure, core abstractions, provider categories
-│   ├── specs/                # 23 per-provider specs (NN-name.md)
-│   ├── plans/                # 23 per-provider implementation plans (NN-name.md)
-│   └── reviews/              # 23 independent reviews of each spec/plan (NN-name.md)
-├── packages/                 # (not yet created — will hold @tslock/* packages)
+│   ├── specs/                # 24 specs (00-core, 01-test-support, ..., 23-publishing, 24-middleware)
+│   ├── plans/                # 24 implementation plans
+│   └── reviews/              # 24 independent reviews of each spec/plan
+  ├── packages/                 # (not yet created — will hold @tslock/* packages — 23 providers + 5 middleware)
 ├── README.md
 ├── AGENTS.md                 # this file
 ├── pnpm-workspace.yaml       # (not yet created)
@@ -54,7 +54,7 @@ Before implementing anything, read in this order:
 | SQL packages | `@tslock/sql-support` (shared) + `@tslock/sql` + `@tslock/kysely` + `@tslock/drizzle` |
 | Redis packages | `@tslock/redis-core` (shared) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` |
 | Ignite | Deferred to v2 (immature Node.js driver) — 23 providers for v1 |
-| Framework integrations | Out of scope for v1 (no NestJS/Express/Fastify decorators) |
+| Framework integrations | Out of scope for v1. Spec/plan/review exist at `docs/specs/24-middleware.md`, `docs/plans/24-middleware.md`, `docs/reviews/24-middleware.md` for v2 exploration. |
 | Metrics | Out of scope for v1 (`LockingTaskExecutorListener` is the extension point) |
 | Linting | Biome |
 
