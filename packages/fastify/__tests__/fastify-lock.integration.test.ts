@@ -1,7 +1,9 @@
 import { LockAssert } from '@tslock/core';
 import { InMemoryLockProvider } from '@tslock/in-memory';
 import Fastify from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
+import type { FastifyLockFactory } from '../src/fastify-lock-plugin.js';
 import { createFastifyLockPlugin } from '../src/index.js';
 
 describe('Fastify lock integration', () => {
@@ -9,11 +11,11 @@ describe('Fastify lock integration', () => {
 
   it('acquires lock, returns 200 from handler', async () => {
     const provider = new InMemoryLockProvider();
-    const fastify = Fastify();
+    const fastify = Fastify() as unknown as FastifyInstance & { tslock: FastifyLockFactory };
     const plugin = createFastifyLockPlugin({ lockProvider: provider, lockAtMostFor: 10000 });
     plugin(fastify, {}, () => {});
 
-    fastify.get('/api/locked', { preHandler: (fastify as any).tslock() }, async () => {
+    fastify.get('/api/locked', { preHandler: fastify.tslock() }, async () => {
       return { ok: true };
     });
 
@@ -26,7 +28,7 @@ describe('Fastify lock integration', () => {
 
   it('returns 503 when lock is held by concurrent request', async () => {
     const provider = new InMemoryLockProvider();
-    const fastify = Fastify();
+    const fastify = Fastify() as unknown as FastifyInstance & { tslock: FastifyLockFactory };
     const plugin = createFastifyLockPlugin({ lockProvider: provider, lockAtMostFor: 10000 });
     plugin(fastify, {}, () => {});
 
@@ -35,7 +37,7 @@ describe('Fastify lock integration', () => {
       releaseBarrier = r;
     });
 
-    fastify.get('/api/locked', { preHandler: (fastify as any).tslock() }, async () => {
+    fastify.get('/api/locked', { preHandler: fastify.tslock() }, async () => {
       await barrier;
       return { ok: true };
     });
@@ -57,7 +59,7 @@ describe('Fastify lock integration', () => {
 
   it('re-acquires lock after first handler completes', async () => {
     const provider = new InMemoryLockProvider();
-    const fastify = Fastify();
+    const fastify = Fastify() as unknown as FastifyInstance & { tslock: FastifyLockFactory };
     const plugin = createFastifyLockPlugin({
       lockProvider: provider,
       lockAtMostFor: 5000,
@@ -65,7 +67,7 @@ describe('Fastify lock integration', () => {
     });
     plugin(fastify, {}, () => {});
 
-    fastify.get('/api/locked', { preHandler: (fastify as any).tslock() }, async () => {
+    fastify.get('/api/locked', { preHandler: fastify.tslock() }, async () => {
       return { ok: true };
     });
 
@@ -81,14 +83,14 @@ describe('Fastify lock integration', () => {
 
   it('different HTTP methods use different lock names', async () => {
     const provider = new InMemoryLockProvider();
-    const fastify = Fastify();
+    const fastify = Fastify() as unknown as FastifyInstance & { tslock: FastifyLockFactory };
     const plugin = createFastifyLockPlugin({ lockProvider: provider, lockAtMostFor: 10000 });
     plugin(fastify, {}, () => {});
 
-    fastify.get('/api/locked', { preHandler: (fastify as any).tslock() }, async (req: any) => {
+    fastify.get('/api/locked', { preHandler: fastify.tslock() }, async (req) => {
       return { method: req.method };
     });
-    fastify.post('/api/locked', { preHandler: (fastify as any).tslock() }, async (req: any) => {
+    fastify.post('/api/locked', { preHandler: fastify.tslock() }, async (req) => {
       return { method: req.method };
     });
 
@@ -105,7 +107,7 @@ describe('Fastify lock integration', () => {
 
   it('custom lockedStatus returns custom status code', async () => {
     const provider = new InMemoryLockProvider();
-    const fastify = Fastify();
+    const fastify = Fastify() as unknown as FastifyInstance & { tslock: FastifyLockFactory };
     const plugin = createFastifyLockPlugin({
       lockProvider: provider,
       lockAtMostFor: 10000,
@@ -118,7 +120,7 @@ describe('Fastify lock integration', () => {
       releaseBarrier = r;
     });
 
-    fastify.get('/api/locked', { preHandler: (fastify as any).tslock() }, async () => {
+    fastify.get('/api/locked', { preHandler: fastify.tslock() }, async () => {
       await barrier;
       return { ok: true };
     });
@@ -137,11 +139,11 @@ describe('Fastify lock integration', () => {
 
   it('LockAssert.assertLocked works inside handler', async () => {
     const provider = new InMemoryLockProvider();
-    const fastify = Fastify();
+    const fastify = Fastify() as unknown as FastifyInstance & { tslock: FastifyLockFactory };
     const plugin = createFastifyLockPlugin({ lockProvider: provider, lockAtMostFor: 10000 });
     plugin(fastify, {}, () => {});
 
-    fastify.get('/api/locked', { preHandler: (fastify as any).tslock() }, async () => {
+    fastify.get('/api/locked', { preHandler: fastify.tslock() }, async () => {
       LockAssert.assertLocked();
       return { assertion: 'success' };
     });
@@ -155,11 +157,11 @@ describe('Fastify lock integration', () => {
 
   it('handler error releases lock', async () => {
     const provider = new InMemoryLockProvider();
-    const fastify = Fastify();
+    const fastify = Fastify() as unknown as FastifyInstance & { tslock: FastifyLockFactory };
     const plugin = createFastifyLockPlugin({ lockProvider: provider, lockAtMostFor: 5000, lockAtLeastFor: 0 });
     plugin(fastify, {}, () => {});
 
-    fastify.get('/api/locked', { preHandler: (fastify as any).tslock() }, async () => {
+    fastify.get('/api/locked', { preHandler: fastify.tslock() }, async () => {
       throw new Error('handler crash');
     });
 
@@ -175,7 +177,7 @@ describe('Fastify lock integration', () => {
 
   it('reentrancy: nested preHandler executes handler once', async () => {
     const provider = new InMemoryLockProvider();
-    const fastify = Fastify();
+    const fastify = Fastify() as unknown as FastifyInstance & { tslock: FastifyLockFactory };
     const plugin = createFastifyLockPlugin({
       lockProvider: provider,
       lockAtMostFor: 10000,
@@ -184,7 +186,7 @@ describe('Fastify lock integration', () => {
     plugin(fastify, {}, () => {});
 
     let handlerCalls = 0;
-    fastify.get('/api/locked', { preHandler: [(fastify as any).tslock(), (fastify as any).tslock()] }, async () => {
+    fastify.get('/api/locked', { preHandler: [fastify.tslock(), fastify.tslock()] }, async () => {
       handlerCalls++;
       return { called: handlerCalls };
     });

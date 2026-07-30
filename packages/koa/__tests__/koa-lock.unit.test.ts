@@ -1,4 +1,5 @@
 import type { LockProvider, SimpleLock } from '@tslock/core';
+import type { Context } from 'koa';
 import { describe, expect, it, vi } from 'vitest';
 import { createKoaLock } from '../src/index.js';
 
@@ -49,7 +50,7 @@ describe('createKoaLock', () => {
     const ctx = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await middleware(ctx as any, next);
+    await middleware(ctx as unknown as Context, next);
 
     expect(ctx.status).toBe(503);
     expect(ctx.body).toBeDefined();
@@ -64,7 +65,7 @@ describe('createKoaLock', () => {
     const ctx = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await middleware(ctx as any, next);
+    await middleware(ctx as unknown as Context, next);
 
     expect(next).toHaveBeenCalled();
   });
@@ -89,7 +90,7 @@ describe('createKoaLock', () => {
     const ctx = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await middleware(ctx as any, next);
+    await middleware(ctx as unknown as Context, next);
 
     expect(unlocked).toBe(true);
   });
@@ -114,7 +115,7 @@ describe('createKoaLock', () => {
     const ctx = createMockContext('GET', '/api/test');
     const next = vi.fn().mockRejectedValue(new Error('handler error'));
 
-    await expect(middleware(ctx as any, next)).rejects.toThrow('handler error');
+    await expect(middleware(ctx as unknown as Context, next)).rejects.toThrow('handler error');
     expect(unlocked).toBe(true);
   });
 
@@ -126,7 +127,7 @@ describe('createKoaLock', () => {
     const ctx = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await middleware(ctx as any, next);
+    await middleware(ctx as unknown as Context, next);
 
     expect(ctx.status).toBe(423);
   });
@@ -143,7 +144,7 @@ describe('createKoaLock', () => {
     const ctx = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await expect(middleware(ctx as any, next)).rejects.toThrow('storage error');
+    await expect(middleware(ctx as unknown as Context, next)).rejects.toThrow('storage error');
   });
 
   it('uses _matchedRoute when available', async () => {
@@ -154,7 +155,7 @@ describe('createKoaLock', () => {
     const ctx = { ...createMockContext('GET', '/api/users/123'), _matchedRoute: '/api/users/:id' };
     const next = vi.fn();
 
-    await middleware(ctx as any, next);
+    await middleware(ctx as unknown as Context, next);
 
     expect(next).toHaveBeenCalled();
   });

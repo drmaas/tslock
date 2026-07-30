@@ -1,4 +1,5 @@
 import type { LockProvider, SimpleLock } from '@tslock/core';
+import type { Context } from 'hono';
 import { describe, expect, it, vi } from 'vitest';
 import { createHonoLock } from '../src/index.js';
 
@@ -49,7 +50,7 @@ describe('createHonoLock', () => {
     const c = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await middleware(c as any, next);
+    await middleware(c as unknown as Context, next);
 
     expect(c.json).toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();
@@ -63,7 +64,7 @@ describe('createHonoLock', () => {
     const c = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await middleware(c as any, next);
+    await middleware(c as unknown as Context, next);
 
     expect(next).toHaveBeenCalled();
   });
@@ -88,7 +89,7 @@ describe('createHonoLock', () => {
     const c = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await middleware(c as any, next);
+    await middleware(c as unknown as Context, next);
 
     expect(unlocked).toBe(true);
   });
@@ -113,7 +114,7 @@ describe('createHonoLock', () => {
     const c = createMockContext('GET', '/api/test');
     const next = vi.fn().mockRejectedValue(new Error('handler error'));
 
-    await expect(middleware(c as any, next)).rejects.toThrow('handler error');
+    await expect(middleware(c as unknown as Context, next)).rejects.toThrow('handler error');
     expect(unlocked).toBe(true);
   });
 
@@ -125,7 +126,7 @@ describe('createHonoLock', () => {
     const c = createMockContext('POST', '/api/users', '/*');
     const next = vi.fn();
 
-    await middleware(c as any, next);
+    await middleware(c as unknown as Context, next);
 
     await vi.waitFor(
       () => {
@@ -143,7 +144,7 @@ describe('createHonoLock', () => {
     const c = createMockContext('GET', '/api/users/123', '/api/users/:id');
     const next = vi.fn();
 
-    await middleware(c as any, next);
+    await middleware(c as unknown as Context, next);
 
     expect(next).toHaveBeenCalled();
   });
@@ -156,7 +157,7 @@ describe('createHonoLock', () => {
     const c = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await middleware(c as any, next);
+    await middleware(c as unknown as Context, next);
 
     expect(c.json).toHaveBeenCalled();
   });
@@ -173,6 +174,6 @@ describe('createHonoLock', () => {
     const c = createMockContext('GET', '/api/test');
     const next = vi.fn();
 
-    await expect(middleware(c as any, next)).rejects.toThrow('storage error');
+    await expect(middleware(c as unknown as Context, next)).rejects.toThrow('storage error');
   });
 });

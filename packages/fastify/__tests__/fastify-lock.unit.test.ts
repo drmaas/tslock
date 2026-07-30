@@ -1,4 +1,5 @@
 import type { LockProvider, SimpleLock } from '@tslock/core';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { createFastifyLockPlugin } from '../src/index.js';
 
@@ -59,7 +60,7 @@ describe('createFastifyLockPlugin', () => {
     const fastify = createMockFastify();
     const doneFn = vi.fn();
 
-    plugin(fastify as any, {}, doneFn);
+    plugin(fastify as unknown as FastifyInstance, {}, doneFn);
 
     expect(fastify.decorate).toHaveBeenCalledWith('tslock', expect.any(Function));
     expect(doneFn).toHaveBeenCalled();
@@ -71,7 +72,7 @@ describe('createFastifyLockPlugin', () => {
     const fastify = createMockFastify();
     const doneFn = vi.fn();
 
-    plugin(fastify as any, {}, doneFn);
+    plugin(fastify as unknown as FastifyInstance, {}, doneFn);
     const tslock = fastify.decorate.mock.calls[0][1];
     const preHandler = tslock();
 
@@ -79,7 +80,7 @@ describe('createFastifyLockPlugin', () => {
     const reply = createMockReply();
     const done = vi.fn();
 
-    preHandler(req as any, reply as any, done);
+    preHandler(req as unknown as FastifyRequest, reply as unknown as FastifyReply, done);
 
     await vi.waitFor(
       () => {
@@ -97,7 +98,7 @@ describe('createFastifyLockPlugin', () => {
     const fastify = createMockFastify();
     const doneFn = vi.fn();
 
-    plugin(fastify as any, {}, doneFn);
+    plugin(fastify as unknown as FastifyInstance, {}, doneFn);
     const tslock = fastify.decorate.mock.calls[0][1];
     const preHandler = tslock();
 
@@ -105,7 +106,7 @@ describe('createFastifyLockPlugin', () => {
     const reply = createMockReply();
     const done = vi.fn();
 
-    preHandler(req as any, reply as any, done);
+    preHandler(req as unknown as FastifyRequest, reply as unknown as FastifyReply, done);
 
     await vi.waitFor(
       () => {
@@ -121,7 +122,7 @@ describe('createFastifyLockPlugin', () => {
     const fastify = createMockFastify();
     const doneFn = vi.fn();
 
-    plugin(fastify as any, {}, doneFn);
+    plugin(fastify as unknown as FastifyInstance, {}, doneFn);
     const tslock = fastify.decorate.mock.calls[0][1];
     const preHandler = tslock();
 
@@ -129,7 +130,7 @@ describe('createFastifyLockPlugin', () => {
     const reply = createMockReply();
     const done = vi.fn();
 
-    preHandler(req as any, reply as any, done);
+    preHandler(req as unknown as FastifyRequest, reply as unknown as FastifyReply, done);
 
     await vi.waitFor(
       () => {
@@ -145,7 +146,7 @@ describe('createFastifyLockPlugin', () => {
     const fastify = createMockFastify();
     const doneFn = vi.fn();
 
-    plugin(fastify as any, {}, doneFn);
+    plugin(fastify as unknown as FastifyInstance, {}, doneFn);
     const tslock = fastify.decorate.mock.calls[0][1];
     const preHandler = tslock({ lockedStatus: 423 });
 
@@ -153,7 +154,7 @@ describe('createFastifyLockPlugin', () => {
     const reply = createMockReply();
     const done = vi.fn();
 
-    preHandler(req as any, reply as any, done);
+    preHandler(req as unknown as FastifyRequest, reply as unknown as FastifyReply, done);
 
     await vi.waitFor(
       () => {
@@ -173,7 +174,7 @@ describe('createFastifyLockPlugin', () => {
     const fastify = createMockFastify();
     const doneFn = vi.fn();
 
-    plugin(fastify as any, {}, doneFn);
+    plugin(fastify as unknown as FastifyInstance, {}, doneFn);
     const tslock = fastify.decorate.mock.calls[0][1];
     const preHandler = tslock();
 
@@ -181,7 +182,7 @@ describe('createFastifyLockPlugin', () => {
     const reply = createMockReply();
     const done = vi.fn();
 
-    preHandler(req as any, reply as any, done);
+    preHandler(req as unknown as FastifyRequest, reply as unknown as FastifyReply, done);
 
     await vi.waitFor(
       () => {
@@ -197,7 +198,7 @@ describe('createFastifyLockPlugin', () => {
     const fastify = createMockFastify();
     const doneFn = vi.fn();
 
-    plugin(fastify as any, {}, doneFn);
+    plugin(fastify as unknown as FastifyInstance, {}, doneFn);
     const tslock = fastify.decorate.mock.calls[0][1];
 
     expect(tslock.lockProvider).toBe(lp);

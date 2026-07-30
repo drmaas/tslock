@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import type { LockProvider, SimpleLock } from '@tslock/core';
+import type { NextFunction, Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 import { createExpressLock } from '../src/index.js';
 
@@ -61,7 +62,7 @@ describe('createExpressLock', () => {
     const res = createMockResponse();
     const next = vi.fn();
 
-    middleware(req as any, res as any, next);
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
 
     await vi.waitFor(
       () => {
@@ -83,7 +84,7 @@ describe('createExpressLock', () => {
     const res = createMockResponse();
     const next = vi.fn();
 
-    middleware(req as any, res as any, next);
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
 
     await vi.waitFor(
       () => {
@@ -114,7 +115,7 @@ describe('createExpressLock', () => {
     const res = createMockResponse();
     const next = vi.fn();
 
-    middleware(req as any, res as any, next);
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
 
     await vi.waitFor(
       () => {
@@ -154,7 +155,7 @@ describe('createExpressLock', () => {
     const res = createMockResponse();
     const next = vi.fn();
 
-    middleware(req as any, res as any, next);
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
 
     await vi.waitFor(
       () => {
@@ -182,7 +183,7 @@ describe('createExpressLock', () => {
     const res = createMockResponse();
     const next = vi.fn();
 
-    middleware(req as any, res as any, next);
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
 
     await vi.waitFor(
       () => {
@@ -202,7 +203,7 @@ describe('createExpressLock', () => {
     const res = createMockResponse();
     const next = vi.fn();
 
-    middleware(req as any, res as any, next);
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
 
     await vi.waitFor(
       () => {
@@ -225,7 +226,7 @@ describe('createExpressLock', () => {
     const res = createMockResponse();
     const next = vi.fn();
 
-    middleware(req as any, res as any, next);
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
 
     await vi.waitFor(
       () => {
