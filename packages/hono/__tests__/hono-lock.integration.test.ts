@@ -4,11 +4,17 @@ import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { createHonoLock } from '../src/index.js';
 
+function createHonoApp() {
+  const app = new Hono();
+  app.onError(() => new Response(null, { status: 500 }));
+  return app;
+}
+
 describe('Hono lock integration', () => {
   it('acquires lock, returns 200 from handler', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createHonoLock({ lockProvider: provider, lockAtMostFor: 10000 });
-    const app = new Hono();
+    const app = createHonoApp();
     app.get('/api/locked', tslock(), (c) => c.json({ ok: true }));
 
     const res = await app.request('/api/locked');
@@ -25,7 +31,7 @@ describe('Hono lock integration', () => {
       releaseBarrier = r;
     });
 
-    const app = new Hono();
+    const app = createHonoApp();
     app.get('/api/locked', tslock(), (c) => {
       return barrier.then(() => c.json({ ok: true }));
     });
@@ -46,7 +52,7 @@ describe('Hono lock integration', () => {
   it('re-acquires lock after first handler completes', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createHonoLock({ lockProvider: provider, lockAtMostFor: 5000, lockAtLeastFor: 0 });
-    const app = new Hono();
+    const app = createHonoApp();
     app.get('/api/locked', tslock(), (c) => c.json({ ok: true }));
 
     const res1 = await app.request('/api/locked');
@@ -60,7 +66,7 @@ describe('Hono lock integration', () => {
   it('different HTTP methods use different lock names', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createHonoLock({ lockProvider: provider, lockAtMostFor: 10000 });
-    const app = new Hono();
+    const app = createHonoApp();
     app.get('/api/locked', tslock(), (c) => c.json({ method: c.req.method }));
     app.post('/api/locked', tslock(), (c) => c.json({ method: c.req.method }));
 
@@ -81,7 +87,7 @@ describe('Hono lock integration', () => {
       releaseBarrier = r;
     });
 
-    const app = new Hono();
+    const app = createHonoApp();
     app.get('/api/locked', tslock(), (c) => {
       return barrier.then(() => c.json({ ok: true }));
     });
@@ -99,7 +105,7 @@ describe('Hono lock integration', () => {
   it('handler error returns 500 and lock is released', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createHonoLock({ lockProvider: provider, lockAtMostFor: 5000, lockAtLeastFor: 0 });
-    const app = new Hono();
+    const app = createHonoApp();
     app.get('/api/locked', tslock(), () => {
       throw new Error('handler crash');
     });
@@ -114,7 +120,7 @@ describe('Hono lock integration', () => {
   it('LockAssert.assertLocked works inside handler', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createHonoLock({ lockProvider: provider, lockAtMostFor: 10000 });
-    const app = new Hono();
+    const app = createHonoApp();
     app.get('/api/locked', tslock(), (c) => {
       LockAssert.assertLocked();
       return c.json({ assertion: 'success' });
@@ -128,7 +134,7 @@ describe('Hono lock integration', () => {
   it('reentrancy: nested middleware executes handler once', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createHonoLock({ lockProvider: provider, lockAtMostFor: 10000, lockNamePrefix: 'reentrancy-hono' });
-    const app = new Hono();
+    const app = createHonoApp();
     let handlerCalls = 0;
     app.get('/api/locked', tslock(), tslock(), (c) => {
       handlerCalls++;

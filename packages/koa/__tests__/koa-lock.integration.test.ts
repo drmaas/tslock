@@ -6,6 +6,14 @@ import Koa from 'koa';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createKoaLock } from '../src/index.js';
 
+function createKoaApp() {
+  const app = new Koa();
+  app.on('error', () => {
+    // Suppress default stderr logging of thrown errors during tests
+  });
+  return app;
+}
+
 describe('Koa lock integration', () => {
   let port: number;
   let server: Server | null;
@@ -58,7 +66,7 @@ describe('Koa lock integration', () => {
   it('acquires lock, returns 200 from handler', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createKoaLock({ lockProvider: provider, lockAtMostFor: 10000 });
-    const app = new Koa();
+    const app = createKoaApp();
     app.use(tslock());
     app.use((ctx) => {
       ctx.body = { ok: true };
@@ -79,7 +87,7 @@ describe('Koa lock integration', () => {
       releaseBarrier = r;
     });
 
-    const app = new Koa();
+    const app = createKoaApp();
     app.use(tslock());
     app.use((ctx) => {
       return barrier.then(() => {
@@ -105,7 +113,7 @@ describe('Koa lock integration', () => {
   it('re-acquires lock after first handler completes', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createKoaLock({ lockProvider: provider, lockAtMostFor: 5000, lockAtLeastFor: 0 });
-    const app = new Koa();
+    const app = createKoaApp();
     app.use(tslock());
     app.use((ctx) => {
       ctx.body = { ok: true };
@@ -129,7 +137,7 @@ describe('Koa lock integration', () => {
       releaseBarrier = r;
     });
 
-    const app = new Koa();
+    const app = createKoaApp();
     app.use(tslock());
     app.use((ctx) => {
       return barrier.then(() => {
@@ -152,7 +160,7 @@ describe('Koa lock integration', () => {
   it('handler error sets 500 and lock is released', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createKoaLock({ lockProvider: provider, lockAtMostFor: 5000, lockAtLeastFor: 0 });
-    const app = new Koa();
+    const app = createKoaApp();
     app.use(tslock());
     app.use(() => {
       throw new Error('handler crash');
@@ -169,7 +177,7 @@ describe('Koa lock integration', () => {
   it('LockAssert.assertLocked works inside handler', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createKoaLock({ lockProvider: provider, lockAtMostFor: 10000 });
-    const app = new Koa();
+    const app = createKoaApp();
     app.use(tslock());
     app.use((ctx) => {
       LockAssert.assertLocked();
@@ -185,7 +193,7 @@ describe('Koa lock integration', () => {
   it('reentrancy: nested middleware executes handler once', async () => {
     const provider = new InMemoryLockProvider();
     const tslock = createKoaLock({ lockProvider: provider, lockAtMostFor: 10000, lockNamePrefix: 'reentrancy-koa' });
-    const app = new Koa();
+    const app = createKoaApp();
     let handlerCalls = 0;
     app.use(tslock());
     app.use(tslock());
