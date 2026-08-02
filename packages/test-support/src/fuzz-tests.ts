@@ -35,6 +35,7 @@ export function fuzzTests(getProvider: () => Promise<LockProvider>): void {
             continue;
           }
           current++;
+          let counted = true;
           maxConcurrent = Math.max(maxConcurrent, current);
           try {
             await sleep(Math.floor(Math.random() * 30));
@@ -44,9 +45,11 @@ export function fuzzTests(getProvider: () => Promise<LockProvider>): void {
               if (extended) active = extended;
             } catch {}
             await sleep(Math.floor(Math.random() * 30));
+            current--;
+            counted = false;
             await active.unlock();
           } finally {
-            current--;
+            if (counted) current--;
           }
         }
       });

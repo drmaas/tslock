@@ -31,7 +31,7 @@ export class MemcachedLockProvider implements LockProvider {
     const expireTimeSeconds = Utils.toTtlSeconds(config.lockAtMostFor);
 
     const result = await this.client.add(key, value, { expires: expireTimeSeconds });
-    if (result.success) {
+    if (result) {
       return new MemcachedLock(this.client, key, value, config);
     }
     return undefined;

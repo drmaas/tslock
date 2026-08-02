@@ -43,6 +43,16 @@ The full key is `shedlock:${env}:${lockName}`.
 >
 > Memcached ownership values intentionally contain the timestamp and hostname only. Memcached unlock operations do not compare an ownership token; the value is retained only when `lockAtLeastFor` requires a delayed release. TTLs use the shared `floor(milliseconds / 1000) + 1` safety buffer.
 
+## Integration tests
+
+The shared lock and fuzz contracts run against an ephemeral `memcached:alpine` container:
+
+```bash
+pnpm --filter @tslock/memcached test:integration
+```
+
+Docker is required for this suite.
+
 ## Requirements
 
 - Node.js >= 22

@@ -407,9 +407,15 @@ importers:
       '@tslock/core':
         specifier: workspace:*
         version: link:../core
+      '@tslock/test-support':
+        specifier: workspace:*
+        version: link:../test-support
       memjs:
         specifier: ^1.3.0
         version: 1.3.2
+      testcontainers:
+        specifier: ^12.0.4
+        version: 12.0.4
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(postcss@8.5.25)(typescript@5.9.3)(yaml@2.9.0)

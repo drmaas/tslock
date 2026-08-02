@@ -22,13 +22,13 @@ export class MemcachedLock extends AbstractSimpleLock {
     const keepLockFor = lockAtLeastUntil(this.config) - ClockProvider.now();
     if (keepLockFor <= 0) {
       const result = await this.client.delete(this.key);
-      if (!result.success) {
+      if (!result) {
         throw new LockException(`Can not unlock ${this.config.name} from memcached`);
       }
     } else {
       const keepLockForSeconds = Utils.toTtlSeconds(keepLockFor);
       const result = await this.client.replace(this.key, this.value, { expires: keepLockForSeconds });
-      if (!result.success) {
+      if (!result) {
         throw new LockException(`Can not unlock ${this.config.name} from memcached`);
       }
     }

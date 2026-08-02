@@ -5,9 +5,9 @@ import { MemcachedLockProvider } from '../src/memcached-lock-provider.js';
 
 function makeClient(overrides: Record<string, unknown> = {}): MemjsClient {
   return {
-    add: vi.fn().mockResolvedValue({ success: true }),
-    delete: vi.fn().mockResolvedValue({ success: true }),
-    replace: vi.fn().mockResolvedValue({ success: true }),
+    add: vi.fn().mockResolvedValue(true),
+    delete: vi.fn().mockResolvedValue(true),
+    replace: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
 }
@@ -27,7 +27,7 @@ describe('MemcachedLockProvider', () => {
   });
 
   it('lock() returns undefined when add fails', async () => {
-    const client = makeClient({ add: vi.fn().mockResolvedValue({ success: false }) });
+    const client = makeClient({ add: vi.fn().mockResolvedValue(false) });
     const provider = new MemcachedLockProvider(client);
     const lock = await provider.lock(config());
     expect(lock).toBeUndefined();
@@ -41,8 +41,8 @@ describe('MemcachedLockProvider', () => {
   });
 
   it('unlock() calls delete when keepLockFor <= 0', async () => {
-    const del = vi.fn().mockResolvedValue({ success: true });
-    const client = makeClient({ add: vi.fn().mockResolvedValue({ success: true }), delete: del });
+    const del = vi.fn().mockResolvedValue(true);
+    const client = makeClient({ add: vi.fn().mockResolvedValue(true), delete: del });
     const provider = new MemcachedLockProvider(client);
     const lock = (await provider.lock(config('t', 10_000, 0)))!;
     ClockProvider.setClock(() => 1_020_000);
@@ -51,8 +51,8 @@ describe('MemcachedLockProvider', () => {
   });
 
   it('unlock() calls replace when keepLockFor > 0', async () => {
-    const replace = vi.fn().mockResolvedValue({ success: true });
-    const client = makeClient({ add: vi.fn().mockResolvedValue({ success: true }), replace });
+    const replace = vi.fn().mockResolvedValue(true);
+    const client = makeClient({ add: vi.fn().mockResolvedValue(true), replace });
     const provider = new MemcachedLockProvider(client);
     const lock = (await provider.lock(config('t', 60_000, 30_000)))!;
     ClockProvider.setClock(() => 1_005_000);
@@ -61,7 +61,7 @@ describe('MemcachedLockProvider', () => {
   });
 
   it('unlock() throws when delete fails', async () => {
-    const client = makeClient({ delete: vi.fn().mockResolvedValue({ success: false }) });
+    const client = makeClient({ delete: vi.fn().mockResolvedValue(false) });
     const provider = new MemcachedLockProvider(client);
     const lock = (await provider.lock(config('t', 10_000, 0)))!;
     ClockProvider.setClock(() => 1_020_000);
@@ -69,7 +69,7 @@ describe('MemcachedLockProvider', () => {
   });
 
   it('unlock() throws when replace fails', async () => {
-    const client = makeClient({ replace: vi.fn().mockResolvedValue({ success: false }) });
+    const client = makeClient({ replace: vi.fn().mockResolvedValue(false) });
     const provider = new MemcachedLockProvider(client);
     const lock = (await provider.lock(config('t', 60_000, 30_000)))!;
     ClockProvider.setClock(() => 1_005_000);
