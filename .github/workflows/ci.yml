@@ -44,6 +44,7 @@ jobs:
       - run: corepack enable && pnpm install --frozen-lockfile
         env:
           CI: true
+      - run: pnpm build
       - run: pnpm test:integration
         env:
           TSLOCK_REDIS_INTEGRATION: '1'
