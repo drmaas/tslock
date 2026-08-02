@@ -112,6 +112,9 @@ importers:
 
   packages/drizzle:
     devDependencies:
+      '@testcontainers/postgresql':
+        specifier: ^12.0.4
+        version: 12.0.4
       '@tslock/core':
         specifier: workspace:*
         version: link:../core
@@ -121,9 +124,15 @@ importers:
       '@tslock/test-support':
         specifier: workspace:*
         version: link:../test-support
+      '@types/pg':
+        specifier: ^8.10.0
+        version: 8.20.0
       drizzle-orm:
         specifier: ^0.30.0
         version: 0.30.10(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.27.6)(mysql2@3.22.6(@types/node@24.13.3))(pg@8.22.0)
+      pg:
+        specifier: ^8.11.0
+        version: 8.22.0
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(postcss@8.5.25)(typescript@5.9.3)(yaml@2.9.0)
