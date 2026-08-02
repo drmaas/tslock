@@ -43,6 +43,8 @@ await executor.executeWithLock(
 
 The znode for a lock is `${basePath}/${lockName}`.
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes. This shared limit also protects the znode path from pathological input.
+
 ## Requirements
 
 - Node.js >= 22

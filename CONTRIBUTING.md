@@ -43,6 +43,8 @@ corepack enable
 pnpm install
 ```
 
+The workspace intentionally denies install scripts for the transitive `cpu-features` and `ssh2` packages used by testcontainers. Standard local Docker-socket integration tests do not require these optional native builds. Docker-over-SSH is not supported by the default policy; if you need it locally, change both entries to `true` in `pnpm-workspace.yaml`, reinstall, and ensure your machine has the required native build toolchain. Do not commit that local override unless the policy is intentionally changing.
+
 ### Verify your environment
 
 ```bash
@@ -89,19 +91,22 @@ TSLock classifies changes into two tracks (see [`AGENTS.md`](./AGENTS.md) for th
 Before opening a PR, run:
 
 ```bash
-pnpm check          # format check + lint (Biome)
-pnpm -r typecheck   # tsc --noEmit across all packagespnpm -r test            # vitest run (unit tests)
-pnpm -r test:integration # integration tests (requires Docker; only some packages define this script)
-pnpm -r build           # tsup build across all packages
+pnpm check             # format check + lint (Biome)
+pnpm -r typecheck      # tsc --noEmit across all packages
+pnpm -r test           # vitest run (unit tests)
+pnpm test:integration  # in-memory, MongoDB, and PostgreSQL; Redis is opt-in
+pnpm -r build          # tsup build across all packages
+pnpm check:packed-peers # verify packed peer dependency ranges
 ```
 
-Integration tests (require Docker):
+Integration tests (MongoDB/PostgreSQL require Docker; Redis requires a running Redis service):
 
 ```bash
-pnpm -r test:integration
+pnpm test:integration
+TSLOCK_REDIS_INTEGRATION=1 REDIS_URL=redis://127.0.0.1:6379 pnpm test:integration
 ```
 
-CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` on every push.
+CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` plus a non-blocking `pnpm audit --prod` and the integration job on every push.
 
 ## Coding conventions
 

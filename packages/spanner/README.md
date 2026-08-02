@@ -63,6 +63,8 @@ await executor.executeWithLock(
 
 Use `resolveSpannerConfiguration()` if you prefer defaults + `Partial<SpannerColumnNames>` overrides.
 
+> **Integration limitation:** The Spanner emulator does not provide a reliable substitute for the transaction behavior required by this provider. Spanner coverage therefore relies on mocked-driver unit tests and the optional live test, which requires `TSLOCK_SPANNER_INSTANCE`, `TSLOCK_SPANNER_DATABASE`, and `TSLOCK_SPANNER_PROJECT_ID`.
+
 ## Requirements
 
 - Node.js >= 22

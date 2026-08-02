@@ -4,6 +4,7 @@ import {
   AbstractStorageAccessor,
   ClockProvider,
   type LockConfiguration,
+  LockException,
   Utils,
   lockAtMostUntil,
   unlockTime,
@@ -72,7 +73,7 @@ export class FirestoreStorageAccessor extends AbstractStorageAccessor {
     const ref = this.docRef(config.name);
     return await this.firestore.runTransaction(async (txn: Transaction) => {
       const snap = await txn.get(ref);
-      if (!snap.exists) return false;
+      if (!snap.exists) throw new LockException(`Lock record not found: ${config.name}`);
       const current = toMillis(snap.get(this.fieldNames.lockUntil) as string | Timestamp);
       if (current > ClockProvider.now()) return false;
       txn.update(ref, this.toData(config));

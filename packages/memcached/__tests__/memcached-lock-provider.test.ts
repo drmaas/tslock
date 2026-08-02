@@ -23,7 +23,7 @@ describe('MemcachedLockProvider', () => {
     const provider = new MemcachedLockProvider(client);
     const lock = await provider.lock(config());
     expect(lock).toBeDefined();
-    expect(client.add).toHaveBeenCalledOnce();
+    expect(client.add).toHaveBeenCalledWith(expect.any(String), expect.any(String), { expires: 61 });
   });
 
   it('lock() returns undefined when add fails', async () => {
@@ -57,7 +57,7 @@ describe('MemcachedLockProvider', () => {
     const lock = (await provider.lock(config('t', 60_000, 30_000)))!;
     ClockProvider.setClock(() => 1_005_000);
     await lock.unlock();
-    expect(replace).toHaveBeenCalledOnce();
+    expect(replace).toHaveBeenCalledWith(expect.any(String), expect.any(String), { expires: 26 });
   });
 
   it('unlock() throws when delete fails', async () => {

@@ -5,6 +5,10 @@ export interface LockMetadata {
   retryAfterSeconds: number;
 }
 
+export type StaticLockedBody = string | number | boolean | null | Record<string, unknown> | unknown[];
+
+export type LockedBody = StaticLockedBody | ((meta: LockMetadata) => unknown);
+
 export interface LockFailureResponse {
   status: number;
   body: unknown;

@@ -108,4 +108,34 @@ describe('DefaultLockingTaskExecutor', () => {
     const result = await executor.executeWithLock(async () => 'x', createLockConfig('t', 1000));
     expect(result.wasExecuted).toBe(true);
   });
+
+  it('unlock error invokes onUnlockError listener and preserves task result', async () => {
+    const { provider, unlockMock } = makeMockProvider();
+    unlockMock.mockRejectedValue(new Error('unlock-boom'));
+    const onUnlockError = vi.fn();
+    const listener: LockingTaskExecutorListener = {
+      ...NO_OP_LISTENER,
+      onUnlockError,
+    };
+    const executor = new DefaultLockingTaskExecutor(provider, listener);
+    const result = await executor.executeWithLock(async () => 'x', createLockConfig('t', 1000));
+    expect(result.wasExecuted).toBe(true);
+    expect(result.getResult()).toBe('x');
+    expect(onUnlockError).toHaveBeenCalledOnce();
+    expect(onUnlockError.mock.calls[0]?.[1]).toBeInstanceOf(Error);
+  });
+
+  it('onUnlockError listener exception does not propagate', async () => {
+    const { provider, unlockMock } = makeMockProvider();
+    unlockMock.mockRejectedValue(new Error('unlock-boom'));
+    const listener: LockingTaskExecutorListener = {
+      ...NO_OP_LISTENER,
+      onUnlockError: () => {
+        throw new Error('listener-boom');
+      },
+    };
+    const executor = new DefaultLockingTaskExecutor(provider, listener);
+    const result = await executor.executeWithLock(async () => 'x', createLockConfig('t', 1000));
+    expect(result.wasExecuted).toBe(true);
+  });
 });

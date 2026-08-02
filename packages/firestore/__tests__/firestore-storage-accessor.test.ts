@@ -1,5 +1,5 @@
 import type { Firestore } from '@google-cloud/firestore';
-import { ClockProvider, createLockConfig } from '@tslock/core';
+import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import { FirestoreStorageAccessor } from '../src/firestore-storage-accessor.js';
 
@@ -115,7 +115,7 @@ describe('FirestoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore });
-      expect(await accessor.updateRecord(cfg())).toBe(false);
+      await expect(accessor.updateRecord(cfg())).rejects.toBeInstanceOf(LockException);
       expect(txn.update).not.toHaveBeenCalled();
     });
   });

@@ -3,6 +3,7 @@ import {
   AbstractStorageAccessor,
   ClockProvider,
   type LockConfiguration,
+  LockException,
   Utils,
   lockAtMostUntil,
   unlockTime,
@@ -97,7 +98,7 @@ export class DatastoreStorageAccessor extends AbstractStorageAccessor {
     const key = this.key(config.name);
     return await this.datastore.runTransaction(async (txn: Transaction) => {
       const existing = await this.safeGet(txn, key);
-      if (!existing) return false;
+      if (!existing) throw new LockException(`Lock record not found: ${config.name}`);
       const current = this.parseFieldValue(existing[this.fieldNames.lockUntil]!);
       if (current > ClockProvider.now()) return false;
       txn.upsert({ key, data: this.toData(config) });

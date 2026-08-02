@@ -39,6 +39,8 @@ await executor.executeWithLock(
 
 Default field names: `name`, `lockUntil`, `lockedAt`, `lockedBy` (via `FieldNames.DEFAULT`).
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes because the name is used as the lock document identifier.
+
 ## Requirements
 
 - Node.js >= 22

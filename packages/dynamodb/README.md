@@ -48,6 +48,8 @@ await executor.executeWithLock(
 | `partitionKey` | `'_id'` | The partition key attribute name. |
 | `sortKey` | `undefined` | `{ name, value }` if your table uses a composite key. |
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes. If a composite key is used, the configured sort-key value is shared across all lock names.
+
 ## Requirements
 
 - Node.js >= 22

@@ -1,5 +1,5 @@
 import type { Datastore } from '@google-cloud/datastore';
-import { Utils } from '@tslock/core';
+import { LockException, Utils } from '@tslock/core';
 
 export interface DatastoreFieldNames {
   readonly lockUntil: string;
@@ -31,12 +31,12 @@ const DEFAULT_FIELD_NAMES: DatastoreFieldNames = {
 
 export function resolveDatastoreConfiguration(input: DatastoreConfiguration): ResolvedDatastoreConfiguration {
   if (!input.datastore) {
-    throw new Error('DatastoreConfiguration: datastore is required');
+    throw new LockException('DatastoreConfiguration: datastore is required');
   }
 
   const entityName = input.entityName ?? 'shedlock';
   if (entityName === '') {
-    throw new Error('DatastoreConfiguration: entityName must not be empty');
+    throw new LockException('DatastoreConfiguration: entityName must not be empty');
   }
 
   const merged: DatastoreFieldNames = {
@@ -46,7 +46,7 @@ export function resolveDatastoreConfiguration(input: DatastoreConfiguration): Re
 
   for (const [key, value] of Object.entries(merged)) {
     if (value === '') {
-      throw new Error(`DatastoreConfiguration: fieldNames.${key} must not be empty`);
+      throw new LockException(`DatastoreConfiguration: fieldNames.${key} must not be empty`);
     }
   }
 

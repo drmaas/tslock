@@ -42,6 +42,8 @@ await executor.executeWithLock(
 
 Default field names: `name`, `lockUntil`, `lockedAt`, `lockedBy`. A lock document's ID is `${documentIdPrefix}${lockName}`.
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes.
+
 ## Requirements
 
 - Node.js >= 22

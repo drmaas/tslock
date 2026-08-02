@@ -66,6 +66,8 @@ await executor.executeWithLock(
 
 Default column names: `name`, `lock_until`, `locked_at`, `locked_by`.
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes because the name is stored as the Cassandra partition key.
+
 ## Requirements
 
 - Node.js >= 22

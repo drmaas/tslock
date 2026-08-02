@@ -41,6 +41,18 @@ await executor.executeWithLock(
 
 The lock document's `_id` is the lock name; it also stores `lockUntil`, `lockedAt`, and `lockedBy` (hostname).
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes.
+
+## Integration tests
+
+The shared MongoDB contract runs against a MongoDB 7 Testcontainers instance:
+
+```bash
+pnpm --filter @tslock/mongo test:integration
+```
+
+A running Docker daemon is required. The suite starts and removes its own container.
+
 ## Requirements
 
 - Node.js >= 22

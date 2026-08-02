@@ -3,6 +3,7 @@ import {
   ClockProvider,
   type LockConfiguration,
   LockException,
+  Utils,
   lockAtLeastUntil,
 } from '@tslock/core';
 import type { Client as MemjsClient } from 'memjs';
@@ -25,7 +26,7 @@ export class MemcachedLock extends AbstractSimpleLock {
         throw new LockException(`Can not unlock ${this.config.name} from memcached`);
       }
     } else {
-      const keepLockForSeconds = Math.floor(keepLockFor / 1000) + 1;
+      const keepLockForSeconds = Utils.toTtlSeconds(keepLockFor);
       const result = await this.client.replace(this.key, this.value, { expires: keepLockForSeconds });
       if (!result.success) {
         throw new LockException(`Can not unlock ${this.config.name} from memcached`);

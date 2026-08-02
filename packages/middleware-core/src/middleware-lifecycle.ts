@@ -35,7 +35,7 @@ export function createLockMiddlewareLifecycle(config: MiddlewareConfig): LockMid
         config.lockNamePrefix,
         ctx.method,
         ctx.path,
-        routeConfig?.name ?? (resolved.lockName || undefined),
+        routeConfig?.name,
       );
       const lockConfig: LockConfiguration = createLockConfig(lockName, resolved.lockAtMostFor, resolved.lockAtLeastFor);
 

@@ -1,5 +1,5 @@
 import type { Database } from '@google-cloud/spanner';
-import { Utils } from '@tslock/core';
+import { LockException, Utils } from '@tslock/core';
 
 export interface SpannerColumnNames {
   readonly name: string;
@@ -33,12 +33,12 @@ const IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 export function resolveSpannerConfiguration(input: SpannerConfiguration): ResolvedSpannerConfiguration {
   if (!input.database) {
-    throw new Error('SpannerConfiguration: database is required');
+    throw new LockException('SpannerConfiguration: database is required');
   }
 
   const tableName = input.tableName ?? 'shedlock';
   if (!IDENTIFIER_RE.test(tableName)) {
-    throw new Error(`SpannerConfiguration: invalid tableName "${tableName}"`);
+    throw new LockException(`SpannerConfiguration: invalid tableName "${tableName}"`);
   }
 
   const merged: SpannerColumnNames = {
@@ -50,7 +50,7 @@ export function resolveSpannerConfiguration(input: SpannerConfiguration): Resolv
 
   for (const [key, value] of Object.entries(merged)) {
     if (!IDENTIFIER_RE.test(value)) {
-      throw new Error(`SpannerConfiguration: invalid columnNames.${key} "${value}"`);
+      throw new LockException(`SpannerConfiguration: invalid columnNames.${key} "${value}"`);
     }
   }
 

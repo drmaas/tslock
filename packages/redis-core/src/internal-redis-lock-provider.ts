@@ -1,12 +1,16 @@
+import { randomUUID } from 'node:crypto';
 import {
   AbstractSimpleLock,
+  ClockProvider,
   type ExtensibleLockProvider,
   type LockConfiguration,
   type SimpleLock,
+  Utils,
+  lockAtLeastUntil,
   lockAtMostUntil,
 } from '@tslock/core';
 import type { RedisTemplate } from './redis-template.js';
-import { DEL_IF_EQUALS_SCRIPT, EXTEND_IF_EQUALS_SCRIPT } from './scripts.js';
+import { DEL_IF_EQUALS_SCRIPT, EXTEND_IF_EQUALS_SCRIPT, KEEP_IF_EQUALS_SCRIPT } from './scripts.js';
 
 export const DEFAULT_KEY_PREFIX = 'job-lock';
 export const ENV_DEFAULT = 'default';
@@ -39,6 +43,15 @@ class RedisLock extends AbstractSimpleLock {
   }
 
   protected override async doUnlock(): Promise<void> {
+    const keepLockFor = lockAtLeastUntil(this.config) - ClockProvider.now();
+    if (keepLockFor > 0) {
+      if (this.safeUpdate) {
+        await this.redis.eval(KEEP_IF_EQUALS_SCRIPT, [this.key], [this.value, keepLockFor]);
+      } else {
+        await this.redis.setIfPresent(this.key, this.value, keepLockFor);
+      }
+      return;
+    }
     if (this.safeUpdate) {
       await this.redis.eval(DEL_IF_EQUALS_SCRIPT, [this.key], [this.value]);
     } else {
@@ -48,7 +61,7 @@ class RedisLock extends AbstractSimpleLock {
 
   protected override async doExtend(newConfig: LockConfiguration): Promise<SimpleLock | undefined> {
     const extendUntil = lockAtMostUntil(newConfig);
-    const expireMs = Math.max(0, extendUntil - Date.now());
+    const expireMs = Math.max(0, extendUntil - ClockProvider.now());
     let ok: boolean;
     if (this.safeUpdate) {
       const result = await this.redis.eval(EXTEND_IF_EQUALS_SCRIPT, [this.key], [this.value, expireMs]);
@@ -91,11 +104,11 @@ export class InternalRedisLockProvider implements ExtensibleLockProvider {
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const key = this.buildKey(config.name);
     const value = RedisLock.buildValue({
-      hostname: 'tslock',
-      isoNow: new Date(lockAtMostUntil(config)).toISOString(),
-      randomId: Math.random().toString(36).slice(2),
+      hostname: Utils.getHostname(),
+      isoNow: Utils.toIsoString(lockAtMostUntil(config)),
+      randomId: randomUUID(),
     });
-    const expireMs = Math.max(0, lockAtMostUntil(config) - Date.now());
+    const expireMs = Math.max(0, lockAtMostUntil(config) - ClockProvider.now());
     const acquired = await this.redis.setIfAbsent(key, value, expireMs);
     if (!acquired) return undefined;
     return new RedisLock(config, this.redis, key, value, this.safeUpdate);

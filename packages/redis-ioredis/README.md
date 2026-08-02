@@ -40,6 +40,16 @@ await executor.executeWithLock(
 
 The full key is `${keyPrefix}:${env}:${lockName}`.
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes. Redis ownership values include a hostname and random UUID because safe updates verify the stored value.
+
+## Integration tests
+
+Redis integration tests are opt-in and require a running Redis service:
+
+```bash
+TSLOCK_REDIS_INTEGRATION=1 REDIS_URL=redis://127.0.0.1:6379 pnpm --filter @tslock/redis-ioredis test:integration
+```
+
 ## Exports
 
 | Export | Description |

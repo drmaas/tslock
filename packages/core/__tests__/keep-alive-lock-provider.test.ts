@@ -99,4 +99,57 @@ describe('KeepAliveLockProvider', () => {
     const lock = (await kap.lock(createLockConfig('t', 60_000)))!;
     await expect(lock.extend(60_000, 0)).rejects.toThrow(LockException);
   });
+
+  it('transient extend failure retries once and keeps the interval alive', async () => {
+    const { provider, extendMock } = makeProvider();
+    const kap = new KeepAliveLockProvider(provider, scheduler);
+    const _lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    extendMock.mockRejectedValueOnce(new Error('transient'));
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+    await cb();
+    expect(extendMock).toHaveBeenCalledTimes(2);
+    expect(scheduler.callbacks.size).toBe(1);
+  });
+
+  it('extend failure twice stops the interval and notifies onKeepAliveFailure', async () => {
+    const { provider, extendMock } = makeProvider();
+    const onKeepAliveFailure = vi.fn();
+    const kap = new KeepAliveLockProvider(provider, scheduler, onKeepAliveFailure);
+    const _lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    extendMock.mockRejectedValue(new Error('extend-boom'));
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+    await cb();
+    expect(extendMock).toHaveBeenCalledTimes(2);
+    expect(scheduler.callbacks.size).toBe(0);
+    expect(onKeepAliveFailure).toHaveBeenCalledOnce();
+    const [cfg, error] = onKeepAliveFailure.mock.calls[0]!;
+    expect(cfg.name).toBe('t');
+    expect((error as Error).message).toBe('extend-boom');
+  });
+
+  it('extend returning undefined stops the interval and notifies lock lost', async () => {
+    const { provider } = makeProvider({ extendReturn: 'undefined' });
+    const onKeepAliveFailure = vi.fn();
+    const kap = new KeepAliveLockProvider(provider, scheduler, onKeepAliveFailure);
+    const _lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+    await cb();
+    expect(scheduler.callbacks.size).toBe(0);
+    expect(onKeepAliveFailure).toHaveBeenCalledOnce();
+    const [cfg, error] = onKeepAliveFailure.mock.calls[0]!;
+    expect(cfg.name).toBe('t');
+    expect((error as Error).message).toBe('Keep-alive lock was lost');
+  });
+
+  it('unlock after a failed keep-alive still releases the underlying lock', async () => {
+    const { provider, unlockMock, extendMock } = makeProvider();
+    const kap = new KeepAliveLockProvider(provider, scheduler);
+    const lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    extendMock.mockRejectedValue(new Error('extend-boom'));
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+    await cb();
+    expect(scheduler.callbacks.size).toBe(0);
+    await lock.unlock();
+    expect(unlockMock).toHaveBeenCalledOnce();
+  });
 });

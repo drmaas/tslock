@@ -1,6 +1,7 @@
 import { ClockProvider } from './clock-provider.js';
 import { type DurationInput, parseDuration } from './duration.js';
 import { LockException } from './lock-exception.js';
+import { Utils } from './utils.js';
 
 export interface LockConfiguration {
   readonly name: string;
@@ -29,6 +30,7 @@ export function createLockConfig(
   if (typeof name !== 'string' || name.length === 0) {
     throw new LockException('Lock name must be a non-empty string');
   }
+  Utils.validateLockName(name);
   const most = parseDuration(lockAtMostFor);
   const least = parseDuration(lockAtLeastFor);
   if (most < 0) {

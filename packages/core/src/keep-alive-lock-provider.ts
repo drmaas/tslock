@@ -19,37 +19,50 @@ class KeepAliveLock extends AbstractSimpleLock {
     initialLock: SimpleLock,
     private readonly baseConfig: LockConfiguration,
     scheduler: Scheduler,
+    private readonly onKeepAliveFailure?: (config: LockConfiguration, error: unknown) => void,
   ) {
     super(baseConfig);
     this.currentLock = initialLock;
     this.remainingLockAtLeastFor = baseConfig.lockAtLeastFor;
     this.intervalHandle = scheduler.setInterval(
-      () => this.extendForNextPeriod(),
+      () => this.safeExtendForNextPeriod(),
       Math.floor(baseConfig.lockAtMostFor / 2),
     );
+  }
+
+  private deactivate(): void {
+    this.active = false;
+    this.intervalHandle.clear();
   }
 
   private async extendForNextPeriod(): Promise<void> {
     if (!this.active) return;
     if (lockAtMostUntil(this.baseConfig) < ClockProvider.now()) {
-      this.active = false;
-      this.intervalHandle.clear();
+      this.deactivate();
       return;
     }
     const next = Math.max(0, this.remainingLockAtLeastFor);
     const newLock = await this.currentLock.extend(this.baseConfig.lockAtMostFor, next);
     if (!newLock) {
-      this.active = false;
-      this.intervalHandle.clear();
+      this.deactivate();
+      this.onKeepAliveFailure?.(this.baseConfig, new LockException('Keep-alive lock was lost'));
       return;
     }
     this.currentLock = newLock;
     this.remainingLockAtLeastFor = Math.max(0, next - this.baseConfig.lockAtMostFor / 2);
   }
 
+  private safeExtendForNextPeriod(): Promise<void> {
+    return this.extendForNextPeriod().catch((firstError: unknown) =>
+      this.extendForNextPeriod().catch(() => {
+        this.deactivate();
+        this.onKeepAliveFailure?.(this.baseConfig, firstError);
+      }),
+    );
+  }
+
   protected override async doUnlock(): Promise<void> {
-    this.active = false;
-    this.intervalHandle.clear();
+    this.deactivate();
     await this.currentLock.unlock();
   }
 
@@ -64,6 +77,7 @@ export class KeepAliveLockProvider implements ExtensibleLockProvider {
   constructor(
     private readonly provider: ExtensibleLockProvider,
     private readonly scheduler: Scheduler = new DefaultScheduler(),
+    private readonly onKeepAliveFailure?: (config: LockConfiguration, error: unknown) => void,
   ) {}
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
@@ -74,6 +88,6 @@ export class KeepAliveLockProvider implements ExtensibleLockProvider {
     }
     const lock = await this.provider.lock(config);
     if (!lock) return undefined;
-    return new KeepAliveLock(lock, config, this.scheduler);
+    return new KeepAliveLock(lock, config, this.scheduler, this.onKeepAliveFailure);
   }
 }

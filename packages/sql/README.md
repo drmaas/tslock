@@ -75,6 +75,16 @@ await executor.executeWithLock(
 
 Default column names: `name`, `lockUntil`, `lockedAt`, `lockedBy`.
 
+## Integration tests
+
+The PostgreSQL contract runs against a PostgreSQL 16 Testcontainers instance and creates an isolated `shedlock` table:
+
+```bash
+pnpm --filter @tslock/sql test:integration
+```
+
+A running Docker daemon is required. The suite starts and removes its own container.
+
 ## Requirements
 
 - Node.js >= 22

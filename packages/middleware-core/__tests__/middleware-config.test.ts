@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MiddlewareConfig } from '../src/middleware-config.js';
-import { mergeRouteConfig, resolveMiddlewareConfig } from '../src/middleware-config.js';
+import { mergeRouteConfig, resolveMiddlewareConfig, snapshotRouteConfig } from '../src/middleware-config.js';
 
 function mockLockProvider() {
   return {
@@ -67,7 +67,7 @@ describe('mergeRouteConfig', () => {
     const global = baseConfig();
     const resolved = mergeRouteConfig(global);
 
-    expect(resolved.lockName).toBe('');
+    expect(mergeRouteConfig(global)).toBe(resolved);
     expect(resolved.lockAtMostFor).toBe(30000);
     expect(resolved.lockAtLeastFor).toBe(0);
     expect(resolved.lockedStatus).toBe(503);
@@ -76,9 +76,11 @@ describe('mergeRouteConfig', () => {
 
   it('overrides lockAtMostFor from route', () => {
     const global = baseConfig();
-    const resolved = mergeRouteConfig(global, { lockAtMostFor: '1m' });
+    const route = { lockAtMostFor: '1m' as const };
+    const resolved = mergeRouteConfig(global, route);
 
     expect(resolved.lockAtMostFor).toBe(60000);
+    expect(mergeRouteConfig(global, route)).toEqual(resolved);
   });
 
   it('overrides lockAtLeastFor from route', () => {
@@ -103,11 +105,56 @@ describe('mergeRouteConfig', () => {
     expect(resolved.lockedBody).toBe(body);
   });
 
-  it('preserves name from route config', () => {
+  it('preserves arbitrary public body values', () => {
+    const body = new Date(0);
+    const global = resolveMiddlewareConfig({ lockProvider: mockLockProvider(), defaultLockedBody: body });
+
+    expect(mergeRouteConfig(global).lockedBody).toBe(body);
+  });
+
+  it('does not include a redundant lock name in the resolved config', () => {
     const global = baseConfig();
     const resolved = mergeRouteConfig(global, { name: 'custom-name' });
 
-    expect(resolved.lockName).toBe('custom-name');
+    expect('lockName' in resolved).toBe(false);
+  });
+
+  it('does not cache mutable route objects', () => {
+    const global = baseConfig();
+    const route = { lockAtMostFor: '1s' as const };
+    const first = mergeRouteConfig(global, route);
+    route.lockAtMostFor = '2s';
+    const second = mergeRouteConfig(global, route);
+
+    expect(first).not.toBe(second);
+    expect(first.lockAtMostFor).toBe(1000);
+    expect(second.lockAtMostFor).toBe(2000);
+  });
+
+  it('does not share route cache entries across global configs', () => {
+    const route = { lockAtMostFor: '1s' as const };
+    const first = mergeRouteConfig(
+      resolveMiddlewareConfig({ lockProvider: mockLockProvider(), lockAtMostFor: '10s' }),
+      route,
+    );
+    const second = mergeRouteConfig(
+      resolveMiddlewareConfig({ lockProvider: mockLockProvider(), lockAtMostFor: '20s' }),
+      route,
+    );
+
+    expect(first).not.toBe(second);
+    expect(first.lockAtMostFor).toBe(1000);
+    expect(second.lockAtMostFor).toBe(1000);
+  });
+
+  it('snapshots registered route configuration', () => {
+    const route = { name: 'custom', lockAtMostFor: '1s' as const };
+    const snapshot = snapshotRouteConfig(route);
+
+    expect(snapshot).not.toBe(route);
+    expect(Object.isFrozen(snapshot)).toBe(true);
+    route.name = 'changed';
+    expect(snapshot?.name).toBe('custom');
   });
 
   it('default lockedStatus is 503', () => {

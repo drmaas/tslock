@@ -1,7 +1,11 @@
 import type { LockProvider } from '@tslock/core';
-import { parseDuration } from '@tslock/core';
 import type { LockFailureResponse, MiddlewareConfig, RouteLockConfig } from '@tslock/middleware-core';
-import { createLockMiddlewareLifecycle, resolveMiddlewareConfig } from '@tslock/middleware-core';
+import {
+  createLockMiddlewareLifecycle,
+  mergeRouteConfig,
+  resolveMiddlewareConfig,
+  snapshotRouteConfig,
+} from '@tslock/middleware-core';
 import type { RequestHandler } from 'express';
 
 export interface ExpressLockFactory {
@@ -16,12 +20,12 @@ export function createExpressLock(
   const config = resolveMiddlewareConfig(input);
   const lifecycle = createLockMiddlewareLifecycle(config);
 
-  const factory = ((routeConfig?: RouteLockConfig): RequestHandler =>
-    (req, res, next) => {
+  const factory = ((routeConfig?: RouteLockConfig): RequestHandler => {
+    const registeredRouteConfig = snapshotRouteConfig(routeConfig);
+    const lockAtMostMs = mergeRouteConfig(config, registeredRouteConfig).lockAtMostFor;
+    return (req, res, next) => {
       void (async () => {
         try {
-          const lockAtMostMs = parseDuration(routeConfig?.lockAtMostFor ?? config.lockAtMostFor);
-
           const runHandler = () =>
             new Promise<void>((resolve) => {
               let settled = false;
@@ -62,7 +66,7 @@ export function createExpressLock(
 
           await lifecycle.executeWithLock(
             { method: req.method, path: req.path },
-            routeConfig,
+            registeredRouteConfig,
             runHandler,
             sendLockedResponse,
           );
@@ -70,7 +74,8 @@ export function createExpressLock(
           next(err);
         }
       })();
-    }) as ExpressLockFactory;
+    };
+  }) as ExpressLockFactory;
 
   factory.lockProvider = config.lockProvider;
   factory.config = config;

@@ -4,15 +4,13 @@ import { config, sleep, uniqueLockName } from './helpers.js';
 
 export interface IntegrationTestOptions {
   timeMode?: 'mock' | 'real';
+  isExtensible?: boolean;
 }
 
 async function advanceTime(ms: number, mode: 'mock' | 'real', base: number): Promise<void> {
   if (mode === 'mock') {
-    let current = base;
-    ClockProvider.setClock(() => {
-      current += ms;
-      return current;
-    });
+    const current = base + ms;
+    ClockProvider.setClock(() => current);
   } else {
     await sleep(ms);
   }
@@ -72,18 +70,20 @@ export function lockProviderIntegrationTests(
       await lock3?.unlock();
     });
 
-    it('shouldNotExtendIfNotExtensible', async () => {
-      const lock = await provider.lock(config(uniqueLockName(), '1m'));
-      expect(lock).toBeDefined();
-      try {
-        const result = await lock?.extend(60_000, 0);
-        expect(result).toBeUndefined();
-      } catch (e) {
-        expect(e).toBeInstanceOf(LockException);
-      }
-      try {
-        await lock?.unlock();
-      } catch {}
-    });
+    if (!options.isExtensible) {
+      it('shouldNotExtendIfNotExtensible', async () => {
+        const lock = await provider.lock(config(uniqueLockName(), '1m'));
+        expect(lock).toBeDefined();
+        try {
+          const result = await lock?.extend(60_000, 0);
+          expect(result).toBeUndefined();
+        } catch (e) {
+          expect(e).toBeInstanceOf(LockException);
+        }
+        try {
+          await lock?.unlock();
+        } catch {}
+      });
+    }
   });
 }

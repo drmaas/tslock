@@ -6,7 +6,7 @@ Instructions for AI agents working on the TSLock codebase.
 
 TSLock is a TypeScript port of [ShedLock](https://github.com/lukas-krecan/ShedLock) — a distributed lock library for scheduled tasks. It is a pnpm-workspaces monorepo with a small core package and 23+ provider packages, each backed by a different storage engine.
 
-**Current state: docs-only.** All design docs (vision, architecture, specs, plans, reviews) are complete in `docs/`. No implementation code exists yet. Implementation follows the plans in `docs/plans/`. Includes middleware integration specs (Express/Fastify/Koa/Hono) for v2 exploration.
+**Current state:** the packages are implemented and the approved architecture-hardening work is being completed incrementally. Design docs remain in `docs/`; implementation follows `docs/plans/`. Middleware integrations are implemented, with their original exploration docs retained for reference.
 
 ## Repository layout
 
@@ -15,18 +15,18 @@ tslock/
 ├── docs/
 │   ├── 00-vision.md          # product vision, scope, provider matrix
 │   ├── 01-architecture.md    # monorepo structure, core abstractions, provider categories
-│   ├── specs/                # 24 specs (00-core, 01-test-support, ..., 23-publishing, 24-middleware)
-│   ├── plans/                # 24 implementation plans
-│   └── reviews/              # 24 independent reviews of each spec/plan
-  ├── packages/                 # (not yet created — will hold @tslock/* packages — 23 providers + 5 middleware)
+│   ├── specs/                # 28 specs, including architecture hardening and verification follow-up
+│   ├── plans/                # 28 implementation plans
+│   └── reviews/              # 29 reviews, including the supplemental 24-middleware-code review
+├── packages/                 # @tslock/* packages — providers, infrastructure, and middleware
 ├── README.md
 ├── AGENTS.md                 # this file
-├── pnpm-workspace.yaml       # (not yet created)
-├── tsconfig.base.json        # (not yet created)
-└── package.json              # (not yet created)
+├── pnpm-workspace.yaml       # workspace and build-script policy
+├── tsconfig.base.json        # shared TypeScript configuration
+└── package.json              # root scripts and dev dependencies
 ```
 
-The `NN-` prefix on spec/plan/review files is a 2-digit number that matches across all three directories (e.g., `docs/specs/06-spanner.md`, `docs/plans/06-spanner.md`, `docs/reviews/06-spanner.md`).
+The `NN-` prefix on spec/plan/review files is a 2-digit number that matches across all three directories (e.g., `docs/specs/06-spanner.md`, `docs/plans/06-spanner.md`, `docs/reviews/06-spanner.md`). `docs/reviews/24-middleware-code.md` is the one supplemental review sharing the `24` prefix.
 
 ## Read these first
 
@@ -54,7 +54,7 @@ Before implementing anything, read in this order:
 | SQL packages | `@tslock/sql-support` (shared) + `@tslock/sql` + `@tslock/kysely` + `@tslock/drizzle` |
 | Redis packages | `@tslock/redis-core` (shared) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` |
 | Ignite | Deferred to v2 (immature Node.js driver) — 23 providers for v1 |
-| Framework integrations | Out of scope for v1. Spec/plan/review exist at `docs/specs/24-middleware.md`, `docs/plans/24-middleware.md`, `docs/reviews/24-middleware.md` for v2 exploration. |
+| Framework integrations | Implemented as shared middleware-core plus Express, Fastify, Koa, and Hono adapters; the original spec/plan/review remain in `docs/` for reference. |
 | Metrics | Out of scope for v1 (`LockingTaskExecutorListener` is the extension point) |
 | Linting | Biome |
 
@@ -118,7 +118,7 @@ Run the full verification suite:
 - `pnpm -r typecheck`
 - `pnpm -r lint`
 - `pnpm -r test`
-- `pnpm -r test:integration` (at minimum, confirm integration tests exist)
+- `pnpm test:integration` (in-memory, MongoDB, and PostgreSQL; Redis is opt-in via `TSLOCK_REDIS_INTEGRATION=1`)
 - `pnpm -r build`
 
 Fix any failures. If substantial code changes were needed, consider re-running the full suite.
@@ -188,6 +188,8 @@ The reviews in `docs/reviews/` identified issues to fix. Key ones:
 
 Read the full review for each provider before implementing it.
 
+The architecture-hardening slices have addressed the core/Redis fixes, provider error taxonomy and missing-record behavior, TTL migration, middleware hot-path work, and priority integration coverage. Remaining follow-up work is tracked in `docs/plans/25-architecture-improvements.md` and includes broader container coverage plus final repository verification.
+
 ## Setup
 
 Before running any commands, ensure the correct Node.js version and pnpm are active:
@@ -200,11 +202,13 @@ corepack enable pnpm   # ensure pnpm is available via corepack
 ## Commands
 
 ```bash
-pnpm install              # install all workspace deps
+pnpm install              # install all workspace deps (optional testcontainers native builds are denied by policy)
 pnpm -r typecheck         # tsc --noEmit across all packages
 pnpm -r test              # vitest run (unit tests) across all packages
-pnpm -r test:integration  # integration tests (requires Docker / emulators)
+pnpm test:integration     # in-memory, MongoDB, and PostgreSQL suites; Redis is opt-in via TSLOCK_REDIS_INTEGRATION=1
 pnpm -r build             # tsup build across all packages
+pnpm bench                # build artifacts and run manual performance measurements
+pnpm check:packed-peers   # verify packed peer dependencies contain no workspace:* ranges
 pnpm format               # auto-format all files with Biome
 pnpm format:check         # check formatting without writing
 pnpm lint                 # lint with Biome
@@ -228,11 +232,11 @@ git tag v<version> && git push --follow-tags
 ```
 
 All `@tslock/*` packages share one version (lockstep via Changesets fixed mode).
-CI only runs verification (`pnpm check && pnpm typecheck && pnpm test && pnpm build`).
+CI runs verification plus a non-blocking `pnpm audit --prod`; the integration job runs the Docker-backed suites. Packed peer dependency verification is a local release-gate command. The workspace explicitly denies optional `cpu-features` and `ssh2` install scripts. Docker-over-SSH is unsupported under the default policy; a local-only override may set both entries to `true` in `pnpm-workspace.yaml` before reinstalling with the required native toolchain.
 
 ## Rules
 
-- **No code until explicitly asked.** The user's current task is docs-only. When implementation begins, follow the plans in `docs/plans/`.
+- **No code until explicitly asked.** When implementation begins, follow the plans in `docs/plans/`.
 - **Never commit unless explicitly asked.**
 - **Prompt before deleting files or directories.**
 - **No unrequested abstractions.** No interface with one implementation, no factory for one product, no config for a value that never changes.

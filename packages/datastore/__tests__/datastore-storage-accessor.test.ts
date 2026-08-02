@@ -1,5 +1,5 @@
 import type { Datastore, Transaction } from '@google-cloud/datastore';
-import { ClockProvider, createLockConfig } from '@tslock/core';
+import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
 import { type MockInstance, describe, expect, it, vi } from 'vitest';
 import type { DatastoreFieldNames } from '../src/datastore-configuration.js';
 import { DatastoreStorageAccessor } from '../src/datastore-storage-accessor.js';
@@ -107,7 +107,7 @@ describe('DatastoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore });
-      expect(await accessor.updateRecord(cfg())).toBe(false);
+      await expect(accessor.updateRecord(cfg())).rejects.toBeInstanceOf(LockException);
       expect(txn.upsert).not.toHaveBeenCalled();
     });
   });

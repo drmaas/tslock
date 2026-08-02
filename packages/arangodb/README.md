@@ -36,6 +36,8 @@ await executor.executeWithLock(
 |---|---|---|
 | `collection` | `'shedLock'` | The ArangoDB collection used for lock documents. |
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes because the name is stored as the document key.
+
 ## Requirements
 
 - Node.js >= 22

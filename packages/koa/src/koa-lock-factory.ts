@@ -1,6 +1,6 @@
 import type { LockProvider } from '@tslock/core';
 import type { LockFailureResponse, MiddlewareConfig, RouteLockConfig } from '@tslock/middleware-core';
-import { createLockMiddlewareLifecycle, resolveMiddlewareConfig } from '@tslock/middleware-core';
+import { createLockMiddlewareLifecycle, resolveMiddlewareConfig, snapshotRouteConfig } from '@tslock/middleware-core';
 import type { Context, Middleware } from 'koa';
 
 export interface KoaLockFactory {
@@ -15,8 +15,9 @@ export function createKoaLock(
   const config = resolveMiddlewareConfig(input);
   const lifecycle = createLockMiddlewareLifecycle(config);
 
-  const factory = ((routeConfig?: RouteLockConfig): Middleware =>
-    async (ctx, next) => {
+  const factory = ((routeConfig?: RouteLockConfig): Middleware => {
+    const registeredRouteConfig = snapshotRouteConfig(routeConfig);
+    return async (ctx, next) => {
       const path = (ctx as Context & { _matchedRoute?: string })._matchedRoute ?? ctx.path;
 
       const runHandler = async () => {
@@ -29,8 +30,14 @@ export function createKoaLock(
         ctx.body = result.body;
       };
 
-      await lifecycle.executeWithLock({ method: ctx.method, path }, routeConfig, runHandler, sendLockedResponse);
-    }) as KoaLockFactory;
+      await lifecycle.executeWithLock(
+        { method: ctx.method, path },
+        registeredRouteConfig,
+        runHandler,
+        sendLockedResponse,
+      );
+    };
+  }) as KoaLockFactory;
 
   factory.lockProvider = config.lockProvider;
   factory.config = config;

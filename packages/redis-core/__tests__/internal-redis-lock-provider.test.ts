@@ -1,9 +1,10 @@
-import { createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import {
   DEL_IF_EQUALS_SCRIPT,
   EXTEND_IF_EQUALS_SCRIPT,
   InternalRedisLockProvider,
+  KEEP_IF_EQUALS_SCRIPT,
   type RedisTemplate,
 } from '../src/index.js';
 
@@ -95,5 +96,66 @@ describe('InternalRedisLockProvider', () => {
     const lock = (await provider.lock(createLockConfig('t', 60_000)))!;
     const extended = await lock.extend(120_000, 0);
     expect(extended).toBeUndefined();
+  });
+
+  it('lock() value contains hostname and a UUID-shaped randomId', async () => {
+    const redis = makeRedis();
+    const provider = new InternalRedisLockProvider(redis);
+    await provider.lock(createLockConfig('t', 60_000));
+    const value = redis.setIfAbsent.mock.calls[0]![1] as string;
+    expect(value.startsWith('ADDED:')).toBe(true);
+    const hostname = value.slice(value.indexOf('@') + 1, value.lastIndexOf(':'));
+    expect(hostname.length).toBeGreaterThan(0);
+    const randomId = value.slice(value.lastIndexOf(':') + 1);
+    expect(randomId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+
+  it('unlock() with lockAtLeastFor > 0 keeps the key via KEEP script (safeUpdate=true)', async () => {
+    ClockProvider.setClock(() => 1_000_000);
+    try {
+      const redis = makeRedis();
+      const provider = new InternalRedisLockProvider(redis, { safeUpdate: true });
+      const lock = (await provider.lock(createLockConfig('t', 60_000, 30_000)))!;
+      await lock.unlock();
+      expect(redis.eval).toHaveBeenCalledOnce();
+      const [script, keys, args] = redis.eval.mock.calls[0]!;
+      expect(script).toBe(KEEP_IF_EQUALS_SCRIPT);
+      expect(keys).toEqual(['job-lock:default:t']);
+      expect(args[1]).toBe(30_000);
+      expect(redis.deleteKey).not.toHaveBeenCalled();
+    } finally {
+      ClockProvider.resetClock();
+    }
+  });
+
+  it('unlock() with lockAtLeastFor > 0 keeps the key via setIfPresent (safeUpdate=false)', async () => {
+    ClockProvider.setClock(() => 1_000_000);
+    try {
+      const redis = makeRedis();
+      const provider = new InternalRedisLockProvider(redis, { safeUpdate: false });
+      const lock = (await provider.lock(createLockConfig('t', 60_000, 30_000)))!;
+      await lock.unlock();
+      expect(redis.setIfPresent).toHaveBeenCalledOnce();
+      const [key, value, expireMs] = redis.setIfPresent.mock.calls[0]!;
+      expect(key).toBe('job-lock:default:t');
+      expect(typeof value).toBe('string');
+      expect(expireMs).toBe(30_000);
+      expect(redis.deleteKey).not.toHaveBeenCalled();
+    } finally {
+      ClockProvider.resetClock();
+    }
+  });
+
+  it('unlock() with lockAtLeastFor = 0 still deletes', async () => {
+    ClockProvider.setClock(() => 1_000_000);
+    try {
+      const redis = makeRedis();
+      const provider = new InternalRedisLockProvider(redis);
+      const lock = (await provider.lock(createLockConfig('t', 60_000)))!;
+      await lock.unlock();
+      expect(redis.eval).toHaveBeenCalledWith(DEL_IF_EQUALS_SCRIPT, expect.any(Array), expect.any(Array));
+    } finally {
+      ClockProvider.resetClock();
+    }
   });
 });

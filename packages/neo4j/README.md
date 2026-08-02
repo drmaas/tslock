@@ -57,6 +57,8 @@ await executor.executeWithLock(
 
 Default property names: `name`, `lockUntil`, `lockedAt`, `lockedBy`.
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes because the name is stored as the lock node identifier/property.
+
 ## Requirements
 
 - Node.js >= 22

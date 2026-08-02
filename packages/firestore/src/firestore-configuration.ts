@@ -1,5 +1,5 @@
 import type { Firestore } from '@google-cloud/firestore';
-import { Utils } from '@tslock/core';
+import { LockException, Utils } from '@tslock/core';
 
 export interface FirestoreFieldNames {
   readonly lockUntil: string;
@@ -31,12 +31,12 @@ const DEFAULT_FIELD_NAMES: FirestoreFieldNames = {
 
 export function resolveFirestoreConfiguration(input: FirestoreConfiguration): ResolvedFirestoreConfiguration {
   if (!input.firestore) {
-    throw new Error('FirestoreConfiguration: firestore is required');
+    throw new LockException('FirestoreConfiguration: firestore is required');
   }
 
   const collectionName = input.collectionName ?? 'shedlock';
   if (collectionName === '') {
-    throw new Error('FirestoreConfiguration: collectionName must not be empty');
+    throw new LockException('FirestoreConfiguration: collectionName must not be empty');
   }
 
   const merged: FirestoreFieldNames = {
@@ -46,7 +46,7 @@ export function resolveFirestoreConfiguration(input: FirestoreConfiguration): Re
 
   for (const [key, value] of Object.entries(merged)) {
     if (value === '') {
-      throw new Error(`FirestoreConfiguration: fieldNames.${key} must not be empty`);
+      throw new LockException(`FirestoreConfiguration: fieldNames.${key} must not be empty`);
     }
   }
 

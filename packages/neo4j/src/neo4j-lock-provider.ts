@@ -1,6 +1,7 @@
 import {
   type ExtensibleLockProvider,
   type LockConfiguration,
+  LockException,
   type SimpleLock,
   StorageBasedLockProvider,
 } from '@tslock/core';
@@ -34,7 +35,7 @@ const VALID_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function validateIdentifier(name: string, field: string): void {
   if (!VALID_IDENTIFIER.test(name)) {
-    throw new Error(`${field} "${name}" is not a valid Neo4j identifier`);
+    throw new LockException(`Neo4jConfiguration: ${field} "${name}" is not a valid Neo4j identifier`);
   }
 }
 

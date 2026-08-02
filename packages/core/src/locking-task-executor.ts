@@ -89,7 +89,9 @@ export class DefaultLockingTaskExecutor implements LockingTaskExecutor {
       } finally {
         try {
           await lock.unlock();
-        } catch {}
+        } catch (error) {
+          safeEmit(() => this.listener.onUnlockError?.(config, error));
+        }
       }
       return TaskResult.result(result as T);
     };

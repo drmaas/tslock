@@ -1,6 +1,6 @@
 import type { LockProvider } from '@tslock/core';
 import type { LockFailureResponse, MiddlewareConfig, RouteLockConfig } from '@tslock/middleware-core';
-import { createLockMiddlewareLifecycle, resolveMiddlewareConfig } from '@tslock/middleware-core';
+import { createLockMiddlewareLifecycle, resolveMiddlewareConfig, snapshotRouteConfig } from '@tslock/middleware-core';
 import type { FastifyPluginCallback, preHandlerHookHandler } from 'fastify';
 
 export interface FastifyLockFactory {
@@ -15,8 +15,9 @@ export function createFastifyLockPlugin(
   const config = resolveMiddlewareConfig(input);
   const lifecycle = createLockMiddlewareLifecycle(config);
 
-  const factory = ((routeConfig?: RouteLockConfig): preHandlerHookHandler =>
-    (request, reply, done) => {
+  const factory = ((routeConfig?: RouteLockConfig): preHandlerHookHandler => {
+    const registeredRouteConfig = snapshotRouteConfig(routeConfig);
+    return (request, reply, done) => {
       void (async () => {
         try {
           const path = request.routeOptions?.url ?? request.url;
@@ -33,7 +34,7 @@ export function createFastifyLockPlugin(
 
           await lifecycle.executeWithLock(
             { method: request.method, path },
-            routeConfig,
+            registeredRouteConfig,
             runHandler,
             sendLockedResponse,
           );
@@ -41,7 +42,8 @@ export function createFastifyLockPlugin(
           done(err instanceof Error ? err : new Error(String(err)));
         }
       })();
-    }) as FastifyLockFactory;
+    };
+  }) as FastifyLockFactory;
 
   factory.lockProvider = config.lockProvider;
   factory.config = config;

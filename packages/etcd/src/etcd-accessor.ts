@@ -1,6 +1,5 @@
 import { ClockProvider, type LockConfiguration, Utils } from '@tslock/core';
 import type { Etcd3, Lease } from 'etcd3';
-import { MILLIS_IN_SECOND } from './etcd-lock-provider-options.js';
 import { EtcdLock } from './etcd-lock.js';
 
 export class EtcdAccessor {
@@ -14,7 +13,7 @@ export class EtcdAccessor {
     const hostname = Utils.getHostname();
     const key = `shedlock:${this.env}:${config.name}`;
     const value = `ADDED:${Utils.toIsoString(now)}@${hostname}`;
-    const ttlSeconds = Math.ceil(config.lockAtMostFor / MILLIS_IN_SECOND);
+    const ttlSeconds = Utils.toTtlSeconds(config.lockAtMostFor);
 
     const lease = this.client.lease(ttlSeconds);
 
@@ -50,7 +49,7 @@ export class EtcdAccessor {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const value = `ADDED:${Utils.toIsoString(now)}@${hostname}`;
-    const newTtlSeconds = Math.ceil(config.lockAtLeastFor / MILLIS_IN_SECOND);
+    const newTtlSeconds = Utils.toTtlSeconds(config.lockAtLeastFor);
 
     const newLease = this.client.lease(newTtlSeconds);
     await this.client.put(key).value(value).lease(newLease.grant()).exec();

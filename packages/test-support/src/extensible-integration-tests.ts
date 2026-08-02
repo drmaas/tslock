@@ -7,7 +7,7 @@ export function extensibleLockProviderIntegrationTests(
   getProvider: () => Promise<ExtensibleLockProvider>,
   options: IntegrationTestOptions = {},
 ): void {
-  lockProviderIntegrationTests(getProvider, options);
+  lockProviderIntegrationTests(getProvider, { ...options, isExtensible: true });
   const timeMode = options.timeMode ?? 'real';
 
   describe('extensibleLockProviderIntegrationTests', () => {
@@ -25,22 +25,16 @@ export function extensibleLockProviderIntegrationTests(
       const lock = await provider.lock(config(name, '10s'));
       expect(lock).toBeDefined();
       if (timeMode === 'mock') {
-        let current = baseTime;
-        ClockProvider.setClock(() => {
-          current += 6_000;
-          return current;
-        });
+        const current = baseTime + 6_000;
+        ClockProvider.setClock(() => current);
       } else {
         await sleep(6_000);
       }
       const extended = await lock?.extend(10_000, 0);
       expect(extended).toBeDefined();
       if (timeMode === 'mock') {
-        let current2 = baseTime + 6_000;
-        ClockProvider.setClock(() => {
-          current2 += 8_000;
-          return current2;
-        });
+        const current2 = baseTime + 14_000;
+        ClockProvider.setClock(() => current2);
       } else {
         await sleep(8_000);
       }
@@ -54,11 +48,8 @@ export function extensibleLockProviderIntegrationTests(
       const lock = await provider.lock(config(name, '1s'));
       expect(lock).toBeDefined();
       if (timeMode === 'mock') {
-        let current = baseTime;
-        ClockProvider.setClock(() => {
-          current += 2_000;
-          return current;
-        });
+        const current = baseTime + 2_000;
+        ClockProvider.setClock(() => current);
       } else {
         await sleep(2_000);
       }

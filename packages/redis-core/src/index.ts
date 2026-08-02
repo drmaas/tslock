@@ -6,4 +6,11 @@ export {
   type RedisLockValueParts,
 } from './internal-redis-lock-provider.js';
 export type { RedisTemplate } from './redis-template.js';
-export { DEL_IF_EQUALS_SCRIPT, DEL_SCRIPT, EXTEND_IF_EQUALS_SCRIPT, EXTEND_SCRIPT } from './scripts.js';
+export {
+  DEL_IF_EQUALS_SCRIPT,
+  DEL_SCRIPT,
+  EXTEND_IF_EQUALS_SCRIPT,
+  EXTEND_SCRIPT,
+  KEEP_IF_EQUALS_SCRIPT,
+  KEEP_SCRIPT,
+} from './scripts.js';

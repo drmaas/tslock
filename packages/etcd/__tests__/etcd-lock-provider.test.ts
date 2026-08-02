@@ -58,7 +58,7 @@ describe('EtcdLockProvider', () => {
 
       expect(lock).toBeDefined();
       expect(client.if).toHaveBeenCalledWith('shedlock:default:test-lock', 'Version', '==', 0);
-      expect(client.lease).toHaveBeenCalledWith(30);
+      expect(client.lease).toHaveBeenCalledWith(31);
       expect(putBuilder.value).toHaveBeenCalled();
       expect(txnChain.then).toHaveBeenCalled();
       expect(txnChain.else).toHaveBeenCalled();
@@ -76,7 +76,7 @@ describe('EtcdLockProvider', () => {
       expect(client.if).toHaveBeenCalledWith('shedlock:prod:my-lock', 'Version', '==', 0);
     });
 
-    it('uses Math.ceil for TTL seconds', async () => {
+    it('rounds TTL seconds up with the shared helper', async () => {
       const { client } = makeClient();
       const provider = new EtcdLockProvider(client);
       const config = makeConfig('subsecond', 500);
@@ -167,8 +167,8 @@ describe('EtcdLockProvider', () => {
       await lock?.unlock();
 
       expect(client.lease).toHaveBeenCalledTimes(2);
-      expect(client.lease).toHaveBeenNthCalledWith(1, 30);
-      expect(client.lease).toHaveBeenNthCalledWith(2, 10);
+      expect(client.lease).toHaveBeenNthCalledWith(1, 31);
+      expect(client.lease).toHaveBeenNthCalledWith(2, 11);
       expect(oldLease.revoke).toHaveBeenCalled();
     });
   });

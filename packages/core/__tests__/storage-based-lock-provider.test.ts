@@ -63,13 +63,12 @@ describe('StorageBasedLockProvider', () => {
     expect(lock).toBeUndefined();
   });
 
-  it('updateRecord throws after fresh insert → cache cleared, throws', async () => {
+  it('updateRecord throws → registry cleared so the next lock() retries insert (self-heal)', async () => {
     const { accessor, insertMock, updateMock } = makeAccessor({ updateThrows: true });
     const provider = new StorageBasedLockProvider(accessor);
     await expect(provider.lock(createLockConfig('t', 1000))).rejects.toThrow('storage-failure');
     expect(insertMock).toHaveBeenCalledOnce();
     expect(updateMock).toHaveBeenCalledOnce();
-    provider.clearCache('t');
     await expect(provider.lock(createLockConfig('t', 1000))).rejects.toThrow('storage-failure');
     expect(insertMock).toHaveBeenCalledTimes(2);
   });

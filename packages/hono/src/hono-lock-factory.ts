@@ -1,6 +1,6 @@
 import type { LockProvider } from '@tslock/core';
 import type { LockFailureResponse, MiddlewareConfig, RouteLockConfig } from '@tslock/middleware-core';
-import { createLockMiddlewareLifecycle, resolveMiddlewareConfig } from '@tslock/middleware-core';
+import { createLockMiddlewareLifecycle, resolveMiddlewareConfig, snapshotRouteConfig } from '@tslock/middleware-core';
 import type { Context } from 'hono';
 import type { MiddlewareHandler } from 'hono/types';
 
@@ -24,8 +24,9 @@ export function createHonoLock(
   const config = resolveMiddlewareConfig(input);
   const lifecycle = createLockMiddlewareLifecycle(config);
 
-  const factory = ((routeConfig?: RouteLockConfig): MiddlewareHandler =>
-    async (c, next) => {
+  const factory = ((routeConfig?: RouteLockConfig): MiddlewareHandler => {
+    const registeredRouteConfig = snapshotRouteConfig(routeConfig);
+    return async (c, next) => {
       const path = getRoutePath(c);
 
       const runHandler = async () => {
@@ -36,8 +37,14 @@ export function createHonoLock(
         c.res = c.json(result.body, result.status as 200, result.headers);
       };
 
-      await lifecycle.executeWithLock({ method: c.req.method, path }, routeConfig, runHandler, sendLockedResponse);
-    }) as HonoLockFactory;
+      await lifecycle.executeWithLock(
+        { method: c.req.method, path },
+        registeredRouteConfig,
+        runHandler,
+        sendLockedResponse,
+      );
+    };
+  }) as HonoLockFactory;
 
   factory.lockProvider = config.lockProvider;
   factory.config = config;

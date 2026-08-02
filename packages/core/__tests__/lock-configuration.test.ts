@@ -32,6 +32,20 @@ describe('LockConfiguration', () => {
     expect(() => createLockConfig('', 30_000)).toThrow(LockException);
   });
 
+  it('throws on lock names with control characters', () => {
+    expect(() => createLockConfig('bad\nname', 30_000)).toThrow(LockException);
+    expect(() => createLockConfig('bad\u0000name', 30_000)).toThrow(LockException);
+  });
+
+  it('throws on lock names exceeding 1024 UTF-8 bytes', () => {
+    expect(() => createLockConfig('a'.repeat(1025), 30_000)).toThrow(LockException);
+  });
+
+  it('accepts lock names up to 1024 UTF-8 bytes', () => {
+    expect(() => createLockConfig('a'.repeat(1024), 30_000)).not.toThrow();
+    expect(() => createLockConfig('é'.repeat(512), 30_000)).not.toThrow();
+  });
+
   it('throws on negative lockAtMostFor', () => {
     expect(() => createLockConfig('test', -1)).toThrow(LockException);
   });

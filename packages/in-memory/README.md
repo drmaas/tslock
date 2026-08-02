@@ -34,6 +34,14 @@ const provider = new InMemoryLockProvider();
 provider.isLocked('my-task'); // false until a lock is held
 ```
 
+## Integration tests
+
+The in-memory provider runs the shared lock, extension, and fuzz contracts without external services:
+
+```bash
+pnpm --filter @tslock/in-memory test:integration
+```
+
 ## Requirements
 
 - Node.js >= 22

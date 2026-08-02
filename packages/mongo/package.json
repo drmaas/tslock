@@ -12,12 +12,14 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
@@ -38,10 +40,12 @@
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
+    "@tslock/test-support": "workspace:*",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^2.0.0",
-    "mongodb": "^6.0.0"
+    "mongodb": "^6.0.0",
+    "@testcontainers/mongodb": "^12.0.4"
   },
   "publishConfig": {
     "access": "public"
@@ -50,5 +54,6 @@
     "type": "git",
     "url": "git+https://github.com/drmaas/tslock.git",
     "directory": "packages/mongo"
-  }
+  },
+  "sideEffects": false
 }

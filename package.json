@@ -14,9 +14,12 @@
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "test": "pnpm -r test",
+    "test:integration": "pnpm -r test:integration",
+    "check:packed-peers": "node scripts/check-packed-peers.mjs",
+    "bench": "pnpm build && node benchmarks/lock-overhead.mjs",
     "build": "pnpm -r build",
     "version-packages": "changeset version",
-    "release": "pnpm check && pnpm build && pnpm test && npx changeset publish",
+    "release": "pnpm check && pnpm build && pnpm test && pnpm check:packed-peers && npx changeset publish",
     "prepare": "husky"
   },
   "engines": {

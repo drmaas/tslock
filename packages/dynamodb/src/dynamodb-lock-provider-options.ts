@@ -1,4 +1,5 @@
 import type { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { LockException } from '@tslock/core';
 
 export interface DynamoDBLockProviderOptions {
   client?: DynamoDBClient;
@@ -14,7 +15,7 @@ export interface ResolvedOptions {
 }
 
 export function validateOptions(options: DynamoDBLockProviderOptions): ResolvedOptions {
-  if (!options.tableName) throw new Error('tableName is required');
+  if (!options.tableName) throw new LockException('DynamoDBConfiguration: tableName is required');
   return {
     tableName: options.tableName,
     partitionKey: options.partitionKey ?? '_id',

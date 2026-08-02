@@ -6,6 +6,7 @@ export interface LockingTaskExecutorListener {
   onLockNotAcquired(config: LockConfiguration): void;
   onTaskStarted(config: LockConfiguration): void;
   onTaskFinished(config: LockConfiguration, executionTimeMillis: number): void;
+  onUnlockError?(config: LockConfiguration, error: unknown): void;
 }
 
 export const NO_OP_LISTENER: LockingTaskExecutorListener = {
@@ -14,4 +15,5 @@ export const NO_OP_LISTENER: LockingTaskExecutorListener = {
   onLockNotAcquired: () => {},
   onTaskStarted: () => {},
   onTaskFinished: () => {},
+  onUnlockError: () => {},
 };

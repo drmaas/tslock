@@ -1,4 +1,11 @@
-import { ClockProvider, type LockConfiguration, type LockProvider, type SimpleLock, Utils } from '@tslock/core';
+import {
+  ClockProvider,
+  type LockConfiguration,
+  LockException,
+  type LockProvider,
+  type SimpleLock,
+  Utils,
+} from '@tslock/core';
 import type { Client as MemjsClient } from 'memjs';
 import { Client } from 'memjs';
 import type { MemcachedLockProviderOptions } from './memcached-configuration.js';
@@ -21,7 +28,7 @@ export class MemcachedLockProvider implements LockProvider {
     const hostname = Utils.getHostname();
     const key = `shedlock:${this.env}:${config.name}`;
     const value = `ADDED:${Utils.toIsoString(now)}@${hostname}`;
-    const expireTimeSeconds = Math.floor(config.lockAtMostFor / 1000) + 1;
+    const expireTimeSeconds = Utils.toTtlSeconds(config.lockAtMostFor);
 
     const result = await this.client.add(key, value, { expires: expireTimeSeconds });
     if (result.success) {
@@ -32,7 +39,7 @@ export class MemcachedLockProvider implements LockProvider {
 }
 
 export function createMemcachedLockProvider(options: MemcachedLockProviderOptions): MemcachedLockProvider {
-  if (!options.servers) throw new Error('servers is required');
+  if (!options.servers) throw new LockException('MemcachedConfiguration: servers is required');
   const client = Client.create(options.servers, options.clientOptions);
   return new MemcachedLockProvider(client, options);
 }

@@ -11,7 +11,7 @@ export function storageBasedLockProviderIntegrationTests(
   getProvider: () => Promise<StorageBasedLockProvider>,
   options: StorageBasedIntegrationTestOptions = {},
 ): void {
-  lockProviderIntegrationTests(getProvider, options);
+  lockProviderIntegrationTests(getProvider, { ...options, isExtensible: true });
   const timeMode = options.timeMode ?? 'real';
 
   describe('storageBasedLockProviderIntegrationTests', () => {
@@ -54,11 +54,8 @@ export function storageBasedLockProviderIntegrationTests(
       expect(lock1).toBeDefined();
       await lock1?.unlock();
       if (timeMode === 'mock') {
-        let current = baseTime;
-        ClockProvider.setClock(() => {
-          current += 2_000;
-          return current;
-        });
+        const current = baseTime + 2_000;
+        ClockProvider.setClock(() => current);
       } else {
         await sleep(2_000);
       }

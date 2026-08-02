@@ -1,5 +1,5 @@
 import type { Database } from '@google-cloud/spanner';
-import { ClockProvider, createLockConfig } from '@tslock/core';
+import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { SpannerColumnNames } from '../src/spanner-configuration.js';
 import { SpannerStorageAccessor } from '../src/spanner-storage-accessor.js';
@@ -181,7 +181,7 @@ describe('SpannerStorageAccessor', () => {
       expect(tx.update).not.toHaveBeenCalled();
     });
 
-    it('returns false when row missing', async () => {
+    it('throws when row missing', async () => {
       const tx = makeTx();
       tx.read.mockResolvedValue([[]]);
       const db = makeDb({
@@ -190,7 +190,7 @@ describe('SpannerStorageAccessor', () => {
           .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
       });
       const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
-      expect(await accessor.updateRecord(cfg())).toBe(false);
+      await expect(accessor.updateRecord(cfg())).rejects.toBeInstanceOf(LockException);
       expect(tx.update).not.toHaveBeenCalled();
     });
   });

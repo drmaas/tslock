@@ -61,30 +61,24 @@ export class StorageBasedLockProvider implements ExtensibleLockProvider {
   constructor(private readonly accessor: StorageAccessor) {}
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
-    let justInserted = false;
     if (!this.registry.lockRecordRecentlyCreated(config.name)) {
       const inserted = await this.accessor.insertRecord(config);
       this.registry.addRecord(config.name);
-      justInserted = true;
       if (inserted) {
         return new StorageLock(config, this.accessor);
       }
     }
 
-    let updated: boolean;
     try {
-      updated = await this.accessor.updateRecord(config);
-    } catch (e) {
-      if (justInserted) {
-        this.registry.clearCache(config.name);
+      const updated = await this.accessor.updateRecord(config);
+      if (updated) {
+        return new StorageLock(config, this.accessor);
       }
+      return undefined;
+    } catch (e) {
+      this.registry.clearCache(config.name);
       throw e;
     }
-
-    if (updated) {
-      return new StorageLock(config, this.accessor);
-    }
-    return undefined;
   }
 
   clearCache(name: string): void {

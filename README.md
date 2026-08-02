@@ -48,6 +48,10 @@ await executor.executeWithLock(
 );
 ```
 
+## Lock names
+
+Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes. This shared limit keeps names safe across Redis keys, object keys, document IDs, znode paths, and other provider backends.
+
 ## Duration formats
 
 `lockAtMostFor` and `lockAtLeastFor` accept:
@@ -120,11 +124,11 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/memcached` | `memjs` | [README](./packages/memcached/README.md) |
 | `@tslock/nats` | `nats` (JetStream KV) | [README](./packages/nats/README.md) |
 
-### Middleware integrations (v2 — spec & plan only, not yet implemented)
+### Middleware integrations
 
 | Package | Framework | Spec |
 |---|---|---|
-| `@tslock/middleware-core` | (shared logic) | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/middleware-core` | Shared middleware lifecycle and configuration | [README](./packages/middleware-core/README.md) |
 | `@tslock/express` | Express 4.x / 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
 | `@tslock/fastify` | Fastify 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
 | `@tslock/koa` | Koa 2.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
@@ -207,17 +211,23 @@ corepack enable
 pnpm install
 ```
 
+The workspace intentionally denies install scripts for the transitive `cpu-features` and `ssh2` packages used by testcontainers. Standard local Docker-socket integration tests do not require these optional native builds. Docker-over-SSH is not supported by the default policy; if you need it locally, change both entries to `true` in `pnpm-workspace.yaml`, reinstall, and ensure your machine has the required native build toolchain. Do not commit that local override unless the policy is intentionally changing.
+
 ### Common commands
 
 ```bash
 pnpm -r typecheck       # tsc --noEmit across all packages
 pnpm -r test            # vitest run (unit tests) across all packages
-pnpm -r test:integration # integration tests (requires Docker / emulators)
+pnpm test:integration  # in-memory, MongoDB, and PostgreSQL integration suites
+# requires Docker for MongoDB/PostgreSQL; Redis is opt-in when a Redis service is available:
+TSLOCK_REDIS_INTEGRATION=1 REDIS_URL=redis://127.0.0.1:6379 pnpm test:integration
 pnpm -r build           # tsup build across all packages
 pnpm check              # combined format check + lint (Biome)
 pnpm check:fix          # combined format + lint, applying safe fixes
 pnpm format             # auto-format all files with Biome
 pnpm lint               # lint with Biome
+pnpm bench              # build packages and measure lock/executor overhead
+pnpm check:packed-peers # verify packed peer ranges contain no workspace:* values
 ```
 
 CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` on every push.
@@ -252,9 +262,9 @@ All design docs are in [`docs/`](./docs):
 |---|---|
 | [`docs/00-vision.md`](./docs/00-vision.md) | Product vision, scope, provider matrix, design decisions |
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
-| [`docs/specs/`](./docs/specs/) | Per-provider and middleware specifications (24 docs) |
-| [`docs/plans/`](./docs/plans/) | Per-provider and middleware implementation plans (24 docs) |
-| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo (24 docs) |
+| [`docs/specs/`](./docs/specs/) | Per-provider, middleware, architecture-hardening, build-policy, and verification-follow-up specifications (28 docs) |
+| [`docs/plans/`](./docs/plans/) | Per-provider, middleware, architecture-hardening, build-policy, and verification-follow-up implementation plans (28 docs) |
+| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (29 docs) |
 
 ## Project status
 
@@ -269,6 +279,7 @@ pnpm login                              # one-time — handles 2FA
 pnpm changeset                          # describe changes, pick semver bump
 pnpm version-packages                   # bump versions + update CHANGELOGs
 pnpm format                             # reformat package.json
+pnpm check:packed-peers                  # verify packed peer dependencies
 git add -A && git commit -m "chore: release v<version>"
 pnpm publish -r                         # publish all packages to npm
 git tag v<version> && git push origin v<version>

@@ -3,6 +3,7 @@ import {
   AbstractStorageAccessor,
   ClockProvider,
   type LockConfiguration,
+  LockException,
   Utils,
   lockAtMostUntil,
   unlockTime,
@@ -48,7 +49,7 @@ export class SpannerStorageAccessor extends AbstractStorageAccessor {
         columns: [this.colNames.lockUntil],
         json: true,
       });
-      if (rows.length === 0) return false;
+      if (rows.length === 0) throw new LockException(`Lock record not found: ${config.name}`);
       const currentLockUntil = Date.parse((rows[0] as Record<string, unknown>)[this.colNames.lockUntil] as string);
       if (currentLockUntil > ClockProvider.now()) return false;
       tx.update(this.tableName, {

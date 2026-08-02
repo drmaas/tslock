@@ -29,18 +29,12 @@ describe('LockAssert', () => {
     expect(LockAssert.alreadyLockedBy('my-lock')).toBe(false);
   });
 
-  it('TestHelper.makeAllAssertsPass(true) makes asserts pass', () => {
-    LockAssert.TestHelper.makeAllAssertsPass(true);
-    try {
-      expect(() => LockAssert.assertLocked()).not.toThrow();
-    } finally {
-      LockAssert.TestHelper.makeAllAssertsPass(false);
-    }
-  });
-
-  it('TestHelper.makeAllAssertsPass(false) pops sentinel', () => {
-    LockAssert.TestHelper.makeAllAssertsPass(true);
-    LockAssert.TestHelper.makeAllAssertsPass(false);
-    expect(() => LockAssert.assertLocked()).toThrow(LockException);
+  it('alreadyLockedBy scans the whole stack (nested reentrancy)', () => {
+    LockAssert.runWithLock('foo', () => {
+      LockAssert.runWithLock('bar', () => {
+        expect(LockAssert.alreadyLockedBy('foo')).toBe(true);
+        expect(LockAssert.alreadyLockedBy('bar')).toBe(true);
+      });
+    });
   });
 });

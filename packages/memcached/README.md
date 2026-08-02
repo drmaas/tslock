@@ -39,6 +39,10 @@ await executor.executeWithLock(
 
 The full key is `shedlock:${env}:${lockName}`.
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes.
+>
+> Memcached ownership values intentionally contain the timestamp and hostname only. Memcached unlock operations do not compare an ownership token; the value is retained only when `lockAtLeastFor` requires a delayed release. TTLs use the shared `floor(milliseconds / 1000) + 1` safety buffer.
+
 ## Requirements
 
 - Node.js >= 22

@@ -41,6 +41,8 @@ await executor.executeWithLock(
 
 The object key for a lock is `${objectPrefix}${lockName}`.
 
+> **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes. The S3 and GCS error classifiers intentionally remain separate because their SDK error shapes differ: S3 uses exception names/HTTP metadata, while GCS uses numeric status codes.
+
 ## Requirements
 
 - Node.js >= 22

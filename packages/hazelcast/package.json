@@ -12,7 +12,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": ["dist"],
   "scripts": {
@@ -50,5 +51,6 @@
     "type": "git",
     "url": "git+https://github.com/drmaas/tslock.git",
     "directory": "packages/hazelcast"
-  }
+  },
+  "sideEffects": false
 }

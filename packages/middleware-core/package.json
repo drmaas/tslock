@@ -12,7 +12,8 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": ["dist"],
   "scripts": {
@@ -38,5 +39,6 @@
     "type": "git",
     "url": "git+https://github.com/drmaas/tslock.git",
     "directory": "packages/middleware-core"
-  }
+  },
+  "sideEffects": false
 }
