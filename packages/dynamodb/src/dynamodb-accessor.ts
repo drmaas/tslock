@@ -82,7 +82,10 @@ export class DynamoDBAccessor {
           TableName: this.tableName,
           Key: this.buildKey(config.name),
           UpdateExpression: 'SET lockUntil = :unlockTime',
-          ConditionExpression: `attribute_exists(${this.partitionKey})`,
+          ConditionExpression: 'attribute_exists(#partitionKey)',
+          ExpressionAttributeNames: {
+            '#partitionKey': this.partitionKey,
+          },
           ExpressionAttributeValues: {
             ':unlockTime': { S: isoUnlock },
           },

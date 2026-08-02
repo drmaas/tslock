@@ -66,6 +66,20 @@ describe('DynamoDBLockProvider', () => {
     expect(cmd.input.Key.sk.S).toBe('global');
   });
 
+  it('unlock() aliases the partition key in its condition expression', async () => {
+    const send = vi.fn().mockResolvedValue({});
+    const client = makeClient({ send });
+    const provider = new DynamoDBLockProvider({ tableName: 'locks', client });
+    const lock = (await provider.lock(config()))!;
+
+    send.mockClear();
+    await lock.unlock();
+
+    const cmd = send.mock.calls[0][0];
+    expect(cmd.input.ConditionExpression).toBe('attribute_exists(#partitionKey)');
+    expect(cmd.input.ExpressionAttributeNames).toEqual({ '#partitionKey': '_id' });
+  });
+
   it('unlock() works', async () => {
     const client = makeClient();
     const provider = new DynamoDBLockProvider({ tableName: 'locks', client });
