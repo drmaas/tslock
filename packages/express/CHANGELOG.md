@@ -1,4 +1,4 @@
-# @tslock/mongo
+# @tslock/express
 
 ## 2.0.0
 
@@ -8,29 +8,12 @@
 
 ### Patch Changes
 
-- [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba) Thanks [@drmaas](https://github.com/drmaas)! - Add shared integration contracts for the in-memory, MongoDB, and PostgreSQL providers, with isolated Testcontainers suites and a root integration-test command.
+- [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba) Thanks [@drmaas](https://github.com/drmaas)! - Improve middleware hot-path performance and type safety: resolve global durations once, cache route resolutions by configuration identity, type resolved lock-failure bodies, remove redundant resolved lock-name state, and resolve Express handler timeouts during route registration.
 
 - [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba) Thanks [@drmaas](https://github.com/drmaas)! - Document lock-name and middleware failure semantics, add package tree-shaking metadata, and provide CI audit, benchmark, and packed-peer verification tooling.
 
-- [`e9cd52c`](https://github.com/drmaas/tslock/commit/e9cd52cf1de2d43bd49322fad0c5bc8876155483) Thanks [@drmaas](https://github.com/drmaas)! - Fix the MongoDB integration harness to use a direct connection through the Testcontainers-mapped host port.
+- [`69f1231`](https://github.com/drmaas/tslock/commit/69f1231f942599ea92a14c49257bb56a0137ae3f) Thanks [@drmaas](https://github.com/drmaas)! - Expose the existing Express end-to-end middleware coverage through a dedicated integration test command and document its scenarios.
 
-- Updated dependencies [[`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba), [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba), [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba), [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba)]:
+- Updated dependencies [[`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba), [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba), [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba), [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba), [`fd75a75`](https://github.com/drmaas/tslock/commit/fd75a754a74974a60e2dcf4099cf15c3defa1fba)]:
   - @tslock/core@2.0.0
-
-## 1.0.2
-
-### Patch Changes
-
-- Fixing lint warnings
-
-- Updated dependencies []:
-  - @tslock/core@1.0.2
-
-## 1.0.1
-
-### Patch Changes
-
-- testing changeset release process
-
-- Updated dependencies []:
-  - @tslock/core@1.0.1
+  - @tslock/middleware-core@2.0.0
