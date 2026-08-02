@@ -392,6 +392,9 @@ importers:
 
   packages/kysely:
     devDependencies:
+      '@testcontainers/postgresql':
+        specifier: ^12.0.4
+        version: 12.0.4
       '@tslock/core':
         specifier: workspace:*
         version: link:../core
@@ -401,9 +404,15 @@ importers:
       '@tslock/test-support':
         specifier: workspace:*
         version: link:../test-support
+      '@types/pg':
+        specifier: ^8.10.0
+        version: 8.20.0
       kysely:
         specifier: ^0.27.0
         version: 0.27.6
+      pg:
+        specifier: ^8.11.0
+        version: 8.22.0
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(postcss@8.5.25)(typescript@5.9.3)(yaml@2.9.0)

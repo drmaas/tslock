@@ -44,6 +44,16 @@ await executor.executeWithLock(
 
 The second argument is the dialect name: `'postgresql' | 'mysql' | 'sqlite'`. The third is a standard `SqlConfiguration` — see [`@tslock/sql-support`](../sql-support/README.md#configuration) for all options (table name, column overrides, `useDbTime`, etc.).
 
+## Integration tests
+
+The shared storage and fuzz contracts run against an ephemeral PostgreSQL container:
+
+```bash
+pnpm --filter @tslock/kysely test:integration
+```
+
+Docker is required for this suite.
+
 ## Requirements
 
 - Node.js >= 22
