@@ -36,6 +36,16 @@ await executor.executeWithLock(
 | `storage` | `StorageType.Memory` | KV bucket storage type (`Memory` or `File`). |
 | `connectionOptions` | `undefined` | Extra `nats.connect()` options. |
 
+## Integration tests
+
+The shared lock and fuzz contracts run against an ephemeral JetStream-enabled NATS container:
+
+```bash
+pnpm --filter @tslock/nats test:integration
+```
+
+Docker is required for this suite.
+
 > **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes because the name is used directly as the JetStream KV key.
 
 ## Requirements

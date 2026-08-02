@@ -36,6 +36,18 @@ describe('NatsLockProvider', () => {
   });
 
   describe('lock()', () => {
+    it('returns NatsLock when a deleted tombstone is present and create succeeds', async () => {
+      const config = createLockConfig('test', 60_000);
+      vi.mocked(kv.get).mockResolvedValueOnce({ operation: 'DEL', value: Buffer.alloc(0) } as never);
+      vi.mocked(kv.create).mockResolvedValueOnce(1);
+
+      const result = await provider.lock(config);
+
+      expect(result).toBeDefined();
+      expect(kv.create).toHaveBeenCalledWith('test', expect.any(Buffer));
+      expect(kv.update).not.toHaveBeenCalled();
+    });
+
     it('returns NatsLock when key does not exist and create succeeds', async () => {
       ClockProvider.setClock(() => 1_000_000);
       const config = createLockConfig('test', 60_000);
@@ -51,7 +63,11 @@ describe('NatsLockProvider', () => {
     it('returns undefined when key does not exist and create conflicts', async () => {
       const config = createLockConfig('test', 60_000);
       vi.mocked(kv.get).mockResolvedValueOnce(null);
-      vi.mocked(kv.create).mockRejectedValueOnce({ code: 10071, message: 'Conflict' });
+      vi.mocked(kv.create).mockRejectedValueOnce({
+        code: '400',
+        message: 'wrong last sequence: 3',
+        api_error: { err_code: 10071 },
+      });
 
       const result = await provider.lock(config);
       expect(result).toBeUndefined();
@@ -109,6 +125,17 @@ describe('NatsLockProvider', () => {
   });
 
   describe('unlock()', () => {
+    it('no-op when entry is a deleted tombstone', async () => {
+      const config = createLockConfig('test', 60_000);
+      const lock = new NatsLock(kv, config);
+      vi.mocked(kv.get).mockResolvedValueOnce({ operation: 'DEL', value: Buffer.alloc(0) } as never);
+
+      await lock.unlock();
+
+      expect(kv.delete).not.toHaveBeenCalled();
+      expect(kv.update).not.toHaveBeenCalled();
+    });
+
     it('no-op when entry is null', async () => {
       const config = createLockConfig('test', 60_000);
       const lock = new NatsLock(kv, config);

@@ -13,11 +13,21 @@ import { NatsLock } from './nats-lock.js';
 
 function isNatsConflictError(e: unknown): boolean {
   if (e && typeof e === 'object') {
-    const err = e as { code?: number; message?: string };
-    if (err.code === 10071) return true;
-    if (err.message?.includes('stream name already in use')) return true;
+    const err = e as {
+      code?: number | string;
+      message?: string;
+      api_error?: { err_code?: number };
+    };
+    if (err.code === 10071 || err.api_error?.err_code === 10071) return true;
+    if (err.message?.includes('stream name already in use') || err.message?.includes('wrong last sequence')) {
+      return true;
+    }
   }
   return false;
+}
+
+function isDeletedEntry(entry: Awaited<ReturnType<KV['get']>>): boolean {
+  return entry !== null && entry.operation !== undefined && entry.operation !== 'PUT';
 }
 
 export class NatsLockProvider implements LockProvider {
@@ -29,7 +39,7 @@ export class NatsLockProvider implements LockProvider {
     const value = longToBytes(newLockUntil);
 
     const entry = await this.kv.get(config.name);
-    if (entry === null) {
+    if (entry === null || isDeletedEntry(entry)) {
       try {
         await this.kv.create(config.name, value);
         return new NatsLock(this.kv, config);

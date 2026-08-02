@@ -18,7 +18,7 @@ export class NatsLock extends AbstractSimpleLock {
 
   protected override async doUnlock(): Promise<void> {
     const entry = await this.kv.get(this.config.name);
-    if (entry === null) return;
+    if (entry === null || (entry.operation !== undefined && entry.operation !== 'PUT')) return;
 
     const lockUntil = bytesToLong(entry.value);
     if (lockUntil > lockAtMostUntil(this.config)) return;
