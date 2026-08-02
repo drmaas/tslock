@@ -11,7 +11,7 @@ let provider: ReturnType<typeof createMongoLockProvider> | undefined;
 beforeAll(async () => {
   container = await new MongoDBContainer('mongo:7').start();
   try {
-    client = new MongoClient(container.getConnectionString());
+    client = new MongoClient(container.getConnectionString(), { directConnection: true });
     await client.connect();
     provider = createMongoLockProvider(client.db('tslock_test'));
   } catch (error) {
