@@ -76,83 +76,32 @@ Providers fall into categories that determine their implementation pattern:
 
 ## Development Workflow
 
-When the user requests a change, first classify it:
+Classify the requested work before editing. The executable, detailed workflows live in [`.opencode/skills/`](./.opencode/skills/) so agent-driven and human-driven work follow the same repository policy.
 
-| If the change... | Then... |
-|---|---|
-| Touches only existing patterns, follows provider templates, fixes a bug in one function, docs typos, chores | **Fast track** — implement directly, skip the workflow below |
-| Adds new concepts, changes cross-package contracts, requires 3+ files, or is architecturally substantial | **Full workflow** below |
+| Contribution | Agent skill | Use when | Do not use when |
+|---|---|---|---|
+| Bug fix | `tslock-bugfix` | Reproducible bug, regression, race, or incorrect behavior | New feature/design, docs-only, or test-only work |
+| Feature/provider | `tslock-sdd` | New behavior, provider, concept, public/cross-package contract, or substantial refactor | Isolated bug, docs-only, or test-only work |
+| Documentation | `tslock-doc-improver` | Reconcile or improve READMEs, examples, links, contributor docs, specs/plans references, or API descriptions | Runtime defect or new architecture is the primary problem |
+| Tests | `tslock-test-improver` | Coverage, assertions, integration, fuzz, shared contracts, or test infrastructure | Production bug or new feature design is the primary problem |
+| Refactor | `tslock-sdd` if substantial; fast track if local/mechanical | Architecture, public contracts, or multiple packages are affected | Trivial rename or mechanical cleanup |
 
-### Full workflow
+A tiny typo, formatting-only change, or obvious local mechanical edit can use the fast track. It still needs the narrowest meaningful verification. If a fast-track change reveals a new design, cross-package impact, or a production defect, stop and switch to the matching skill.
 
-Execute these stages sequentially. Each stage produces artifacts and hands off to the next.
+### Full SDD workflow
 
-#### 1. Interview
+Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) for substantial changes. It runs these stages sequentially:
 
-Ask clarifying questions about scope, requirements, and constraints. Continue until all unknowns are resolved or the user delegates to your judgment.
+1. **Interview and discovery** — resolve scope, constraints, compatibility, edge cases, and tests.
+2. **Spec** — create immutable `docs/specs/<NN>-<name>.md` with behavior, API, errors, invariants, and test expectations.
+3. **Plan** — create immutable `docs/plans/<NN>-<name>.md` with ordered files, implementation steps, verification, and docs.
+4. **Implement** — implement from the spec and plan with unit/integration tests and repository conventions.
+5. **Verify** — run targeted checks and the full suite required by the scope.
+6. **Review** — obtain an independent review against architecture, spec, plan, code, tests, and docs.
+7. **Repeat** — route findings to the lowest affected stage and repeat verification/review until done, up to three rounds before escalation.
+8. **Document and hand off** — reconcile current docs and report artifacts, checks, review outcome, and deferred work.
 
-#### 2. Spec
-
-Write a specification document:
-- Path: `docs/specs/<NN>-<name>.md`
-- Content: behavior, API surface, edge cases, error handling, test expectations
-- Must align with the architecture (`docs/01-architecture.md`)
-
-#### 3. Plan
-
-Write an implementation plan:
-- Path: `docs/plans/<NN>-<name>.md`
-- Content: step-by-step implementation order, file changes, verification commands, documentation updates as a line item
-- Must follow from the spec
-
-#### 4. Implement
-
-Launch a builder subagent via `task` with fresh context. The builder:
-- Creates or modifies code per the plan
-- Writes unit and integration tests
-- Ensures the verification suite passes before handing off
-
-#### 5. Verify
-
-Run the full verification suite:
-- `pnpm -r typecheck`
-- `pnpm -r lint`
-- `pnpm -r test`
-- `pnpm test:integration` (in-memory, MongoDB, and PostgreSQL; Redis is opt-in via `TSLOCK_REDIS_INTEGRATION=1`)
-- `pnpm -r build`
-
-Fix any failures. If substantial code changes were needed, consider re-running the full suite.
-
-#### 6. Review
-
-Launch an independent reviewer subagent via `task` with fresh context. The reviewer:
-- Checks that the code matches the spec, the plan, and the architecture
-- Produces a review document: `docs/reviews/<NN>-<name>.md`
-
-#### 7. Feedback loop
-
-If the reviewer identifies discrepancies, send the work back to the lowest affected stage:
-
-| Issue | Return to |
-|---|---|
-| Architecture mismatch | **Block** — requires user intervention (architecture is immutable otherwise) |
-| Spec mismatch | Step 2 (Spec) |
-| Plan mismatch | Step 3 (Plan) |
-| Code or tests mismatch | Step 4 (Implement) |
-| Verification failing | Step 5 (Verify) |
-| Docs not updated | Step 5 (Verify) or inline fix |
-
-After the fix, cycle through Verify → Review again. Maximum **3 rounds** before escalating to the user.
-
-**Resolution hierarchy:** Architecture (immutable unless user says otherwise) > Spec > Plan > Code
-
-#### 8. Documentation
-
-Confirm that `README.md` and `AGENTS.md` were updated per the plan. If any doc change was missed, fix it.
-
-#### 9. Done
-
-Report completion to the user with a summary of what was built, verified, and reviewed.
+The focused skills apply the same verify/review/repeat discipline without creating SDD artifacts for their narrower work: [`tslock-bugfix`](./.opencode/skills/tslock-bugfix/SKILL.md), [`tslock-doc-improver`](./.opencode/skills/tslock-doc-improver/SKILL.md), and [`tslock-test-improver`](./.opencode/skills/tslock-test-improver/SKILL.md). `tsock-doc-improver` and `tslock-sd` are not skill names; they are corrected here to the canonical names above.
 
 ## Implementation conventions
 

@@ -232,15 +232,31 @@ pnpm check:packed-peers # verify packed peer ranges contain no workspace:* value
 
 CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` on every push.
 
+### Contribution workflow skills
+
+When using an agent, choose the repository-local skill that matches the primary change:
+
+| Contribution | Skill | Use it for | Not for |
+|---|---|---|---|
+| Bug fix | [`tslock-bugfix`](./.opencode/skills/tslock-bugfix/SKILL.md) | Reproduce, fix, verify, review, and repeat for a defect or regression | New features, docs-only, or test-only work |
+| Feature/provider | [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) | Spec → plan → implement → verify → review for new behavior or substantial changes | Isolated bugs, docs-only, or test-only work |
+| Documentation | [`tslock-doc-improver`](./.opencode/skills/tslock-doc-improver/SKILL.md) | Compare docs with specs, plans, reviews, and code, then reconcile them | Runtime bug fixes or new design work |
+| Tests | [`tslock-test-improver`](./.opencode/skills/tslock-test-improver/SKILL.md) | Review coverage, add meaningful tests, verify, review, and repeat | Production fixes or feature design |
+| Refactor | `tslock-sdd` for substantial changes; fast track for local mechanical edits | Architecture, public contracts, or multiple packages | Trivial cleanup |
+
+These are OpenCode skills; contributors working without an agent can follow the same routing in [`CONTRIBUTING.md`](./CONTRIBUTING.md). The canonical names are `tslock-sdd`, `tslock-bugfix`, `tslock-doc-improver`, and `tslock-test-improver`.
+
 ### Adding a new provider
 
-The repo follows a spec → plan → implement → verify → review workflow. See [`AGENTS.md`](./AGENTS.md) for the full process and `docs/plans/` for per-provider implementation plans. In short:
+Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) or follow the equivalent process manually:
 
-1. Read `docs/00-vision.md`, `docs/01-architecture.md`, and an existing provider's spec/plan/review as a template.
-2. Create `docs/specs/<NN>-<name>.md` and `docs/plans/<NN>-<name>.md`.
-3. Implement under `packages/<name>/` following the package conventions in `AGENTS.md`.
-4. Add the shared integration test contract from `@tslock/test-support`.
-5. Run the full verification suite above and fix any failures.
+1. Open an issue to claim the provider and confirm it is in scope.
+2. Read `docs/00-vision.md`, `docs/01-architecture.md`, and an existing provider's spec/plan/review as a template.
+3. Create immutable `docs/specs/<NN>-<name>.md` and `docs/plans/<NN>-<name>.md`.
+4. Implement under `packages/<name>/` following the package conventions in `AGENTS.md`.
+5. Add the shared integration test contract from `@tslock/test-support`.
+6. Run the full verification suite above and fix any failures.
+
 
 ### Project layout
 
@@ -256,7 +272,7 @@ tslock/
 
 ## Documentation
 
-All design docs are in [`docs/`](./docs):
+All design docs are in [`docs/`](./docs). Contributor workflow routing is documented in [`CONTRIBUTING.md`](./CONTRIBUTING.md), and the executable agent workflows are in [`.opencode/skills/`](./.opencode/skills/).
 
 | Doc | Content |
 |---|---|
