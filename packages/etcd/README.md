@@ -42,6 +42,16 @@ The full key is `shedlock:${env}:${lockName}`.
 >
 > Etcd ownership values intentionally contain the timestamp and hostname only. Etcd unlock revokes the lease rather than comparing an ownership token, so a crypto-random value is not used. TTLs use the shared `floor(milliseconds / 1000) + 1` safety buffer.
 
+## Integration tests
+
+The shared lock and fuzz contracts run against an ephemeral etcd v3.5 container:
+
+```bash
+pnpm --filter @tslock/etcd test:integration
+```
+
+Docker is required for this suite.
+
 ## Requirements
 
 - Node.js >= 22

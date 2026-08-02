@@ -58,7 +58,7 @@ describe('EtcdLockProvider', () => {
 
       expect(lock).toBeDefined();
       expect(client.if).toHaveBeenCalledWith('shedlock:default:test-lock', 'Version', '==', 0);
-      expect(client.lease).toHaveBeenCalledWith(31);
+      expect(client.lease).toHaveBeenCalledWith(31, { autoKeepAlive: false });
       expect(putBuilder.value).toHaveBeenCalled();
       expect(txnChain.then).toHaveBeenCalled();
       expect(txnChain.else).toHaveBeenCalled();
@@ -84,7 +84,7 @@ describe('EtcdLockProvider', () => {
       const lock = await provider.lock(config);
 
       expect(lock).toBeDefined();
-      expect(client.lease).toHaveBeenCalledWith(1);
+      expect(client.lease).toHaveBeenCalledWith(1, { autoKeepAlive: false });
     });
 
     it('returns undefined when key exists', async () => {
@@ -143,7 +143,23 @@ describe('EtcdLockProvider', () => {
       expect(lease.revoke).toHaveBeenCalled();
     });
 
-    it('puts with new lease then revokes old lease when lockAtLeastFor > 0', async () => {
+    it('revokes the original lease without replacement when the minimum has elapsed', async () => {
+      const { client, lease } = makeClient();
+      const createdAt = 1_700_000_000_000;
+      ClockProvider.setClock(() => createdAt);
+
+      const provider = new EtcdLockProvider(client);
+      const lock = await provider.lock(makeConfig('elapsed-minimum', 10_000, 5_000));
+      expect(lock).toBeDefined();
+
+      ClockProvider.setClock(() => createdAt + 5_000);
+      await lock?.unlock();
+
+      expect(client.lease).toHaveBeenCalledTimes(1);
+      expect(lease.revoke).toHaveBeenCalled();
+    });
+
+    it('puts with a remaining lease then revokes the original lease when lockAtLeastFor > 0', async () => {
       const { client } = makeClient();
       const oldLease = {
         grant: vi.fn().mockResolvedValue(12345),
@@ -167,8 +183,8 @@ describe('EtcdLockProvider', () => {
       await lock?.unlock();
 
       expect(client.lease).toHaveBeenCalledTimes(2);
-      expect(client.lease).toHaveBeenNthCalledWith(1, 31);
-      expect(client.lease).toHaveBeenNthCalledWith(2, 11);
+      expect(client.lease).toHaveBeenNthCalledWith(1, 31, { autoKeepAlive: false });
+      expect(client.lease).toHaveBeenNthCalledWith(2, 11, { autoKeepAlive: false });
       expect(oldLease.revoke).toHaveBeenCalled();
     });
   });

@@ -15,7 +15,7 @@ export class EtcdAccessor {
     const value = `ADDED:${Utils.toIsoString(now)}@${hostname}`;
     const ttlSeconds = Utils.toTtlSeconds(config.lockAtMostFor);
 
-    const lease = this.client.lease(ttlSeconds);
+    const lease = this.client.lease(ttlSeconds, { autoKeepAlive: false });
 
     try {
       const result = await this.client
@@ -47,11 +47,17 @@ export class EtcdAccessor {
     }
 
     const now = ClockProvider.now();
+    const remainingMs = config.createdAt + config.lockAtLeastFor - now;
+    if (remainingMs <= 0) {
+      await lease.revoke();
+      return;
+    }
+
     const hostname = Utils.getHostname();
     const value = `ADDED:${Utils.toIsoString(now)}@${hostname}`;
-    const newTtlSeconds = Utils.toTtlSeconds(config.lockAtLeastFor);
+    const newTtlSeconds = Utils.toTtlSeconds(remainingMs);
 
-    const newLease = this.client.lease(newTtlSeconds);
+    const newLease = this.client.lease(newTtlSeconds, { autoKeepAlive: false });
     await this.client.put(key).value(value).lease(newLease.grant()).exec();
     await lease.revoke();
   }
