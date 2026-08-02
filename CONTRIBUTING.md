@@ -58,33 +58,47 @@ If all of those pass, you're good to go.
 
 ## Ways to contribute
 
-- 🐛 **Fix a bug** — check the issue tracker for `bug` labels.
-- 📦 **Add a provider** — see [Adding a new provider](#adding-a-new-provider). Open an issue first to claim it.
-- 📝 **Improve docs** — READMEs, code comments, design docs.
-- ✅ **Improve tests** — especially integration test coverage for providers with emulators.
-- 🔧 **Refactor** — keep the code lean. No unrequested abstractions (see [`AGENTS.md`](./AGENTS.md)).
+- 🐛 **Fix a bug** — check the issue tracker for `bug` labels and use `tslock-bugfix` when working with an agent.
+- 📦 **Add a provider** — see [Adding a new provider](#adding-a-new-provider). Open an issue first to claim it; use `tslock-sdd` with an agent.
+- 📝 **Improve docs** — READMEs, comments, and design docs; use `tslock-doc-improver` with an agent.
+- ✅ **Improve tests** — especially integration test coverage for providers with emulators; use `tslock-test-improver` with an agent.
+- 🔧 **Refactor** — keep the code lean. Use `tslock-sdd` for a substantial refactor and the fast track for a local mechanical refactor (see [`AGENTS.md`](./AGENTS.md)).
 - 🌍 **Report issues** — clear reproduction steps and environment details go a long way.
+
+### Agent workflow routing
+
+The repository provides OpenCode skills under [`.opencode/skills/`](./.opencode/skills/) for repeatable contribution workflows. Use the skill that matches the primary intent:
+
+| Contribution | Skill | Use when | Do not use when |
+|---|---|---|---|
+| Fix a bug | `tslock-bugfix` | A reproducible defect, regression, race, or incorrect behavior needs a focused fix | The primary work is a new feature, docs audit, or test-only coverage improvement |
+| Add a feature/provider | `tslock-sdd` | New behavior, public API, provider, concept, cross-package contract, or substantial refactor | The change is an isolated bug, docs-only update, or test-only improvement |
+| Improve docs | `tslock-doc-improver` | Docs, READMEs, specs/plans references, examples, links, or contributor guidance need reconciliation | The primary problem is incorrect runtime behavior or a new design |
+| Improve tests | `tslock-test-improver` | Coverage, assertions, integration tests, fuzz tests, or test infrastructure need improvement | The primary task is fixing production behavior or designing a new feature |
+| Refactor | `tslock-sdd` for substantial changes; fast track for local mechanical changes | The refactor changes architecture, public contracts, or multiple packages | Do not use SDD for a trivial rename or mechanical cleanup |
+
+The skill names are canonical. `tsock-doc-improver` and `tslock-sd` are treated as typos; use `tslock-doc-improver` and `tslock-sdd`. If you are not using an agent, follow the workflow below directly.
 
 ## Development workflow
 
-TSLock classifies changes into two tracks (see [`AGENTS.md`](./AGENTS.md) for the full version):
+TSLock uses two levels of rigor:
 
-| If the change... | Then... |
-|---|---|
-| Touches only existing patterns, fixes a bug in one function, docs typos, chores | **Fast track** — implement directly |
-| Adds new concepts, changes cross-package contracts, requires 3+ files, or is architecturally substantial | **Full workflow** below |
+- **Fast track:** a small, well-understood change that follows existing patterns—such as a typo, isolated mechanical cleanup, or one-function bug fix. Reproduce or characterize the issue, implement the smallest change, run targeted verification, and review the diff.
+- **Full SDD:** a new concept, feature/provider, public or cross-package contract, architectural change, or substantial refactor. Use the `tslock-sdd` skill when working with an agent.
 
 ### Full workflow (architecturally substantial changes)
 
-1. **Interview** — open an issue and discuss scope until unknowns are resolved.
-2. **Spec** — write `docs/specs/<NN>-<name>.md` describing behavior, API, edge cases.
-3. **Plan** — write `docs/plans/<NN>-<name>.md` with step-by-step implementation order.
-4. **Implement** — write the code + unit and integration tests.
-5. **Verify** — run the full suite (below) and fix failures.
-6. **Review** — request an independent review against the spec, plan, and architecture.
-7. **Repeat** - loop to previous steps until done.
+1. **Interview and discovery** — resolve scope, constraints, compatibility, edge cases, and test expectations.
+2. **Spec** — write `docs/specs/<NN>-<name>.md` describing behavior, API, edge cases, errors, and tests.
+3. **Plan** — write `docs/plans/<NN>-<name>.md` with ordered implementation steps, files, verification, and documentation updates.
+4. **Implement** — implement from the spec and plan, including unit/integration tests and relevant docs.
+5. **Verify** — run the relevant targeted checks and the full suite where required; fix failures.
+6. **Review** — obtain an independent review against the spec, plan, architecture, code, tests, and docs.
+7. **Repeat** — route findings back to the lowest affected stage and repeat verification/review until done (maximum three rounds before escalating).
 
 > **Immutable docs:** specs, plans, and reviews in `docs/` are written once and not edited after the fact. New work gets new files. The only exception is an explicit maintainer decision.
+
+The complete executable instructions are in [`.opencode/skills/tslock-sdd/SKILL.md`](./.opencode/skills/tslock-sdd/SKILL.md). The focused bug, documentation, and test workflows are in the neighboring skill files.
 
 ### Verification suite
 
