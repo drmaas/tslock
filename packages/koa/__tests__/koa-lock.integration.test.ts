@@ -15,24 +15,42 @@ function createKoaApp() {
 }
 
 describe('Koa lock integration', () => {
-  let port: number;
-  let server: Server | null;
+  const ctx: { server: Server | null; port: number } = { server: null, port: 0 };
 
   beforeEach(() => {
-    port = 30000 + Math.floor(Math.random() * 10000);
-    server = null;
+    ctx.server = null;
+    ctx.port = 0;
   });
 
-  afterEach(() => {
-    if (server) {
-      server.close();
+  afterEach(async () => {
+    if (ctx.server) {
+      const s = ctx.server;
+      s.closeIdleConnections();
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(() => {
+          s.closeAllConnections();
+          resolve();
+        }, 100);
+        s.close(() => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
     }
   });
 
   function startServer(app: Koa): Promise<Server> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const s = http.createServer(app.callback());
-      s.listen(port, () => resolve(s));
+      s.once('error', reject);
+      s.listen(0, '127.0.0.1', () => {
+        const addr = s.address();
+        if (addr && typeof addr === 'object') {
+          ctx.port = addr.port;
+        }
+        s.off('error', reject);
+        resolve(s);
+      });
     });
   }
 
@@ -45,14 +63,18 @@ describe('Koa lock integration', () => {
     headers: Record<string, string | string[] | undefined>;
   }> {
     return new Promise((resolve, reject) => {
-      const req = http.request({ hostname: '127.0.0.1', port, path, method }, (res) => {
+      const req = http.request({ hostname: '127.0.0.1', port: ctx.port, path, method }, (res) => {
         let data = '';
         res.on('data', (chunk: string) => {
           data += chunk;
         });
         res.on('end', () => {
           try {
-            resolve({ status: res.statusCode ?? 0, body: JSON.parse(data), headers: res.headers });
+            resolve({
+              status: res.statusCode ?? 0,
+              body: JSON.parse(data),
+              headers: res.headers,
+            });
           } catch {
             resolve({ status: res.statusCode ?? 0, body: data, headers: res.headers });
           }
@@ -72,7 +94,7 @@ describe('Koa lock integration', () => {
       ctx.body = { ok: true };
     });
 
-    server = await startServer(app);
+    ctx.server = await startServer(app);
     const res = await makeRequest('/api/locked');
     expect(res.status).toBe(200);
     expect((res.body as Record<string, unknown>).ok).toBe(true);
@@ -95,7 +117,7 @@ describe('Koa lock integration', () => {
       });
     });
 
-    server = await startServer(app);
+    ctx.server = await startServer(app);
 
     const firstReq = makeRequest('/api/locked');
     await new Promise((r) => setTimeout(r, 50));
@@ -119,7 +141,7 @@ describe('Koa lock integration', () => {
       ctx.body = { ok: true };
     });
 
-    server = await startServer(app);
+    ctx.server = await startServer(app);
     const res1 = await makeRequest('/api/locked');
     expect(res1.status).toBe(200);
     await new Promise((r) => setTimeout(r, 200));
@@ -145,7 +167,7 @@ describe('Koa lock integration', () => {
       });
     });
 
-    server = await startServer(app);
+    ctx.server = await startServer(app);
 
     const firstReq = makeRequest('/api/locked');
     await new Promise((r) => setTimeout(r, 50));
@@ -166,7 +188,7 @@ describe('Koa lock integration', () => {
       throw new Error('handler crash');
     });
 
-    server = await startServer(app);
+    ctx.server = await startServer(app);
     const res1 = await makeRequest('/api/locked');
     expect(res1.status).toBe(500);
     await new Promise((r) => setTimeout(r, 200));
@@ -184,7 +206,7 @@ describe('Koa lock integration', () => {
       ctx.body = { assertion: 'success' };
     });
 
-    server = await startServer(app);
+    ctx.server = await startServer(app);
     const res = await makeRequest('/api/locked');
     expect(res.status).toBe(200);
     expect((res.body as Record<string, unknown>).assertion).toBe('success');
@@ -202,7 +224,7 @@ describe('Koa lock integration', () => {
       ctx.body = { called: handlerCalls };
     });
 
-    server = await startServer(app);
+    ctx.server = await startServer(app);
     const res = await makeRequest('/api/locked');
     expect(res.status).toBe(200);
     expect(handlerCalls).toBe(1);
