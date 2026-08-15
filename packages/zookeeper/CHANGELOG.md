@@ -1,5 +1,13 @@
 # @tslock/zookeeper
 
+## 2.0.1
+
+### Patch Changes
+
+- - db5f7a8 — test(middleware): bind HTTP integration servers to ephemeral ports — Fixes intermittent EADDRINUSE in Express/Koa suites by using port-0 OS assignment, awaiting close in afterEach, and surfacing listen errors as assertions. Closes [#12](https://github.com/drmaas/tslock/issues/12).
+- Updated dependencies [`d51e51c`]:
+  - @tslock/core@2.0.1
+
 ## 2.0.0
 
 ### Minor Changes

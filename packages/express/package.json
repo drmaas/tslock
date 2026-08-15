@@ -1,6 +1,6 @@
 {
   "name": "@tslock/express",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "TSLock Express.js middleware integration",
   "license": "Apache-2.0",
   "type": "module",
