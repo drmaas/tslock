@@ -75,6 +75,16 @@ describe('S3StorageAccessor', () => {
       expect(result).toBe(false);
     });
 
+    it('concurrent create: PutObject 409 → returns false', async () => {
+      mockSend
+        .mockRejectedValueOnce(mockS3Error('NotFound', 404))
+        .mockRejectedValueOnce(mockS3Error('ConditionalRequestConflict', 409));
+
+      const result = await accessor.insertRecord(defaultConfig);
+
+      expect(result).toBe(false);
+    });
+
     it('HeadObject throws 500 → propagates', async () => {
       mockSend.mockRejectedValueOnce(mockS3Error('InternalError', 500));
 
@@ -149,6 +159,20 @@ describe('S3StorageAccessor', () => {
       expect(result).toBe(false);
     });
 
+    it('concurrent modify: PutObject 409 → returns false', async () => {
+      mockSend
+        .mockResolvedValueOnce({
+          ETag: '"etag1"',
+          Metadata: { lockuntil: '1970-01-01T00:00:01.000Z' },
+          $metadata: { httpStatusCode: 200 },
+        })
+        .mockRejectedValueOnce(mockS3Error('Conflict', 409));
+
+      const result = await accessor.updateRecord(defaultConfig);
+
+      expect(result).toBe(false);
+    });
+
     it('corrupt metadata: missing lockUntil → throws LockException', async () => {
       mockSend.mockResolvedValueOnce({
         ETag: '"etag1"',
@@ -197,6 +221,20 @@ describe('S3StorageAccessor', () => {
           $metadata: { httpStatusCode: 200 },
         })
         .mockRejectedValueOnce(mockS3Error('PreconditionFailed', 412));
+
+      await accessor.unlock(defaultConfig);
+
+      expect(mockSend).toHaveBeenCalledTimes(2);
+    });
+
+    it('concurrent modify: PutObject 409 → no-op resolves', async () => {
+      mockSend
+        .mockResolvedValueOnce({
+          ETag: '"etag1"',
+          Metadata: { lockuntil: '1970-01-01T00:00:10.000Z' },
+          $metadata: { httpStatusCode: 200 },
+        })
+        .mockRejectedValueOnce(mockS3Error('Conflict', 409));
 
       await accessor.unlock(defaultConfig);
 
@@ -290,6 +328,25 @@ describe('S3StorageAccessor', () => {
           $metadata: { httpStatusCode: 200 },
         })
         .mockRejectedValueOnce(mockS3Error('PreconditionFailed', 412));
+
+      const result = await accessor.extend(defaultConfig);
+
+      expect(result).toBe(false);
+    });
+
+    it('concurrent modify: PutObject 409 → returns false', async () => {
+      vi.spyOn(accessor as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host1');
+      mockSend
+        .mockResolvedValueOnce({
+          ETag: '"etag1"',
+          Metadata: {
+            lockuntil: '1970-01-01T00:00:10.000Z',
+            lockedby: 'host1',
+            lockedat: '1970-01-01T00:00:00.000Z',
+          },
+          $metadata: { httpStatusCode: 200 },
+        })
+        .mockRejectedValueOnce(mockS3Error('Conflict', 409));
 
       const result = await accessor.extend(defaultConfig);
 

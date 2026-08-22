@@ -25,10 +25,18 @@ export function isNotFound(e: unknown): boolean {
   return getStatusCode(e) === 404;
 }
 
-export function isPreconditionFailed(e: unknown): boolean {
+export function isConditionalWriteFailed(e: unknown): boolean {
   if (e instanceof S3ServiceException) {
-    return e.name === 'PreconditionFailed' || e.$metadata?.httpStatusCode === 412;
+    return (
+      e.name === 'PreconditionFailed' ||
+      e.name === 'ConditionalRequestConflict' ||
+      e.name === 'Conflict' ||
+      e.$metadata?.httpStatusCode === 412 ||
+      e.$metadata?.httpStatusCode === 409
+    );
   }
-  if (getErrorName(e) === 'PreconditionFailed') return true;
-  return getStatusCode(e) === 412;
+  const name = getErrorName(e);
+  if (name === 'PreconditionFailed' || name === 'ConditionalRequestConflict' || name === 'Conflict') return true;
+  const statusCode = getStatusCode(e);
+  return statusCode === 412 || statusCode === 409;
 }

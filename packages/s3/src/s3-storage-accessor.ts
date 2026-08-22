@@ -8,7 +8,7 @@ import {
   lockAtMostUntil,
   unlockTime,
 } from '@tslock/core';
-import { isNotFound, isPreconditionFailed } from './s3-errors.js';
+import { isConditionalWriteFailed, isNotFound } from './s3-errors.js';
 import type { S3ProviderConfig } from './s3-provider-config.js';
 
 function getMetadataValue(metadata: Record<string, string> | undefined, key: string): string | undefined {
@@ -79,7 +79,7 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
       );
       return true;
     } catch (e) {
-      if (isPreconditionFailed(e)) return false;
+      if (isConditionalWriteFailed(e)) return false;
       throw e;
     }
   }
@@ -101,7 +101,7 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
       );
       return true;
     } catch (e) {
-      if (isPreconditionFailed(e)) return false;
+      if (isConditionalWriteFailed(e)) return false;
       throw e;
     }
   }
@@ -124,7 +124,7 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
         }),
       );
     } catch (e) {
-      if (isPreconditionFailed(e)) return;
+      if (isConditionalWriteFailed(e)) return;
       throw e;
     }
   }
@@ -152,7 +152,7 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
       );
       return true;
     } catch (e) {
-      if (isPreconditionFailed(e)) return false;
+      if (isConditionalWriteFailed(e)) return false;
       throw e;
     }
   }
