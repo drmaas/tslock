@@ -29,7 +29,7 @@
   "peerDependencies": {
     "@tslock/core": "workspace:*",
     "@tslock/sql-support": "workspace:*",
-    "drizzle-orm": "^0.30.0"
+    "drizzle-orm": "^0.45.2"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -52,7 +52,7 @@
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^3.2.6",
-    "drizzle-orm": "^0.30.0"
+    "drizzle-orm": "^0.45.2"
   },
   "publishConfig": {
     "access": "public"
