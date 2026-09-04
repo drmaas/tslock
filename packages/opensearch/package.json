@@ -27,7 +27,7 @@
   },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
-    "@opensearch-project/opensearch": "^2.0.0"
+    "@opensearch-project/opensearch": "^3.6.0"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
-    "@opensearch-project/opensearch": "^2.0.0",
+    "@opensearch-project/opensearch": "^3.6.0",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^3.2.6"
