@@ -129,7 +129,7 @@ importers:
         version: 8.20.0
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.27.6)(mysql2@3.23.1(@types/node@24.13.3))(pg@8.22.0)
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.28.17)(mysql2@3.23.1(@types/node@24.13.3))(pg@8.22.0)
       pg:
         specifier: ^8.11.0
         version: 8.22.0
@@ -338,8 +338,8 @@ importers:
         specifier: workspace:*
         version: link:../in-memory
       hono:
-        specifier: ^4.0.0
-        version: 4.12.32
+        specifier: ^4.12.34
+        version: 4.12.34
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
@@ -414,8 +414,8 @@ importers:
         specifier: ^8.10.0
         version: 8.20.0
       kysely:
-        specifier: ^0.27.0
-        version: 0.27.6
+        specifier: ^0.28.17
+        version: 0.28.17
       pg:
         specifier: ^8.11.0
         version: 8.22.0
@@ -3049,8 +3049,8 @@ packages:
     resolution: {integrity: sha512-l3GSdZL1Jr1C0kyb461tUjEdrRPZr8Qry7jByltf5JGrA0xvqOSrxRBfcrJqqV/AMEtqqhHhC6w8HW0gn76tRQ==}
     engines: {node: '>=14'}
 
-  hono@4.12.32:
-    resolution: {integrity: sha512-XcuyW9qE2kJn07PkecMOBd5Vq/hMy7mmGw+idz1yblbg9N17ijJODrvPkn7/dwL3Kulj8LcRJ69DLOWf91dRUg==}
+  hono@4.12.34:
+    resolution: {integrity: sha512-GqXJqY/xJkJmuloTrnV1ZEXG3fqte+VjkUqoRNZXcrUidiUOP4fMSIHHY4tsqZBK++kVyWmt/AAfSUuy57/eSA==}
     engines: {node: '>=16.9.0'}
 
   hpagent@1.2.0:
@@ -3351,9 +3351,9 @@ packages:
     resolution: {integrity: sha512-3An0GCLDSR34tsCO4H8Tef8Pp2ngtaZDAZnsWJYelqXUK5wyiHvGItgK/xcSkmHLSTn1Jcho1mRQs2ehRzvKKw==}
     engines: {node: ^4.8.4 || ^6.10.1 || ^7.10.1 || >= 8.1.4}
 
-  kysely@0.27.6:
-    resolution: {integrity: sha512-FIyV/64EkKhJmjgC0g2hygpBv5RNWVPyNCqSAD7eTCv6eFWNIi4PN1UvdSJGicN/o35bnevgis4Y0UDC0qi8jQ==}
-    engines: {node: '>=14.0.0'}
+  kysely@0.28.17:
+    resolution: {integrity: sha512-nbD8lB9EB3wNdMhOCdx5Li8DxnLbvKByylRLcJ1h+4SkrowVeECAyZlyiKMThF7xFdRz0jSQ2MoJr+wXux2y0Q==}
+    engines: {node: '>=20.0.0'}
 
   launch-editor@2.14.1:
     resolution: {integrity: sha512-QWBrQsMpH7gPr965dsKD/3cKWiNoTjpATQf++Xq63N6sKRGMwlVXz41O1IZTMfZQgBctD/K5Zt06+/I6pP6+HA==}
@@ -6686,11 +6686,11 @@ snapshots:
 
   dom-walk@0.1.2: {}
 
-  drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.27.6)(mysql2@3.23.1(@types/node@24.13.3))(pg@8.22.0):
+  drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.28.17)(mysql2@3.23.1(@types/node@24.13.3))(pg@8.22.0):
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
       '@types/pg': 8.20.0
-      kysely: 0.27.6
+      kysely: 0.28.17
       mysql2: 3.23.1(@types/node@24.13.3)
       pg: 8.22.0
 
@@ -7271,7 +7271,7 @@ snapshots:
       base64-js: 1.5.1
       pako: 1.0.11
 
-  hono@4.12.32: {}
+  hono@4.12.34: {}
 
   hpagent@1.2.0: {}
 
@@ -7610,7 +7610,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  kysely@0.27.6: {}
+  kysely@0.28.17: {}
 
   launch-editor@2.14.1:
     dependencies:
