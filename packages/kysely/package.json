@@ -29,7 +29,7 @@
   "peerDependencies": {
     "@tslock/core": "workspace:*",
     "@tslock/sql-support": "workspace:*",
-    "kysely": "^0.27.0"
+    "kysely": "^0.28.17"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -52,7 +52,7 @@
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^3.2.6",
-    "kysely": "^0.27.0"
+    "kysely": "^0.28.17"
   },
   "publishConfig": {
     "access": "public"
