@@ -129,7 +129,7 @@ importers:
         version: 8.20.0
       drizzle-orm:
         specifier: ^0.30.0
-        version: 0.30.10(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.27.6)(mysql2@3.22.6(@types/node@24.13.3))(pg@8.22.0)
+        version: 0.30.10(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.27.6)(mysql2@3.23.1(@types/node@24.13.3))(pg@8.22.0)
       pg:
         specifier: ^8.11.0
         version: 8.22.0
@@ -691,8 +691,8 @@ importers:
         specifier: ^10.0.0
         version: 10.0.4
       mysql2:
-        specifier: ^3.6.0
-        version: 3.22.6(@types/node@22.20.1)
+        specifier: ^3.23.1
+        version: 3.23.1(@types/node@22.20.1)
       pg:
         specifier: ^8.11.0
         version: 8.22.0
@@ -3448,8 +3448,8 @@ packages:
     resolution: {integrity: sha512-YT/CS0PAe62kT8EoQXcQj8yIcSu18HhYv0s6ShdAFsoFly3oV5QaxODnkj0u7zH0/RFyH47cdcMVpcGXliEFVA==}
     engines: {node: '>=10'}
 
-  mysql2@3.22.6:
-    resolution: {integrity: sha512-fPKmeDGUzvFP7bMD5SASlJ5zIgvCC4hbanTmhbUlEmhyrY1hR4Hi3xLOWgTd3luYjLVifx6uGvMNJ2m/LlqEpg==}
+  mysql2@3.23.1:
+    resolution: {integrity: sha512-tTuRnC7qCet2IOfSNMYZ5SwXuBnfvBPAcIA28P0gtruXyZlU1LMxA6uha32kYypoFgyYklMqhLWwt4laYwXR/Q==}
     engines: {node: '>= 8.0'}
     peerDependencies:
       '@types/node': '>= 8'
@@ -6441,12 +6441,12 @@ snapshots:
 
   dom-walk@0.1.2: {}
 
-  drizzle-orm@0.30.10(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.27.6)(mysql2@3.22.6(@types/node@24.13.3))(pg@8.22.0):
+  drizzle-orm@0.30.10(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.27.6)(mysql2@3.23.1(@types/node@24.13.3))(pg@8.22.0):
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
       '@types/pg': 8.20.0
       kysely: 0.27.6
-      mysql2: 3.22.6(@types/node@24.13.3)
+      mysql2: 3.23.1(@types/node@24.13.3)
       pg: 8.22.0
 
   dunder-proto@1.0.1:
@@ -7513,7 +7513,7 @@ snapshots:
       mime-kind: 4.0.0
       multi-part-lite: 1.0.0
 
-  mysql2@3.22.6(@types/node@22.20.1):
+  mysql2@3.23.1(@types/node@22.20.1):
     dependencies:
       '@types/node': 22.20.1
       aws-ssl-profiles: 1.1.2
@@ -7525,7 +7525,7 @@ snapshots:
       named-placeholders: 1.1.6
       sql-escaper: 1.5.1
 
-  mysql2@3.22.6(@types/node@24.13.3):
+  mysql2@3.23.1(@types/node@24.13.3):
     dependencies:
       '@types/node': 24.13.3
       aws-ssl-profiles: 1.1.2
