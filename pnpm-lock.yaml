@@ -541,8 +541,8 @@ importers:
   packages/opensearch:
     devDependencies:
       '@opensearch-project/opensearch':
-        specifier: ^2.0.0
-        version: 2.13.0
+        specifier: ^3.6.0
+        version: 3.6.0
       '@tslock/core':
         specifier: workspace:*
         version: link:../core
@@ -1522,9 +1522,9 @@ packages:
   '@nodable/entities@2.2.0':
     resolution: {integrity: sha512-9uGyhaQavEUMC8AIddIjau4NsnsXhou+j5sBAGojCM1oxmQpVKTWR/9JxABD6UAv12vpIms55fPZKFQEhG6uBg==}
 
-  '@opensearch-project/opensearch@2.13.0':
-    resolution: {integrity: sha512-Bu3jJ7pKzumbMMeefu7/npAWAvFu5W9SlbBow1ulhluqUpqc7QoXe0KidDrMy7Dy3BQrkI6llR3cWL4lQTZOFw==}
-    engines: {node: '>=10', yarn: ^1.22.10}
+  '@opensearch-project/opensearch@3.6.0':
+    resolution: {integrity: sha512-ow1A/Z7MBlNL/JZzTY4+M+8psiVh66g0Z7EQSl/qbT0U6zLBsVDYh6nvm8D4e4tIzQtn6ODbA2OsqYGvqZj76g==}
+    engines: {node: '>=14', yarn: ^1.22.10}
 
   '@opentelemetry/api@1.9.1':
     resolution: {integrity: sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q==}
@@ -5464,7 +5464,7 @@ snapshots:
 
   '@nodable/entities@2.2.0': {}
 
-  '@opensearch-project/opensearch@2.13.0':
+  '@opensearch-project/opensearch@3.6.0':
     dependencies:
       aws4: 1.13.2
       debug: 4.4.3
