@@ -43,7 +43,7 @@
     "@tslock/test-support": "workspace:*",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
-    "vitest": "^2.0.0",
+    "vitest": "^3.2.6",
     "mongodb": "^6.0.0",
     "@testcontainers/mongodb": "^12.0.4"
   },
