@@ -27,7 +27,7 @@
   },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
-    "neo4j-driver": "^5.0.0"
+    "neo4j-driver": "^6.2.0"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -42,7 +42,7 @@
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^3.2.6",
-    "neo4j-driver": "^5.0.0"
+    "neo4j-driver": "^6.2.0"
   },
   "publishConfig": {
     "access": "public"
