@@ -38,8 +38,8 @@
     "@tslock/core": "workspace:*",
     "@tslock/in-memory": "workspace:*",
     "@tslock/middleware-core": "workspace:*",
-    "@types/koa": "^2.15.0",
-    "koa": "^2.15.0",
+    "@types/koa": "^3.0.3",
+    "koa": "^3.2.1",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "vitest": "^3.2.6"
