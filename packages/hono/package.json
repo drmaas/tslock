@@ -27,7 +27,7 @@
     "@tslock/middleware-core": "workspace:*"
   },
   "peerDependencies": {
-    "hono": "^4.13.5"
+    "hono": "^4.13.7"
   },
   "peerDependenciesMeta": {
     "hono": {
@@ -38,10 +38,10 @@
     "@tslock/core": "workspace:*",
     "@tslock/in-memory": "workspace:*",
     "@tslock/middleware-core": "workspace:*",
-    "hono": "^4.13.5",
+    "hono": "^4.13.7",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=22"
