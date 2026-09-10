@@ -48,7 +48,7 @@
     "@tslock/test-support": "workspace:*",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
-    "vitest": "^3.2.6",
+    "vitest": "^4.1.11",
     "ioredis": "^6.0.0"
   },
   "publishConfig": {
