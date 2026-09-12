@@ -43,7 +43,7 @@
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.20.2"
   },
   "publishConfig": {
     "access": "public"
