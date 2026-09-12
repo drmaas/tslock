@@ -28,7 +28,7 @@
   },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
-    "mongodb": "^6.0.0"
+    "mongodb": "^7.6.0"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -44,7 +44,7 @@
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11",
-    "mongodb": "^6.0.0",
+    "mongodb": "^7.6.0",
     "@testcontainers/mongodb": "^12.0.4"
   },
   "publishConfig": {
