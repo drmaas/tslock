@@ -46,7 +46,7 @@
     "@tslock/core": "workspace:*",
     "@tslock/sql-support": "workspace:*",
     "@tslock/test-support": "workspace:*",
-    "@testcontainers/postgresql": "^12.0.4",
+    "@testcontainers/postgresql": "^12.1.0",
     "@types/pg": "^8.10.0",
     "pg": "^8.11.0",
     "typescript": "^5.5.0",
