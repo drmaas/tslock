@@ -27,7 +27,7 @@
   },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
-    "@google-cloud/spanner": "^7.0.0"
+    "@google-cloud/spanner": "^8.11.0"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -40,7 +40,7 @@
   "devDependencies": {
     "@tslock/core": "workspace:*",
     "@tslock/test-support": "workspace:*",
-    "@google-cloud/spanner": "^7.0.0",
+    "@google-cloud/spanner": "^8.11.0",
     "typescript": "^5.5.0",
     "vitest": "^4.1.11",
     "tsup": "^8.0.0"
