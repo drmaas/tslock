@@ -15,9 +15,9 @@ tslock/
 ├── docs/
 │   ├── 00-vision.md          # product vision, scope, provider matrix
 │   ├── 01-architecture.md    # monorepo structure, core abstractions, provider categories
-│   ├── specs/                # 28 specs, including architecture hardening and verification follow-up
-│   ├── plans/                # 28 implementation plans
-│   └── reviews/              # 29 reviews, including the supplemental 24-middleware-code review
+│   ├── specs/                # 29 specs, including architecture hardening, verification follow-up, and NestJS
+│   ├── plans/                # 29 implementation plans
+│   └── reviews/              # 30 reviews, including NestJS and the supplemental 24-middleware-code review
 ├── packages/                 # @tslock/* packages — providers, infrastructure, and middleware
 ├── README.md
 ├── AGENTS.md                 # this file
@@ -54,7 +54,7 @@ Before implementing anything, read in this order:
 | SQL packages | `@tslock/sql-support` (shared) + `@tslock/sql` + `@tslock/kysely` + `@tslock/drizzle` |
 | Redis packages | `@tslock/redis-core` (shared) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` |
 | Ignite | Deferred to v2 (immature Node.js driver) — 23 providers for v1 |
-| Framework integrations | Implemented as shared middleware-core plus Express, Fastify, Koa, and Hono adapters; the original spec/plan/review remain in `docs/` for reference. |
+| Framework integrations | HTTP adapters live in middleware-core plus Express, Fastify, Koa, and Hono. NestJS module and `@SchedulerLock` live in `@tslock/nestjs` (`docs/specs/28-nestjs.md`). Core stays framework-agnostic. |
 | Metrics | Out of scope for v1 (`LockingTaskExecutorListener` is the extension point) |
 | Linting | Biome |
 

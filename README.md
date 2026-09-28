@@ -133,6 +133,7 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/fastify` | Fastify 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
 | `@tslock/koa` | Koa 2.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
 | `@tslock/hono` | Hono 4.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/nestjs` | NestJS 10 / 11 module and `@SchedulerLock` | [README](./packages/nestjs/README.md) |
 
 ## Core abstractions
 
@@ -278,9 +279,9 @@ All design docs are in [`docs/`](./docs). Contributor workflow routing is docume
 |---|---|
 | [`docs/00-vision.md`](./docs/00-vision.md) | Product vision, scope, provider matrix, design decisions |
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
-| [`docs/specs/`](./docs/specs/) | Per-provider, middleware, architecture-hardening, build-policy, and verification-follow-up specifications (28 docs) |
-| [`docs/plans/`](./docs/plans/) | Per-provider, middleware, architecture-hardening, build-policy, and verification-follow-up implementation plans (28 docs) |
-| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (29 docs) |
+| [`docs/specs/`](./docs/specs/) | Per-provider, middleware, NestJS, architecture-hardening, build-policy, and verification-follow-up specifications (29 docs) |
+| [`docs/plans/`](./docs/plans/) | Per-provider, middleware, NestJS, architecture-hardening, build-policy, and verification-follow-up implementation plans (29 docs) |
+| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including NestJS, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (30 docs) |
 
 ## Project status
 
