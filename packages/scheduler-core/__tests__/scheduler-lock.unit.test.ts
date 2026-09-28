@@ -74,12 +74,22 @@ describe('createSchedulerLock', () => {
     await expect(wrapped(41)).resolves.toBe(42);
     await expect(lock.wrap(() => 0, { name: 'zero', lockAtMostFor: '1s' })()).resolves.toBe(0);
     await expect(lock.wrap(() => false, { name: 'false', lockAtMostFor: '1s' })()).resolves.toBe(false);
+    await expect(lock.wrap(() => null, { name: 'null', lockAtMostFor: '1s' })()).resolves.toBeNull();
   });
 
   it('skips the task and returns undefined when the lock is not acquired', async () => {
+    const events: string[] = [];
+    const listener: LockingTaskExecutorListener = {
+      onLockAttempt: () => events.push('attempt'),
+      onLockAcquired: () => events.push('acquired'),
+      onLockNotAcquired: () => events.push('miss'),
+      onTaskStarted: () => events.push('started'),
+      onTaskFinished: () => events.push('finished'),
+    };
     const lock = createSchedulerLock({
       lockProvider: recordingProvider(false),
       defaultLockAtMostFor: '1m',
+      listener,
     });
     let calls = 0;
     const wrapped = lock.wrap(
@@ -92,6 +102,7 @@ describe('createSchedulerLock', () => {
 
     await expect(wrapped()).resolves.toBeUndefined();
     expect(calls).toBe(0);
+    expect(events).toEqual(['attempt', 'miss']);
   });
 
   it('unlocks after the task throws and propagates provider errors', async () => {

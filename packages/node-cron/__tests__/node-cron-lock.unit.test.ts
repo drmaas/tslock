@@ -119,4 +119,32 @@ describe('createNodeCronLock', () => {
     await expect(coordinator.shouldRun('missing', 1_000)).resolves.toBe(false);
     await expect(coordinator.onComplete?.('missing')).resolves.toBeUndefined();
   });
+
+  it('createRunCoordinator clears the map when unlock rejects', async () => {
+    let unlocks = 0;
+    const provider: LockProvider = {
+      async lock() {
+        return {
+          async unlock() {
+            unlocks += 1;
+            throw new Error('unlock failed');
+          },
+          async extend() {
+            return undefined;
+          },
+        };
+      },
+    };
+    const lock = createNodeCronLock({
+      lockProvider: provider,
+      defaultLockAtMostFor: '1m',
+    });
+    const coordinator = lock.createRunCoordinator();
+    await expect(coordinator.shouldRun('job', 1_000)).resolves.toBe(true);
+    await expect(coordinator.onComplete?.('job')).rejects.toThrow('unlock failed');
+    expect(unlocks).toBe(1);
+    await expect(coordinator.shouldRun('job', 1_000)).resolves.toBe(true);
+    await expect(coordinator.onComplete?.('job')).rejects.toThrow('unlock failed');
+    expect(unlocks).toBe(2);
+  });
 });

@@ -41,6 +41,8 @@ When the lock is held elsewhere, the wrapper skips and resolves `undefined`.
 
 ### node-cron v4 RunCoordinator
 
+Use either the wrap/`schedule` path **or** `createRunCoordinator` with `distributed: true` for a given job — not both, or you will double-lock.
+
 ```typescript
 import cron, { setRunCoordinator } from 'node-cron';
 
