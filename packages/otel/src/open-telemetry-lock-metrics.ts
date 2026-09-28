@@ -89,10 +89,8 @@ class ObservedSimpleLock implements SimpleLock {
       const duration = performance.now() - start;
       const outcome = failed ? OUTCOME_FAILURE : OUTCOME_SUCCESS;
       const attributes = outcomeAttributes(this.config, outcome, failure);
-      record(() => {
-        this.instruments.unlocked.add(1, attributes);
-        this.instruments.unlockDuration.record(duration, attributes);
-      });
+      record(() => this.instruments.unlocked.add(1, attributes));
+      record(() => this.instruments.unlockDuration.record(duration, attributes));
     }
   }
 
@@ -122,10 +120,8 @@ class ObservedSimpleLock implements SimpleLock {
       const duration = performance.now() - start;
       const outcome = failed ? OUTCOME_FAILURE : OUTCOME_SUCCESS;
       const attributes = outcomeAttributes(requested, outcome, failure);
-      record(() => {
-        this.instruments.extend.add(1, attributes);
-        this.instruments.extendDuration.record(duration, attributes);
-      });
+      record(() => this.instruments.extend.add(1, attributes));
+      record(() => this.instruments.extendDuration.record(duration, attributes));
     }
   }
 }
@@ -204,10 +200,9 @@ export function createOpenTelemetryLockMetrics(
       record(() => taskActive.add(1, lockAttributes(config)));
     },
     onTaskFinished(config, executionTimeMillis) {
-      record(() => {
-        taskDuration.record(executionTimeMillis, lockAttributes(config));
-        taskActive.add(-1, lockAttributes(config));
-      });
+      const attributes = lockAttributes(config);
+      record(() => taskDuration.record(executionTimeMillis, attributes));
+      record(() => taskActive.add(-1, attributes));
     },
   };
 

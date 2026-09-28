@@ -286,7 +286,7 @@ All design docs are in [`docs/`](./docs). Contributor workflow routing is docume
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
 | [`docs/specs/`](./docs/specs/) | Per-provider, middleware, architecture-hardening, build-policy, verification-follow-up, and OpenTelemetry specifications (29 docs) |
 | [`docs/plans/`](./docs/plans/) | Per-provider, middleware, architecture-hardening, build-policy, verification-follow-up, and OpenTelemetry implementation plans (29 docs) |
-| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (29 docs) |
+| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including architecture hardening, build policy, verification follow-up, OpenTelemetry, and a supplemental middleware-code review (30 docs) |
 
 ## Project status
 

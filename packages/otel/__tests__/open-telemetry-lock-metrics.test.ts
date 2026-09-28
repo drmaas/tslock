@@ -1,5 +1,5 @@
 import type { Attributes, Meter } from '@opentelemetry/api';
-import { InMemoryMetricReader, MeterProvider } from '@opentelemetry/sdk-metrics';
+import { MeterProvider, MetricReader } from '@opentelemetry/sdk-metrics';
 import {
   DefaultLockingTaskExecutor,
   type ExtensibleLockProvider,
@@ -11,6 +11,16 @@ import {
 import { InMemoryLockProvider } from '@tslock/in-memory';
 import { describe, expect, it, vi } from 'vitest';
 import { TSLOCK_METRIC_ATTRIBUTES, TSLOCK_METRIC_NAMES, createOpenTelemetryLockMetrics } from '../src/index.js';
+
+class CollectingReader extends MetricReader {
+  protected onShutdown(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  protected onForceFlush(): Promise<void> {
+    return Promise.resolve();
+  }
+}
 
 class FakeScheduler implements Scheduler {
   callbacks: Array<() => void> = [];
@@ -26,14 +36,14 @@ class FakeScheduler implements Scheduler {
 }
 
 function setup() {
-  const reader = new InMemoryMetricReader();
+  const reader = new CollectingReader();
   const meterProvider = new MeterProvider({ readers: [reader] });
   const meter = meterProvider.getMeter('test');
   const metrics = createOpenTelemetryLockMetrics({ meter });
   return { reader, metrics };
 }
 
-async function points(reader: InMemoryMetricReader, name: string) {
+async function points(reader: CollectingReader, name: string) {
   const { resourceMetrics, errors } = await reader.collect();
   expect(errors).toEqual([]);
   const metric = resourceMetrics.scopeMetrics
@@ -272,6 +282,33 @@ describe('createOpenTelemetryLockMetrics', () => {
       }),
     ).toBe(1);
     expect(scheduler.callbacks).toHaveLength(0);
+  });
+
+  it('decrements active tasks when the duration histogram throws', async () => {
+    const active = vi.fn();
+    const meter = {
+      createCounter: () => ({ add() {} }),
+      createHistogram: () => ({
+        record() {
+          throw new Error('histogram');
+        },
+      }),
+      createUpDownCounter: () => ({ add: active }),
+    } as unknown as Meter;
+    const metrics = createOpenTelemetryLockMetrics({ meter });
+    const executor = new DefaultLockingTaskExecutor(
+      metrics.instrument({
+        async lock() {
+          return { unlock: async () => {}, extend: async () => undefined };
+        },
+      }),
+      metrics.listener,
+    );
+    const result = await executor.executeWithLock(async () => 'ok', createLockConfig('active', 1_000));
+    expect(result.getResult()).toBe('ok');
+    expect(active).toHaveBeenCalledTimes(2);
+    expect(active.mock.calls[0]?.[0]).toBe(1);
+    expect(active.mock.calls[1]?.[0]).toBe(-1);
   });
 
   it('does not let a throwing meter fail unlock', async () => {

@@ -38,7 +38,7 @@ const result = await executor.executeWithLock(async () => {
 }, createLockConfig('nightly-cleanup', '5m', '1m'));
 ```
 
-Omit `meter` to use `metrics.getMeter('@tslock/otel')`. Register the global `MeterProvider` before the first lock operation. Instruments are created when `createOpenTelemetryLockMetrics` runs; the API proxy still forwards to a provider registered afterwards.
+Omit `meter` to use `metrics.getMeter('@tslock/otel')`. Call `metrics.setGlobalMeterProvider`, or start the SDK, before `createOpenTelemetryLockMetrics()`. Instruments are created in the factory. The metrics API does not attach those instruments to a provider registered later; pass `meter` from a provider that is already started when you need an explicit meter.
 
 ### Keep-alive
 
@@ -77,6 +77,8 @@ Every instrument has `lock.name`, `lock.at_most_for_ms`, and `lock.at_least_for_
 | `tslock.lock.keepalive.failure` | Counter | Keep-alive stopped because the lock was lost or the retry failed |
 
 Duration histograms use millisecond bucket boundaries from 5ms through 5 minutes. `onUnlockError` is not a second unlock counter; the wrapper records the failed `unlock()` and the executor still reports the error to other listeners you compose yourself.
+
+`DefaultLockingTaskExecutor` unlocks the handle it acquired. After `LockExtender.extendActiveLock`, that handle is already spent, so the unlock series records `outcome=failure` and `error.type=LockException`. The extend series still records success. Keep-alive renews through the wrapped handle and unlocks the current one, so a normal keep-alive release records unlock success.
 
 Names and attribute keys are exported as `TSLOCK_METRIC_NAMES` and `TSLOCK_METRIC_ATTRIBUTES`.
 
