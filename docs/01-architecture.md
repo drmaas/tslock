@@ -476,8 +476,11 @@ class TrackingLockProviderWrapper implements LockProvider {
   }
 
   getActiveLocks(): ReadonlySet<SimpleLock> { return this.activeLocks; }
+  getActiveLockRecords(): readonly ActiveLockRecord[];
 }
 ```
+
+`createLockHealthMonitor({ tracking })` builds a read-only `LockHealthSnapshot` (active locks, last acquire/skip, recent keep-alive failures, overdue leases) for ops dumps and `/health`-style endpoints. It complements `@tslock/otel` metrics; it does not unlock or mutate locks. See `docs/specs/29-lock-health-snapshot.md`.
 
 ### 4.4 LockException
 

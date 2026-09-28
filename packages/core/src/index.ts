@@ -41,5 +41,14 @@ export {
   LockRecordRegistry,
   StorageBasedLockProvider,
 } from './storage-based-lock-provider.js';
+export type { ActiveLockRecord } from './tracking-lock-provider.js';
 export { TrackingLockProviderWrapper } from './tracking-lock-provider.js';
+export type {
+  KeepAliveFailureRecord,
+  LockHealthEvent,
+  LockHealthMonitor,
+  LockHealthMonitorOptions,
+  LockHealthSnapshot,
+} from './lock-health.js';
+export { createLockHealthMonitor } from './lock-health.js';
 export { Utils } from './utils.js';

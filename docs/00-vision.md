@@ -69,6 +69,7 @@ TSLock is a **framework-agnostic, provider-pluggable** distributed lock library 
 | `LockExtender` — manually extend the active lock | ✅ |
 | `KeepAliveLockProvider` — auto-renew locks during long tasks | ✅ |
 | `TrackingLockProviderWrapper` — introspect active locks | ✅ |
+| Read-only lock health snapshot (`createLockHealthMonitor`) | ✅ |
 | All 24 ShedLock providers, each with canonical TS/JS driver | ✅ |
 | Integration test contracts (shared abstract test suite) | ✅ |
 | `InMemoryProvider` for testing/local development | ✅ |
