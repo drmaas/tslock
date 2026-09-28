@@ -55,7 +55,8 @@ tslock/
 │   ├── etcd/                    # @tslock/etcd
 │   ├── memcached/               # @tslock/memcached
 │   ├── nats/                    # @tslock/nats
-│   └── in-memory/               # @tslock/in-memory
+│   ├── in-memory/               # @tslock/in-memory
+│   └── otel/                    # @tslock/otel — OpenTelemetry metrics
 ├── docs/
 │   ├── 00-vision.md
 │   ├── 01-architecture.md       # ← this file
@@ -84,6 +85,7 @@ tslock/
 10. **Every other provider package** depends on `@tslock/core` + its driver (peer dep).
 11. **No provider depends on another provider.** Shared logic lives in core or in a shared support package (`sql-support`, `redis-core`).
 12. **Peer dependencies, not bundled dependencies**, for drivers. Users install the driver version they want. This avoids version conflicts and keeps packages lean.
+13. **`@tslock/otel`** depends on `@tslock/core` and takes `@opentelemetry/api` as a required peer dependency. It does not depend on an OpenTelemetry SDK.
 
 ## 3. Core Abstractions
 
@@ -344,7 +346,7 @@ const NO_OP_LISTENER: LockingTaskExecutorListener = {
 };
 ```
 
-This is the **metrics extension point**. Users implement this interface to wire Prometheus, OpenTelemetry, Datadog, or any metrics system. No metrics framework dependency in core.
+This is the **metrics extension point**. Users implement this interface to wire Prometheus, Datadog, or any metrics system. No metrics framework dependency in core. `@tslock/otel` is the official OpenTelemetry wiring: it implements this listener and records unlock, extend, and keep-alive failure from the lock handle and `KeepAliveLockProvider`'s existing callback.
 
 ### 3.9 KeepAliveLockProvider
 

@@ -55,7 +55,7 @@ Before implementing anything, read in this order:
 | Redis packages | `@tslock/redis-core` (shared) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` |
 | Ignite | Deferred to v2 (immature Node.js driver) — 23 providers for v1 |
 | Framework integrations | Implemented as shared middleware-core plus Express, Fastify, Koa, and Hono adapters; the original spec/plan/review remain in `docs/` for reference. |
-| Metrics | Out of scope for v1 (`LockingTaskExecutorListener` is the extension point) |
+| Metrics | `@tslock/otel` records OpenTelemetry metrics from `LockingTaskExecutorListener`, instrumented locks, and the keep-alive failure callback. Prometheus stays user-wired. |
 | Linting | Biome |
 
 ## Provider categories
