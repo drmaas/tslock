@@ -120,7 +120,7 @@ pnpm test:integration
 TSLOCK_REDIS_INTEGRATION=1 REDIS_URL=redis://127.0.0.1:6379 pnpm test:integration
 ```
 
-CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` plus a non-blocking `pnpm audit --prod` and the integration job on every push.
+CI runs a `lockfile` job first, then `pnpm check && pnpm typecheck && pnpm test && pnpm build` plus a non-blocking `pnpm audit --prod`, and the integration job. `verify` and `integration` wait for `lockfile`, including on Dependabot pull requests (they target `main`).
 
 ## Coding conventions
 
@@ -147,6 +147,21 @@ CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` plus a non-blo
 6. Add a `README.md` to the package (see any existing provider README for the format).
 7. Add the package to the matrix tables in [`README.md`](./README.md#packages).
 8. Run the full verification suite and fix any failures.
+
+## Dependency and lockfile updates
+
+The workspace has one root `pnpm-lock.yaml`. `packageManager` is `pnpm@11.14.0`, and that file is what Dependabot's npm updater reads for every workspace package. Run `pnpm validate:lockfile` before pushing a lockfile change. It rejects duplicated YAML keys (the `ERR_PNPM_BROKEN_LOCKFILE` failure) with a line number. CI runs that check, then `pnpm install --lockfile-only --frozen-lockfile`, before `verify` and `integration`. Dependabot pull requests run the same workflow. Regenerate a bad lockfile with `pnpm install` and commit a single copy of each package and snapshot key.
+
+Dependabot security logs can say `VulnerabilityAuditor: missing lockfile` and still run `pnpm update … --lockfile-only`. That line is the npm audit helper looking for `package-lock.json`. This repo does not commit an npm lockfile.
+
+`overrides` in `pnpm-workspace.yaml` force a patched transitive version when the parent range will not accept it and the replacement stays on a compatible line. pnpm 11 reads that file, not a `pnpm` key in `package.json`. Do not delete an override to silence a resolution. These overrides apply to this workspace install. They are not published inside `@tslock/*` packages; driver peers stay the caller's choice.
+
+Some advisories stay open because the patched release is a major the parent does not allow:
+
+- `@opentelemetry/core@1.30.1` ([GHSA-8988-4f7v-96qf](https://github.com/advisories/GHSA-8988-4f7v-96qf), fixed in 2.8.0) comes from `@google-cloud/spanner` 8 via `@opentelemetry/sdk-metrics@1.30.1` and `@opentelemetry/resources@1.30.1`, which pin core exactly. No 1.x fix exists. `@tslock/otel` already uses metrics 2.x. Spanner 9 moves to OpenTelemetry 2.x and is a peer major.
+- `file-type@16.5.4` ([GHSA-5v7r-6r5c-r473](https://github.com/advisories/GHSA-5v7r-6r5c-r473), fixed in 21.3.1) comes from `arangojs` 8 → `multi-part` → `mime-kind` (`file-type` ^16). file-type 21 is a different API. `arangojs` 10 drops that chain and is a peer major.
+- `uuid@9` ([GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq), fixed in 11.1.1; 8.x and 9.x have no patched release) comes from `gaxios` 6, `google-gax` 4, and `teeny-request` 9 under the Google Cloud 7.x clients. Those parents do not allow uuid 11+.
+- `esbuild@0.27.7` ([GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr), fixed in 0.28.1) is a dev-server file read on Windows. `tsup@8.5.1` (current latest) depends on `esbuild` `^0.27.0`, which does not include 0.28. The workspace build does not run that dev server.
 
 ## Commit messages
 

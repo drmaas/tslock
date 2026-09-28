@@ -7,7 +7,29 @@ on:
     branches: [main]
 
 jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Reject an unparseable pnpm-lock.yaml
+        run: node --test scripts/validate-lockfile.test.mjs && node scripts/validate-lockfile.mjs
+      - name: Enable pnpm
+        run: corepack enable
+      - name: Fail if the lockfile is out of date
+        env:
+          CI: true
+        run: |
+          if ! pnpm install --lockfile-only --frozen-lockfile; then
+            echo "pnpm-lock.yaml failed frozen validation. verify and integration will not start."
+            echo "Regenerate it with \`pnpm install\` and commit pnpm-lock.yaml. Do not leave duplicate package or snapshot keys."
+            exit 1
+          fi
+
   verify:
+    needs: lockfile
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +47,7 @@ jobs:
       - run: pnpm test
 
   integration:
+    needs: lockfile
     runs-on: ubuntu-latest
     services:
       redis:
