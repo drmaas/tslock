@@ -54,7 +54,7 @@ Before implementing anything, read in this order:
 | SQL packages | `@tslock/sql-support` (shared) + `@tslock/sql` + `@tslock/kysely` + `@tslock/drizzle` |
 | Redis packages | `@tslock/redis-core` (shared) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` |
 | Ignite | Deferred to v2 (immature Node.js driver) — 23 providers for v1 |
-| Framework integrations | HTTP adapters live in middleware-core plus Express, Fastify, Koa, and Hono. NestJS module and `@SchedulerLock` live in `@tslock/nestjs` (`docs/specs/28-nestjs.md`). Core stays framework-agnostic. |
+| Framework integrations | HTTP adapters live in middleware-core plus Express, Fastify, Koa, and Hono. NestJS module and `@SchedulerLock` live in `@tslock/nestjs` (`docs/specs/28-nestjs.md`). Scheduler adapters (`@tslock/scheduler-core`, `@tslock/node-cron`, `@tslock/bree`, `@tslock/aws-lambda`) live in `docs/specs/29-scheduler-adapters.md`. Core stays framework-agnostic and scheduler-free. |
 | Metrics | `@tslock/otel` records OpenTelemetry metrics from `LockingTaskExecutorListener`, instrumented locks, and the keep-alive failure callback. Prometheus stays user-wired. |
 | Linting | Biome |
 

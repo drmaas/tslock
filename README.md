@@ -141,6 +141,15 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/hono` | Hono 4.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
 | `@tslock/nestjs` | NestJS 10 / 11 module and `@SchedulerLock` | [README](./packages/nestjs/README.md) |
 
+### Scheduler adapters
+
+| Package | Host | Spec |
+|---|---|---|
+| `@tslock/scheduler-core` | Shared wrap lifecycle for scheduled callbacks | [README](./packages/scheduler-core/README.md) |
+| `@tslock/node-cron` | `node-cron` ^3 / ^4 | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
+| `@tslock/bree` | Bree ^9 job workers | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
+| `@tslock/aws-lambda` | AWS Lambda / EventBridge handlers | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
+
 ## Core abstractions
 
 | Abstraction | Description |
