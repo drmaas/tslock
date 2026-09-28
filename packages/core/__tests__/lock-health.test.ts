@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ClockProvider } from '../src/clock-provider.js';
+import { KeepAliveLockProvider } from '../src/keep-alive-lock-provider.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import { LockException } from '../src/lock-exception.js';
 import { createLockHealthMonitor } from '../src/lock-health.js';
 import type { LockProvider } from '../src/lock-provider.js';
+import type { Disposable, Scheduler } from '../src/scheduler.js';
 import type { SimpleLock } from '../src/simple-lock.js';
 import { TrackingLockProviderWrapper } from '../src/tracking-lock-provider.js';
 
@@ -12,6 +14,25 @@ function makeLock(): SimpleLock {
     unlock: vi.fn(),
     extend: vi.fn(),
   };
+}
+
+class FakeScheduler implements Scheduler {
+  callbacks = new Map<number, () => void>();
+  nextId = 1;
+
+  setInterval(cb: () => void, _ms: number): Disposable {
+    const id = this.nextId++;
+    this.callbacks.set(id, cb);
+    return {
+      clear: () => {
+        this.callbacks.delete(id);
+      },
+    };
+  }
+
+  async tick(): Promise<void> {
+    await Promise.all([...this.callbacks.values()].map((cb) => Promise.resolve(cb())));
+  }
 }
 
 describe('createLockHealthMonitor', () => {
@@ -68,6 +89,70 @@ describe('createLockHealthMonitor', () => {
     expect(Object.isFrozen(snap.recentKeepAliveFailures)).toBe(true);
     expect(() => JSON.stringify(snap)).not.toThrow();
     expect(JSON.parse(JSON.stringify(snap)).activeLocks).toHaveLength(2);
+  });
+
+  it('does not mark locks overdue when age equals lockAtMostFor', async () => {
+    let now = 1_000;
+    ClockProvider.setClock(() => now);
+    const provider: LockProvider = { lock: vi.fn().mockResolvedValue(makeLock()) };
+    const tracking = new TrackingLockProviderWrapper(provider);
+    await tracking.lock(createLockConfig('edge', 1_000));
+    const health = createLockHealthMonitor({ tracking });
+    now = 2_000;
+    expect(health.snapshot().overdueLocks).toEqual([]);
+    now = 2_001;
+    expect(health.snapshot().overdueLocks.map((lock) => lock.name)).toEqual(['edge']);
+  });
+
+  it('keep-alive renewals through tracking refresh updatedAt and clear overdue', async () => {
+    let now = 1_000;
+    ClockProvider.setClock(() => now);
+    const scheduler = new FakeScheduler();
+    const storageLock = makeLock();
+    const renewed = makeLock();
+    (storageLock.extend as ReturnType<typeof vi.fn>).mockResolvedValue(renewed);
+    const storage: LockProvider = { lock: vi.fn().mockResolvedValue(storageLock) };
+    const tracking = new TrackingLockProviderWrapper(storage);
+    const keepAlive = new KeepAliveLockProvider(tracking, scheduler);
+    const health = createLockHealthMonitor({ tracking });
+
+    await keepAlive.lock(createLockConfig('ka', 30_000));
+    expect(tracking.getActiveLockRecords()[0]?.updatedAt).toBe(1_000);
+
+    now = 32_000;
+    expect(health.snapshot().overdueLocks.map((lock) => lock.name)).toEqual(['ka']);
+
+    now = 16_000;
+    await scheduler.tick();
+    expect(tracking.getActiveLockRecords()[0]?.updatedAt).toBe(16_000);
+    expect(health.snapshot().overdueLocks).toEqual([]);
+
+    now = 40_000;
+    expect(health.snapshot().overdueLocks).toEqual([]);
+    now = 50_000;
+    expect(health.snapshot().overdueLocks.map((lock) => lock.name)).toEqual(['ka']);
+  });
+
+  it('tracking outside keep-alive does not refresh updatedAt on renewals', async () => {
+    let now = 1_000;
+    ClockProvider.setClock(() => now);
+    const scheduler = new FakeScheduler();
+    const storageLock = makeLock();
+    const renewed = makeLock();
+    (storageLock.extend as ReturnType<typeof vi.fn>).mockResolvedValue(renewed);
+    const storage: LockProvider = { lock: vi.fn().mockResolvedValue(storageLock) };
+    const keepAlive = new KeepAliveLockProvider(storage, scheduler);
+    const tracking = new TrackingLockProviderWrapper(keepAlive);
+    const health = createLockHealthMonitor({ tracking });
+
+    await tracking.lock(createLockConfig('ka', 30_000));
+    expect(tracking.getActiveLockRecords()[0]?.updatedAt).toBe(1_000);
+
+    now = 16_000;
+    await scheduler.tick();
+    expect(tracking.getActiveLockRecords()[0]?.updatedAt).toBe(1_000);
+    now = 32_000;
+    expect(health.snapshot().overdueLocks.map((lock) => lock.name)).toEqual(['ka']);
   });
 
   it('keeps keep-alive failures in a ring buffer', () => {

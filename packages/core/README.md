@@ -105,7 +105,35 @@ http.createServer((req, res) => {
 console.log(health.formatSnapshot());
 ```
 
-When also using `@tslock/otel`, instrument the storage provider before tracking, and forward listener / keep-alive callbacks to both helpers yourself.
+When also using `@tslock/otel`, instrument storage before tracking, then forward both helpers:
+
+```typescript
+import { createOpenTelemetryLockMetrics } from '@tslock/otel';
+import type { LockingTaskExecutorListener } from '@tslock/core';
+
+const otel = createOpenTelemetryLockMetrics();
+const tracking = new TrackingLockProviderWrapper(otel.instrument(storage));
+const health = createLockHealthMonitor({ tracking });
+const listener: LockingTaskExecutorListener = {
+  onLockAttempt: (c) => otel.listener.onLockAttempt(c),
+  onLockAcquired: (c) => {
+    otel.listener.onLockAcquired(c);
+    health.onLockAcquired(c);
+  },
+  onLockNotAcquired: (c) => {
+    otel.listener.onLockNotAcquired(c);
+    health.onLockNotAcquired(c);
+  },
+  onTaskStarted: (c) => otel.listener.onTaskStarted(c),
+  onTaskFinished: (c, ms) => otel.listener.onTaskFinished(c, ms),
+  onUnlockError: (c, err) => otel.listener.onUnlockError?.(c, err),
+};
+const provider = new KeepAliveLockProvider(tracking, undefined, (config, error) => {
+  otel.onKeepAliveFailure(config, error);
+  health.onKeepAliveFailure(config, error);
+});
+const executor = new DefaultLockingTaskExecutor(provider, listener);
+```
 
 #### Stable snapshot shape
 
