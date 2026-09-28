@@ -67,6 +67,10 @@ import { KeepAliveLockProvider } from '@tslock/core';
 const provider = new KeepAliveLockProvider(extensibleProvider);
 ```
 
+### Metrics
+
+[`@tslock/otel`](../otel/README.md) records OpenTelemetry metrics from `LockingTaskExecutorListener`, unlock and extend calls, and the keep-alive failure callback. Prometheus and other systems can implement the listener directly. Core does not depend on a metrics library.
+
 ## Exports
 
 | Export | Description |
@@ -75,6 +79,7 @@ const provider = new KeepAliveLockProvider(extensibleProvider);
 | `SimpleLock`, `AbstractSimpleLock` | The lock handle (`unlock`, `extend`). |
 | `LockConfiguration`, `createLockConfig` | Immutable config + builder helper. |
 | `DefaultLockingTaskExecutor`, `TaskResult` | Wraps a task in acquire/release. |
+| `LockingTaskExecutorListener` | Callbacks for attempt, acquire, skip, task start/finish, and unlock errors. |
 | `LockAssert` | Assert code runs inside a lock context. |
 | `LockExtender` | Extend the active lock from within a task. |
 | `KeepAliveLockProvider` | Auto-renewing wrapper. |

@@ -76,6 +76,12 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/test-support` | Shared integration test contracts + fuzz tests (dev-only). | [README](./packages/test-support/README.md) |
 | `@tslock/in-memory` | In-memory provider — testing/local only, **not** for production. | [README](./packages/in-memory/README.md) |
 
+### Observability
+
+| Package | Description | README |
+|---|---|---|
+| `@tslock/otel` | OpenTelemetry metrics for acquire, skip, unlock, extend, and keep-alive failure. | [README](./packages/otel/README.md) |
+
 ### SQL providers
 
 | Package | Driver | README |
@@ -263,7 +269,7 @@ Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) or follow the equival
 
 ```
 tslock/
-├── packages/        # @tslock/* packages (core + 23 providers + infra)
+├── packages/        # @tslock/* packages (core, providers, middleware, otel, nestjs)
 ├── docs/            # vision, architecture, per-provider specs/plans/reviews
 ├── .changeset/      # changesets config
 ├── .github/         # CI workflow
@@ -279,9 +285,9 @@ All design docs are in [`docs/`](./docs). Contributor workflow routing is docume
 |---|---|
 | [`docs/00-vision.md`](./docs/00-vision.md) | Product vision, scope, provider matrix, design decisions |
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
-| [`docs/specs/`](./docs/specs/) | Per-provider, middleware, NestJS, architecture-hardening, build-policy, and verification-follow-up specifications (29 docs) |
-| [`docs/plans/`](./docs/plans/) | Per-provider, middleware, NestJS, architecture-hardening, build-policy, and verification-follow-up implementation plans (29 docs) |
-| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including NestJS, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (30 docs) |
+| [`docs/specs/`](./docs/specs/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up specifications (30 docs) |
+| [`docs/plans/`](./docs/plans/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up implementation plans (30 docs) |
+| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including NestJS, OpenTelemetry, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (31 docs) |
 
 ## Project status
 
