@@ -79,7 +79,7 @@ TSLock is a **framework-agnostic, provider-pluggable** distributed lock library 
 | Feature | Reason |
 |---|---|
 | **Web framework integrations** (NestJS, Express, Fastify decorators) | TS decorators are not standardized; API-first is cleaner. Add in v2 once core is stable. |
-| **Metrics integrations** (Prometheus, OpenTelemetry) | `LockingTaskExecutorListener` is the extension point. Users can wire metrics themselves now; official packages later. |
+| **Prometheus metrics** | `LockingTaskExecutorListener` is the extension point. Official OpenTelemetry metrics ship as `@tslock/otel`. |
 | **Annotation/decorator-based locking** | No `@SchedulerLock` equivalent. API-driven: `executor.executeWithLock(task, config)`. |
 | **Built-in scheduler integration** | No cron parser, no `setInterval` wrapper. User wires TSLock around their scheduler. |
 | **Quarkus/CDI equivalent** | No DI container integration. |
@@ -183,7 +183,7 @@ The mapping:
 | **Module system** | Maven multi-module | npm/pnpm workspaces monorepo |
 | **Packaging** | JAR per module | npm package per provider (`@tslock/*` scoped) |
 | **Framework integration** | Spring, Micronaut, CDI | None (v1); add in v2 |
-| **Metrics** | Micrometer | `LockingTaskExecutorListener` extension point (user wires their own) |
+| **Metrics** | Micrometer | `@tslock/otel` (OpenTelemetry API). Prometheus stays a user-wired listener. |
 | **Annotation support** | `@SchedulerLock` | None (API-driven) |
 | **Reentrancy detection** | `ThreadLocal` deque | `AsyncLocalStorage` deque |
 
