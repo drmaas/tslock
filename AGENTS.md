@@ -158,6 +158,7 @@ pnpm test:integration     # in-memory, MongoDB, and PostgreSQL suites; Redis is 
 pnpm -r build             # tsup build across all packages
 pnpm bench                # build artifacts and run manual performance measurements
 pnpm check:packed-peers   # verify packed peer dependencies contain no workspace:* ranges
+pnpm validate:lockfile    # unique pnpm-lock.yaml keys plus lockfileVersion 9.0; CI runs this before install
 pnpm format               # auto-format all files with Biome
 pnpm format:check         # check formatting without writing
 pnpm lint                 # lint with Biome
@@ -181,7 +182,7 @@ git tag v<version> && git push --follow-tags
 ```
 
 All `@tslock/*` packages share one version (lockstep via Changesets fixed mode).
-CI runs verification plus a non-blocking `pnpm audit --prod`; the integration job runs the Docker-backed suites. Packed peer dependency verification is a local release-gate command. The workspace explicitly denies optional `cpu-features` and `ssh2` install scripts. Docker-over-SSH is unsupported under the default policy; a local-only override may set both entries to `true` in `pnpm-workspace.yaml` before reinstalling with the required native toolchain.
+CI runs `pnpm validate:lockfile` and `pnpm install --lockfile-only --frozen-lockfile` before verify and integration, then verification plus a non-blocking `pnpm audit --prod`. The integration job runs the Docker-backed suites. Dependabot pull requests target `main` and run that same workflow. `overrides` in `pnpm-workspace.yaml` pin patched transitive versions that parent ranges will not accept; see CONTRIBUTING.md for the advisories that stay blocked upstream. Dependabot's `VulnerabilityAuditor: missing lockfile` line means there is no `package-lock.json`; `pnpm-lock.yaml` and `packageManager` are how pnpm is selected. Packed peer dependency verification is a local release-gate command. The workspace explicitly denies optional `cpu-features` and `ssh2` install scripts. Docker-over-SSH is unsupported under the default policy; a local-only override may set both entries to `true` in `pnpm-workspace.yaml` before reinstalling with the required native toolchain.
 
 ## Rules
 
