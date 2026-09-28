@@ -464,20 +464,23 @@ class LockRecordRegistry {
 ### 4.3 TrackingLockProviderWrapper
 
 ```typescript
+interface ActiveLockRecord {
+  readonly name: string;
+  readonly lockAtMostFor: number;
+  readonly lockAtLeastFor: number;
+  readonly acquiredAt: number;
+  readonly updatedAt: number;
+}
+
 class TrackingLockProviderWrapper implements LockProvider {
-  private readonly activeLocks = new Set<SimpleLock>();
-
-  constructor(private readonly delegate: LockProvider) {}
-
-  async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
-    const lock = await this.delegate.lock(config);
-    if (!lock) return undefined;
-    return new TrackingSimpleLock(lock, this.activeLocks);
-  }
-
-  getActiveLocks(): ReadonlySet<SimpleLock> { return this.activeLocks; }
+  constructor(delegate: LockProvider) {}
+  lock(config: LockConfiguration): Promise<SimpleLock | undefined>;
+  getActiveLocks(): ReadonlySet<SimpleLock>;
+  getActiveLockRecords(): readonly ActiveLockRecord[];
 }
 ```
+
+`createLockHealthMonitor({ tracking })` builds a read-only `LockHealthSnapshot` (active locks, last acquire/skip, recent keep-alive failures, overdue leases) for ops dumps and `/health`-style endpoints. It complements `@tslock/otel` metrics; it does not unlock or mutate locks. See `docs/specs/29-lock-health-snapshot.md`.
 
 ### 4.4 LockException
 

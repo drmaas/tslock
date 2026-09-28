@@ -153,6 +153,7 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `LockExtender` | Manually extend the active lock from within the task. |
 | `KeepAliveLockProvider` | Wraps an `ExtensibleLockProvider` + scheduler, auto-renews every `lockAtMostFor/2`. |
 | `TrackingLockProviderWrapper` | Introspect active locks. |
+| `createLockHealthMonitor` | Read-only ops snapshot (active locks, last acquire/skip, keep-alive failures, overdue leases). |
 
 ## Lock extension
 
