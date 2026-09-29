@@ -206,8 +206,10 @@ function getProvider(tenant: string): LockProvider {
 - **Set `lockAtMostFor` generously** — it's the safety net if a node crashes. If a task runs longer than `lockAtMostFor`, it may execute twice.
 - **Set `lockAtLeastFor` for short tasks** — prevents re-execution from clock drift.
 - **Do not manually delete lock rows/documents** — the in-memory `LockRecordRegistry` cache means a deleted row won't be recreated until process restart.
-- **Clocks must be synchronized** (NTP) — lock validity depends on wall-clock time.
+- **Clocks must be synchronized** (NTP) — lock validity depends on wall-clock time. TSLock does not correct skew.
 - **Memcached can evict locks early** if the cache is full — use a dedicated memcached instance or a different provider for critical locks.
+
+See **[Failure modes: when double-execution is possible](./docs/failure-modes.md)** for clock skew, `lockAtMostFor` overrun, Memcached eviction, crashed keep-alive, and the in-memory harness that documents those behaviors. Stay honest with the model: at-most-once holds only while clocks stay synced and the storage lease remains.
 
 ## Local development
 
