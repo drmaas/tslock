@@ -1,5 +1,5 @@
 import type { Database } from '@google-cloud/spanner';
-import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { SpannerColumnNames } from '../src/spanner-configuration.js';
 import { SpannerStorageAccessor } from '../src/spanner-storage-accessor.js';

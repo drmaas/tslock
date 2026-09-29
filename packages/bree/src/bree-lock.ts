@@ -1,9 +1,9 @@
 import type { LockingTaskExecutor } from '@tslock/core';
 import {
+  createSchedulerLock,
   type JobLockOptions,
   type ResolvedSchedulerLockConfig,
   type SchedulerLockConfig,
-  createSchedulerLock,
 } from '@tslock/scheduler-core';
 
 export interface BreeLock {

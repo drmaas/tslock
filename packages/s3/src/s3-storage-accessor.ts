@@ -4,8 +4,8 @@ import {
   ClockProvider,
   type LockConfiguration,
   LockException,
-  Utils,
   lockAtMostUntil,
+  Utils,
   unlockTime,
 } from '@tslock/core';
 import { isConditionalWriteFailed, isNotFound } from './s3-errors.js';

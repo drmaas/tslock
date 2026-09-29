@@ -1,4 +1,4 @@
-import { ClockProvider, type Disposable, KeepAliveLockProvider, type Scheduler, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, type Disposable, KeepAliveLockProvider, type Scheduler } from '@tslock/core';
 import { type MutableClock, withMutableClock } from '@tslock/test-support';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InMemoryLockProvider } from '../src/in-memory-lock-provider.js';

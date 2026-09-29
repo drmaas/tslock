@@ -3,8 +3,8 @@ import {
   ClockProvider,
   type LockConfiguration,
   LockException,
-  Utils,
   lockAtLeastUntil,
+  Utils,
 } from '@tslock/core';
 import type { Client as MemjsClient } from 'memjs';
 

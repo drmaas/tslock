@@ -1,5 +1,5 @@
 import type { Firestore } from '@google-cloud/firestore';
-import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import { FirestoreStorageAccessor } from '../src/firestore-storage-accessor.js';
 

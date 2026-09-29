@@ -1,4 +1,4 @@
-import { ClockProvider, StorageBasedLockProvider, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, StorageBasedLockProvider } from '@tslock/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const NOW = 1_000_000;

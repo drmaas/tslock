@@ -1,5 +1,5 @@
 import type { Client } from '@elastic/elasticsearch';
-import { ClockProvider, type LockConfiguration, Utils, lockAtMostUntil, unlockTime } from '@tslock/core';
+import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
 import { ElasticsearchLock } from './elasticsearch-lock.js';
 import type { ElasticsearchFieldNames } from './field-names.js';
 

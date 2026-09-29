@@ -13,20 +13,20 @@ import {
   DefaultLockingTaskExecutor,
   type DurationInput,
   LockException,
-  type LockProvider,
   type LockingTaskExecutor,
   type LockingTaskExecutorListener,
+  type LockProvider,
   parseDuration,
 } from '@tslock/core';
 import { SchedulerLockInterceptor } from './scheduler-lock-interceptor.js';
 import {
-  type SchedulerLockRuntime,
   bindSchedulerLockRuntime,
+  type SchedulerLockRuntime,
   unbindSchedulerLockRuntime,
 } from './scheduler-lock-runtime.js';
 import {
-  TSLOCK_LOCKING_TASK_EXECUTOR,
   TSLOCK_LOCK_PROVIDER,
+  TSLOCK_LOCKING_TASK_EXECUTOR,
   TSLOCK_MODULE_OPTIONS,
   TSLOCK_SCHEDULER_LOCK_RUNTIME,
 } from './tokens.js';

@@ -2,11 +2,11 @@ import {
   ClockProvider,
   type LockConfiguration,
   type LockProvider,
-  type SimpleLock,
   lockAtMostUntil,
+  type SimpleLock,
 } from '@tslock/core';
 import type { KV } from 'nats';
-import { StorageType, connect } from 'nats';
+import { connect, StorageType } from 'nats';
 import { bytesToLong, longToBytes } from './long-utils.js';
 import type { NatsLockProviderOptions } from './nats-configuration.js';
 import { NatsLock } from './nats-lock.js';

@@ -1,5 +1,5 @@
 import { StorageBasedLockProvider } from '@tslock/core';
-import { type SqlConfiguration, createSqlStatementsSource } from '@tslock/sql-support';
+import { createSqlStatementsSource, type SqlConfiguration } from '@tslock/sql-support';
 import type { DrizzleDialectInfo, DrizzleDialectName } from './dialect-info.js';
 import { type DrizzleExecutor, DrizzleStorageAccessor } from './drizzle-storage-accessor.js';
 

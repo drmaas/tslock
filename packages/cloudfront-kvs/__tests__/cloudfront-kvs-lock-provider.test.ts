@@ -1,4 +1,4 @@
-import { ClockProvider, LockException, Utils, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException, Utils } from '@tslock/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveCloudFrontKvsConfiguration } from '../src/cloudfront-kvs-configuration.js';
 import { CloudFrontKvsLockProvider } from '../src/cloudfront-kvs-lock-provider.js';

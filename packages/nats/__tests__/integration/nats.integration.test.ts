@@ -1,5 +1,5 @@
 import { fuzzTests, lockProviderIntegrationTests } from '@tslock/test-support';
-import { type KV, type NatsConnection, StorageType, connect } from 'nats';
+import { connect, type KV, type NatsConnection, StorageType } from 'nats';
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
 import { afterAll, beforeAll } from 'vitest';
 import { NatsLockProvider } from '../../src/nats-lock-provider.js';

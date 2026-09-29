@@ -4,8 +4,8 @@ import {
   ClockProvider,
   type LockConfiguration,
   LockException,
-  Utils,
   lockAtMostUntil,
+  Utils,
   unlockTime,
 } from '@tslock/core';
 import type { SpannerColumnNames } from './spanner-configuration.js';

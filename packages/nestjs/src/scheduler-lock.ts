@@ -1,5 +1,5 @@
-import { type DurationInput, LockException, Utils, createLockConfig, parseDuration } from '@tslock/core';
-import { type SchedulerLockRuntime, getSchedulerLockRuntime } from './scheduler-lock-runtime.js';
+import { createLockConfig, type DurationInput, LockException, parseDuration, Utils } from '@tslock/core';
+import { getSchedulerLockRuntime, type SchedulerLockRuntime } from './scheduler-lock-runtime.js';
 
 export const SCHEDULER_LOCK_METADATA = Symbol.for('tslock.nestjs.SCHEDULER_LOCK');
 

@@ -1,5 +1,5 @@
 import { StorageBasedLockProvider } from '@tslock/core';
-import { type SqlConfiguration, createSqlStatementsSource } from '@tslock/sql-support';
+import { createSqlStatementsSource, type SqlConfiguration } from '@tslock/sql-support';
 import type { SqlConnection } from './sql-connection.js';
 import { SqlStorageAccessor } from './sql-storage-accessor.js';
 
