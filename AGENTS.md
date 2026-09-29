@@ -65,14 +65,15 @@ Providers fall into categories that determine their implementation pattern:
 | Category | Pattern | Providers |
 |---|---|---|
 | **A — StorageBasedLockProvider** | `StorageAccessor` (insert/update/unlock/extend) + `StorageBasedLockProvider` | SQL, Neo4j, Couchbase, Spanner, Firestore, Datastore, S3, GCS, Cassandra |
-| **B — Direct LockProvider** | Custom mechanism, implements `LockProvider` directly | Mongo, DynamoDB, ES/OpenSearch, ArangoDB |
-| **C — Redis** | `SET NX PX` + Lua scripts, shared `InternalRedisLockProvider` | Redis, Redis-ioredis |
+| **B — Direct LockProvider** | Custom mechanism, implements `LockProvider` directly | Mongo, DynamoDB, ES/OpenSearch, ArangoDB, CloudFront KVS |
+| **C — Redis** | `SET NX PX` + Lua scripts, shared `InternalRedisLockProvider` | Redis, Redis-ioredis (also Valkey / ElastiCache / MemoryDB) |
 | **D — Hazelcast** | IMap entry-level lock + get-check-put + TTL | Hazelcast |
 | **E — ZooKeeper** | PERSISTENT znodes + version CAS | ZooKeeper |
 | **F — Etcd** | Lease + txn (version == 0) | Etcd |
 | **G — Memcached** | `add` (fails if exists) + `replace` | Memcached |
 | **H — NATS JetStream** | KeyValue bucket + create/update with revision | NATS |
 | **I — InMemory** | `Map<string, LockRecord>` | InMemory (only `ExtensibleLockProvider` among specialized) |
+| **J — Cloudflare Durable Objects** | DO storage + fetch protocol | Cloudflare DO (Workers KV deferred) |
 
 ## Development Workflow
 

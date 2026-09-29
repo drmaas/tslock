@@ -34,6 +34,12 @@ Be kind and professional. Treat everyone with respect. Harassment, personal atta
 - **Node.js >= 22** (the repo pins `22.x` in [`.nvmrc`](./.nvmrc); use [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) to match it)
 - **pnpm 11+** (enable via corepack: `corepack enable`)
 
+### Bun compatibility
+
+TSLock targets the **Node.js API surface** (Node >= 22): `AsyncLocalStorage`, `node:os` hostname, Timers, and standard `fetch` where providers use it. There is **no Bun-only package**. Running under [Bun](https://bun.sh) is best-effort: if Bun's Node compatibility layer covers the APIs a given provider needs (and its peer driver works on Bun), the same `@tslock/*` packages should work. Prefer Node 22+ for CI and production unless you have verified your provider + driver combination under Bun.
+
+Provider drivers (Redis clients, AWS SDK, database drivers, Cloudflare Workers runtime for Durable Objects, etc.) each have their own Bun support story — validate those separately.
+
 ### Clone and install
 
 ```bash

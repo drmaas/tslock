@@ -121,7 +121,7 @@ TSLock supports all 24 ShedLock providers. Each uses the canonical or most widel
 | GCS | create with doesNotExist / generationMatch | `@google-cloud/storage` | `@tslock/gcs` |
 | Cassandra | LWT (IF NOT EXISTS / IF condition) | `cassandra-driver` | `@tslock/cassandra` |
 
-### 6.3 Direct Providers (5 — Ignite deferred)
+### 6.3 Direct Providers (5 ShedLock + CloudFront KVS — Ignite deferred)
 
 | ShedLock Provider | Mechanism | TS/JS Driver | TSLock Package |
 |---|---|---|---|
@@ -130,9 +130,12 @@ TSLock supports all 24 ShedLock providers. Each uses the canonical or most widel
 | Elasticsearch | painless script + upsert + refresh | `@elastic/elasticsearch` | `@tslock/elasticsearch` |
 | OpenSearch | painless script + upsert + refresh | `@opensearch-project/opensearch` | `@tslock/opensearch` |
 | ArangoDB | stream transaction + insert/update | `arangojs` | `@tslock/arangodb` |
+| (new) | CloudFront KeyValueStore PutKey + store ETag | `@aws-sdk/client-cloudfront-keyvaluestore` | `@tslock/cloudfront-kvs` |
 | ~~Ignite~~ | ~~keyValueView get/put/replace~~ | ~~apache-ignite-client~~ | ~~Deferred to v2~~ |
 
 **Ignite note:** The `apache-ignite-client` Node.js thin client exists but is immature and low-adoption. Deferred to v2 pending a more mature driver.
+
+**CloudFront KeyValueStore note:** Not Redis-compatible. Control-plane writes with store-wide ETag concurrency; CloudFront Functions are read-only. Quotas: 5 MB store, 512-byte keys, 1 KB values.
 
 ### 6.4 Redis (3 ShedLock variants → 2 TSLock packages)
 
@@ -144,7 +147,9 @@ TSLock supports all 24 ShedLock providers. Each uses the canonical or most widel
 
 **Rationale:** ShedLock has 3 Redis variants because Java has 3 Redis client libraries. In TS, the two dominant clients are `ioredis` (most adopted, feature-rich) and `redis` (official). The "Spring" variant has no equivalent (no Spring in TS). Both TSLock Redis packages share the same `InternalRedisLockProvider` logic; only the thin adapter differs.
 
-### 6.5 Specialized Providers (5)
+**Redis-compatible backends (no new package):** Valkey, Amazon ElastiCache (Redis/Valkey engines), and Amazon MemoryDB speak the Redis protocol — use `@tslock/redis` or `@tslock/redis-ioredis`. CloudFront KeyValueStore is **not** in this set.
+
+### 6.5 Specialized Providers (5 ShedLock + Cloudflare Durable Objects)
 
 | ShedLock Provider | Mechanism | TS/JS Driver | TSLock Package |
 |---|---|---|---|
@@ -153,6 +158,9 @@ TSLock supports all 24 ShedLock providers. Each uses the canonical or most widel
 | Etcd | Lease + txn (version == 0) | `etcd3` | `@tslock/etcd` |
 | Memcached | add (fails if exists) + replace | `memjs` | `@tslock/memcached` |
 | NATS JetStream | KeyValue bucket + create/update with revision | `nats` | `@tslock/nats` |
+| (new) | Cloudflare Durable Objects storage | Workers DO (fetch protocol) | `@tslock/cloudflare-do` |
+
+**Cloudflare Workers KV:** Deferred. Eventual consistency is unsuitable for lock acquire without additional coordination; Durable Objects are the supported edge lock backend.
 
 ### 6.6 In-Memory (1)
 
@@ -162,14 +170,15 @@ TSLock supports all 24 ShedLock providers. Each uses the canonical or most widel
 
 **Usage:** Testing and local development only. Not for production distributed locking.
 
-### 6.7 Summary: 24 ShedLock providers → 25 TSLock packages
+### 6.7 Summary: 24 ShedLock providers → 25+ TSLock packages
 
 The mapping:
 - R2DBC merges into `@tslock/sql` (async distinction doesn't apply in Node).
 - Spring Redis has no TS equivalent (no Spring). The 2 remaining Redis variants (Jedis→`redis`, Lettuce→`ioredis`) become 2 packages sharing `@tslock/redis-core`.
 - jOOQ → Kysely (`@tslock/kysely`). Drizzle added as `@tslock/drizzle` (no ShedLock equivalent, user-requested).
 - Shared SQL infrastructure in `@tslock/sql-support` (used by `@tslock/sql`, `@tslock/kysely`, `@tslock/drizzle`).
-- Ignite deferred to v2 (immature Node.js driver). 23 providers for v1.
+- Ignite deferred to v2 (immature Node.js driver).
+- Additive edge providers: `@tslock/cloudfront-kvs`, `@tslock/cloudflare-do`.
 - `@tslock/core` + `@tslock/test-support` are infrastructure packages (not providers).
 
 ## 7. Key Differences from ShedLock (Java)
@@ -203,7 +212,7 @@ The mapping:
 - **Not the fastest lock library.** Correctness and clarity over micro-optimization. A lock check is a single round-trip to the backing store; latency is dominated by network, not library overhead.
 - **Not a distributed coordination framework.** No leader election, no barrier, no phaser. Just locks.
 - **Not a replacement for Redis Redlock.** Redlock is a different algorithm (quorum-based). TSLock's Redis provider uses single-instance `SET NX PX` + Lua, matching ShedLock's approach.
-- **Not polyglot.** TypeScript/Node.js only. Not designed for browser, Deno, or Bun (though it may work on Bun since Bun supports Node APIs).
+- **Not polyglot.** TypeScript/Node.js only. Official support is Node 22+. Bun may work via Node API compatibility (see `CONTRIBUTING.md`); there is no Bun-only package. Not designed for browsers.
 
 ## 10. Versioning & Compatibility
 
@@ -223,7 +232,9 @@ Apache 2.0, matching ShedLock.
 | **Monorepo tool** | pnpm workspaces | Fast, disk-efficient, mature for TS monorepos |
 | **SQL packages** | `@tslock/sql` (raw drivers) + `@tslock/kysely` + `@tslock/drizzle` | Three SQL approaches: raw driver adapters, Kysely query builder, Drizzle ORM. All share `@tslock/sql-support` infrastructure. R2DBC merges into `@tslock/sql` (Node drivers are async-native). |
 | **Redis packages** | `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` (ioredis) | Both are widely adopted. Share `@tslock/redis-core` logic. |
-| **Ignite** | Skip for v1 | `apache-ignite-client` is immature/low-adoption. Document as future work. 23 providers for v1. |
+| **Ignite** | Skip for v1 / still deferred | `apache-ignite-client` is immature/low-adoption. Document as future work. |
+| **CloudFront KVS** | `@tslock/cloudfront-kvs` | Not Redis; control-plane ETag CAS. |
+| **Cloudflare edge** | `@tslock/cloudflare-do` first; Workers KV deferred | DO for coordinated locks; KV eventual consistency unsuitable without extra design. |
 | **Test framework** | Vitest | ESM-native, fast, excellent TS support |
 | **Cloud integration tests** | LocalStack + emulators | LocalStack for S3/DynamoDB, GCP emulators for Firestore/Datastore. Skip Spanner/GCS (no emulator) — unit tests only. |
 | **Package scope** | `@tslock/*` | Short, memorable, matches project name |

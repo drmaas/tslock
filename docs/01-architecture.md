@@ -556,11 +556,11 @@ ShedLock supports `useDbTime()` — the lock records use the database server's c
 
 All implement `StorageAccessor` and delegate to `StorageBasedLockProvider`. The only difference is how `insertRecord`, `updateRecord`, `unlock`, `extend` are implemented against the specific backend.
 
-### 6.2 Category B: Direct LockProvider (5 providers — Ignite deferred)
+### 6.2 Category B: Direct LockProvider (5 ShedLock + CloudFront KVS — Ignite deferred)
 
 ```
 @tslock/mongo, @tslock/dynamodb, @tslock/elasticsearch, @tslock/opensearch,
-@tslock/arangodb
+@tslock/arangodb, @tslock/cloudfront-kvs
 ```
 
 Each implements `LockProvider` directly (not via `StorageBasedLockProvider`) because their locking mechanism doesn't fit the insert-or-update pattern. Examples:
@@ -568,6 +568,7 @@ Each implements `LockProvider` directly (not via `StorageBasedLockProvider`) bec
 - **DynamoDB**: `UpdateItem` with `ConditionExpression`.
 - **ES/OpenSearch**: Painless script + upsert.
 - **ArangoDB**: Stream transaction with exclusive lock.
+- **CloudFront KeyValueStore**: `DescribeKeyValueStore` ETag + `GetKey` / `PutKey` (store-wide optimistic concurrency). Not Redis.
 
 **Ignite** deferred to v2 (immature Node.js driver).
 
@@ -614,6 +615,14 @@ KeyValue bucket with revision-based optimistic concurrency. Lock = `create` (fai
 ### 6.9 Category I: InMemory
 
 Plain `Map<string, number>` (name → lockedUntilEpochMillis). Synchronized access not needed (single-threaded event loop). Implements `ExtensibleLockProvider`. Test/local only.
+
+### 6.10 Category J: Cloudflare Durable Objects
+
+```
+@tslock/cloudflare-do
+```
+
+Client `ExtensibleLockProvider` posts JSON lock ops to a Durable Object via an injectable `fetch` adapter. The DO persists `{ lockUntil, lockedAt, lockedBy }` in strongly consistent storage. Prefer `idFromName(lockName)` so locks shard across objects. **Workers KV is deferred** (eventual consistency).
 
 ## 7. Test Architecture
 

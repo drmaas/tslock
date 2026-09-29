@@ -112,13 +112,14 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/elasticsearch` | `@elastic/elasticsearch` | [README](./packages/elasticsearch/README.md) |
 | `@tslock/opensearch` | `@opensearch-project/opensearch` | [README](./packages/opensearch/README.md) |
 | `@tslock/arangodb` | `arangojs` | [README](./packages/arangodb/README.md) |
+| `@tslock/cloudfront-kvs` | `@aws-sdk/client-cloudfront-keyvaluestore` (not Redis) | [README](./packages/cloudfront-kvs/README.md) |
 
 ### Redis providers
 
 | Package | Driver | README |
 |---|---|---|
-| `@tslock/redis` | `redis` (node-redis, official) | [README](./packages/redis/README.md) |
-| `@tslock/redis-ioredis` | `ioredis` | [README](./packages/redis-ioredis/README.md) |
+| `@tslock/redis` | `redis` (node-redis) — also Valkey / ElastiCache / MemoryDB | [README](./packages/redis/README.md) |
+| `@tslock/redis-ioredis` | `ioredis` — also Valkey / ElastiCache / MemoryDB | [README](./packages/redis-ioredis/README.md) |
 
 ### Specialized providers
 
@@ -129,6 +130,9 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/etcd` | `etcd3` | [README](./packages/etcd/README.md) |
 | `@tslock/memcached` | `memjs` | [README](./packages/memcached/README.md) |
 | `@tslock/nats` | `nats` (JetStream KV) | [README](./packages/nats/README.md) |
+| `@tslock/cloudflare-do` | Cloudflare Durable Objects (Workers KV deferred) | [README](./packages/cloudflare-do/README.md) |
+
+**Deferred:** Apache Ignite (immature Node thin client). **Not Redis:** CloudFront KeyValueStore is `@tslock/cloudfront-kvs`, not the Redis packages.
 
 ### Middleware integrations
 
