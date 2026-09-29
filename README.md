@@ -1,8 +1,19 @@
 # TSLock
 
+[![CI](https://github.com/drmaas/tslock/actions/workflows/ci.yml/badge.svg)](https://github.com/drmaas/tslock/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@tslock/core.svg)](https://www.npmjs.com/package/@tslock/core)
+[![Node.js](https://img.shields.io/node/v/@tslock/core.svg)](https://nodejs.org)
+
 > Distributed locks for scheduled tasks in TypeScript — a port of [ShedLock](https://github.com/lukas-krecan/ShedLock).
 
 TSLock ensures that a scheduled task executes on **at most one** instance at a time across multiple Node.js processes. When a task's lock is held by another instance, the task **skips** (does not queue, does not wait).
+
+## Guides
+
+| Guide | Content |
+|---|---|
+| [Migrate from ShedLock](./docs/02-migration-from-shedlock.md) | One-page JVM → TypeScript migration (API map, durations, providers, Nest `@SchedulerLock`) |
+| [TSLock vs Redlock / BullMQ](./docs/03-comparison.md) | Correctness and model differences: skip-not-queue, clocks, Redis ≠ Redlock |
 
 ## Why?
 
@@ -44,7 +55,7 @@ const executor = new DefaultLockingTaskExecutor(provider);
 // Wrap your scheduled task:
 await executor.executeWithLock(
   () => myScheduledTask(),
-  createLockConfig({ name: 'my-task', lockAtMostFor: '5m', lockAtLeastFor: '1m' }),
+  createLockConfig('my-task', '5m', '1m'),
 );
 ```
 
@@ -177,7 +188,7 @@ await executor.executeWithLock(
     await LockExtender.extendActiveLock('10m', 0); // extend by 10 minutes
     // ... continue work ...
   },
-  createLockConfig({ name: 'long-task', lockAtMostFor: '5m' }),
+  createLockConfig('long-task', '5m'),
 );
 ```
 
@@ -282,7 +293,7 @@ Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) or follow the equival
 ```
 tslock/
 ├── packages/        # @tslock/* packages (core, providers, middleware, otel, nestjs)
-├── docs/            # vision, architecture, per-provider specs/plans/reviews
+├── docs/            # vision, architecture, migration/comparison guides, specs/plans/reviews
 ├── .changeset/      # changesets config
 ├── .github/         # CI workflow
 ├── AGENTS.md        # instructions for AI agents + contributor conventions
@@ -291,12 +302,14 @@ tslock/
 
 ## Documentation
 
-All design docs are in [`docs/`](./docs). Contributor workflow routing is documented in [`CONTRIBUTING.md`](./CONTRIBUTING.md), and the executable agent workflows are in [`.opencode/skills/`](./.opencode/skills/).
+All design docs are in [`docs/`](./docs). Contributor workflow routing is documented in [`CONTRIBUTING.md`](./CONTRIBUTING.md), and the executable agent workflows are in [`.opencode/skills/`](./.opencode/skills/). Newcomer-oriented guides are also linked under [Guides](#guides).
 
 | Doc | Content |
 |---|---|
 | [`docs/00-vision.md`](./docs/00-vision.md) | Product vision, scope, provider matrix, design decisions |
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
+| [`docs/02-migration-from-shedlock.md`](./docs/02-migration-from-shedlock.md) | ShedLock → TSLock migration guide |
+| [`docs/03-comparison.md`](./docs/03-comparison.md) | Comparison vs Redlock and BullMQ-style locks |
 | [`docs/specs/`](./docs/specs/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up specifications (30 docs) |
 | [`docs/plans/`](./docs/plans/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up implementation plans (30 docs) |
 | [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including NestJS, OpenTelemetry, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (31 docs) |
