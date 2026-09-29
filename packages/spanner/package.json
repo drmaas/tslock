@@ -41,7 +41,7 @@
     "@tslock/core": "workspace:*",
     "@tslock/test-support": "workspace:*",
     "@google-cloud/spanner": "^8.11.0",
-    "typescript": "^5.5.0",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.11",
     "tsup": "^8.0.0"
   },

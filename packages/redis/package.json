@@ -46,7 +46,7 @@
     "@tslock/core": "workspace:*",
     "@tslock/redis-core": "workspace:*",
     "@tslock/test-support": "workspace:*",
-    "typescript": "^5.5.0",
+    "typescript": "^7.0.2",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11",
     "redis": "^6.2.1"

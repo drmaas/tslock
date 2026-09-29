@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
-    "typescript": "^5.5.0",
+    "typescript": "^7.0.2",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11",
     "couchbase": "^4.0.0"

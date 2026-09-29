@@ -43,7 +43,7 @@
     "@tslock/test-support": "workspace:*",
     "@aws-sdk/client-cloudfront-keyvaluestore": "^3.600.0",
     "vitest": "^4.1.11",
-    "typescript": "^5.5.0",
+    "typescript": "^7.0.2",
     "tsup": "^8.0.0",
     "@types/node": "^22.20.2"
   },
