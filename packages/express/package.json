@@ -17,7 +17,7 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup",
+    "build": "node ../../scripts/tsup.cjs",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
