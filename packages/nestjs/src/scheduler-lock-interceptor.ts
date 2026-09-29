@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { type CallHandler, type ExecutionContext, Injectable, type NestInterceptor } from '@nestjs/common';
-import { type Observable, from, lastValueFrom } from 'rxjs';
-import { getSchedulerLockRuntime } from './scheduler-lock-runtime.js';
+import { from, lastValueFrom, type Observable } from 'rxjs';
 import { getSchedulerLockOptions, isSchedulerLockWrapped, runWithSchedulerLock } from './scheduler-lock.js';
+import { getSchedulerLockRuntime } from './scheduler-lock-runtime.js';
 
 export class SchedulerLockInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {

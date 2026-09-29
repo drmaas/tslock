@@ -1,15 +1,15 @@
 import {
+  createLockConfig,
   type DurationInput,
   type LockingTaskExecutor,
-  type SimpleLock,
-  createLockConfig,
   parseDuration,
+  type SimpleLock,
 } from '@tslock/core';
 import {
+  createSchedulerLock,
   type JobLockOptions,
   type ResolvedSchedulerLockConfig,
   type SchedulerLockConfig,
-  createSchedulerLock,
 } from '@tslock/scheduler-core';
 
 export interface NodeCronRunCoordinator {
@@ -34,10 +34,7 @@ export interface NodeCronLock {
     task: (...args: unknown[]) => unknown,
     job: JobLockOptions & { taskOptions?: Record<string, unknown> },
   ): unknown;
-  createRunCoordinator(options?: {
-    lockAtLeastFor?: DurationInput;
-    keyPrefix?: string;
-  }): NodeCronRunCoordinator;
+  createRunCoordinator(options?: { lockAtLeastFor?: DurationInput; keyPrefix?: string }): NodeCronRunCoordinator;
 }
 
 export function createNodeCronLock(input: SchedulerLockConfig): NodeCronLock {

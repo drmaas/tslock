@@ -15,7 +15,9 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "node ../../scripts/tsup.cjs",
     "test": "vitest run",

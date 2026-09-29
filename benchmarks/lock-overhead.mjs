@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks';
-import { DefaultLockingTaskExecutor, createLockConfig } from '../packages/core/dist/index.js';
+import { createLockConfig, DefaultLockingTaskExecutor } from '../packages/core/dist/index.js';
 import { InMemoryLockProvider } from '../packages/in-memory/dist/index.js';
 import { createLockMiddlewareLifecycle, resolveMiddlewareConfig } from '../packages/middleware-core/dist/index.js';
 

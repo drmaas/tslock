@@ -1,4 +1,4 @@
-import type { LockConfiguration, LockProvider, LockingTaskExecutorListener, SimpleLock } from '@tslock/core';
+import type { LockConfiguration, LockingTaskExecutorListener, LockProvider, SimpleLock } from '@tslock/core';
 import { LockAssert, LockException } from '@tslock/core';
 import { InMemoryLockProvider } from '@tslock/in-memory';
 import { describe, expect, it, vi } from 'vitest';

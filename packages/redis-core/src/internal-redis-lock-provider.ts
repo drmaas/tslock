@@ -4,10 +4,10 @@ import {
   ClockProvider,
   type ExtensibleLockProvider,
   type LockConfiguration,
-  type SimpleLock,
-  Utils,
   lockAtLeastUntil,
   lockAtMostUntil,
+  type SimpleLock,
+  Utils,
 } from '@tslock/core';
 import type { RedisTemplate } from './redis-template.js';
 import { DEL_IF_EQUALS_SCRIPT, EXTEND_IF_EQUALS_SCRIPT, KEEP_IF_EQUALS_SCRIPT } from './scripts.js';

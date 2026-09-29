@@ -1,5 +1,5 @@
 import type { Client } from '@elastic/elasticsearch';
-import { ClockProvider, type LockConfiguration, Utils, lockAtMostUntil, unlockTime } from '@tslock/core';
+import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
 import { ElasticsearchLock } from './elasticsearch-lock.js';
 import type { ElasticsearchFieldNames } from './field-names.js';
 
@@ -51,24 +51,22 @@ export class ElasticsearchAccessor {
         id: config.name,
         index: this.index,
         refresh: 'wait_for',
-        body: {
-          script: {
-            source: LOCK_SCRIPT,
-            params: {
-              now: isoNow,
-              lockUntil: isoLockUntil,
-              lockedAt: isoNow,
-              lockedBy: hostname,
-              lockUntilField: this.fieldNames.lockUntil,
-              lockedAtField: this.fieldNames.lockedAt,
-              lockedByField: this.fieldNames.lockedBy,
-            },
+        script: {
+          source: LOCK_SCRIPT,
+          params: {
+            now: isoNow,
+            lockUntil: isoLockUntil,
+            lockedAt: isoNow,
+            lockedBy: hostname,
+            lockUntilField: this.fieldNames.lockUntil,
+            lockedAtField: this.fieldNames.lockedAt,
+            lockedByField: this.fieldNames.lockedBy,
           },
-          upsert: {
-            [this.fieldNames.lockUntil]: isoLockUntil,
-            [this.fieldNames.lockedAt]: isoNow,
-            [this.fieldNames.lockedBy]: hostname,
-          },
+        },
+        upsert: {
+          [this.fieldNames.lockUntil]: isoLockUntil,
+          [this.fieldNames.lockedAt]: isoNow,
+          [this.fieldNames.lockedBy]: hostname,
         },
       });
 
@@ -91,16 +89,14 @@ export class ElasticsearchAccessor {
         id: config.name,
         index: this.index,
         refresh: 'wait_for',
-        body: {
-          script: {
-            source: EXTEND_SCRIPT,
-            params: {
-              now: isoNow,
-              lockUntil: isoNewLockUntil,
-              lockedBy: hostname,
-              lockUntilField: this.fieldNames.lockUntil,
-              lockedByField: this.fieldNames.lockedBy,
-            },
+        script: {
+          source: EXTEND_SCRIPT,
+          params: {
+            now: isoNow,
+            lockUntil: isoNewLockUntil,
+            lockedBy: hostname,
+            lockUntilField: this.fieldNames.lockUntil,
+            lockedByField: this.fieldNames.lockedBy,
           },
         },
       });
@@ -122,13 +118,11 @@ export class ElasticsearchAccessor {
         id: config.name,
         index: this.index,
         refresh: 'wait_for',
-        body: {
-          script: {
-            source: UNLOCK_SCRIPT,
-            params: {
-              unlockTime: isoUnlock,
-              lockUntilField: this.fieldNames.lockUntil,
-            },
+        script: {
+          source: UNLOCK_SCRIPT,
+          params: {
+            unlockTime: isoUnlock,
+            lockUntilField: this.fieldNames.lockUntil,
           },
         },
       });

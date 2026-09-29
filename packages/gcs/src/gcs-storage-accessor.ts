@@ -4,8 +4,8 @@ import {
   ClockProvider,
   type LockConfiguration,
   LockException,
-  Utils,
   lockAtMostUntil,
+  Utils,
   unlockTime,
 } from '@tslock/core';
 import { isNotFound, isPreconditionFailed } from './gcs-errors.js';

@@ -1,23 +1,22 @@
 import 'reflect-metadata';
 import type { CallHandler, ExecutionContext } from '@nestjs/common';
-import type { LockConfiguration, LockProvider, LockingTaskExecutorListener, SimpleLock } from '@tslock/core';
+import type { LockConfiguration, LockingTaskExecutorListener, LockProvider, SimpleLock } from '@tslock/core';
 import { DefaultLockingTaskExecutor, LockAssert, LockException } from '@tslock/core';
 import { InMemoryLockProvider } from '@tslock/in-memory';
-import { of, throwError } from 'rxjs';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SchedulerLockInterceptor } from '../src/scheduler-lock-interceptor.js';
 import {
-  type SchedulerLockRuntime,
-  bindSchedulerLockRuntime,
-  unbindSchedulerLockRuntime,
-} from '../src/scheduler-lock-runtime.js';
-import {
-  SCHEDULER_LOCK_METADATA,
-  SchedulerLock,
   getSchedulerLockOptions,
   isSchedulerLockWrapped,
+  SCHEDULER_LOCK_METADATA,
+  SchedulerLock,
 } from '../src/scheduler-lock.js';
+import { SchedulerLockInterceptor } from '../src/scheduler-lock-interceptor.js';
+import {
+  bindSchedulerLockRuntime,
+  type SchedulerLockRuntime,
+  unbindSchedulerLockRuntime,
+} from '../src/scheduler-lock-runtime.js';
 import { TslockModule } from '../src/tslock-module.js';
 
 function acquiredLock(): SimpleLock {

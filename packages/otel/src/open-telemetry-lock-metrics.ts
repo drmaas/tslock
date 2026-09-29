@@ -1,5 +1,5 @@
-import { type Attributes, type Meter, ValueType, metrics } from '@opentelemetry/api';
-import type { LockConfiguration, LockProvider, LockingTaskExecutorListener, SimpleLock } from '@tslock/core';
+import { type Attributes, type Meter, metrics, ValueType } from '@opentelemetry/api';
+import type { LockConfiguration, LockingTaskExecutorListener, LockProvider, SimpleLock } from '@tslock/core';
 
 export const TSLOCK_METRIC_NAMES = Object.freeze({
   lockAttempt: 'tslock.lock.attempt',

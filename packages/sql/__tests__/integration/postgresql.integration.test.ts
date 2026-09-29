@@ -1,5 +1,5 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
-import { DatabaseProduct, SqlConfiguration, createSqlStatementsSource } from '@tslock/sql-support';
+import { createSqlStatementsSource, DatabaseProduct, SqlConfiguration } from '@tslock/sql-support';
 import { fuzzTests, storageBasedLockProviderIntegrationTests } from '@tslock/test-support';
 import { Pool } from 'pg';
 import { afterAll, beforeAll } from 'vitest';

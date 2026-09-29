@@ -1,4 +1,4 @@
-import { ClockProvider, Utils, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, Utils } from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collection';
 import type { Database } from 'arangojs/database';
 import { describe, expect, it, vi } from 'vitest';

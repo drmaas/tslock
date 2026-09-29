@@ -1,16 +1,16 @@
 import type { Attributes, Meter } from '@opentelemetry/api';
 import { MeterProvider, MetricReader } from '@opentelemetry/sdk-metrics';
 import {
+  createLockConfig,
   DefaultLockingTaskExecutor,
   type ExtensibleLockProvider,
   KeepAliveLockProvider,
   LockExtender,
   type Scheduler,
-  createLockConfig,
 } from '@tslock/core';
 import { InMemoryLockProvider } from '@tslock/in-memory';
 import { describe, expect, it, vi } from 'vitest';
-import { TSLOCK_METRIC_ATTRIBUTES, TSLOCK_METRIC_NAMES, createOpenTelemetryLockMetrics } from '../src/index.js';
+import { createOpenTelemetryLockMetrics, TSLOCK_METRIC_ATTRIBUTES, TSLOCK_METRIC_NAMES } from '../src/index.js';
 
 class CollectingReader extends MetricReader {
   protected onShutdown(): Promise<void> {

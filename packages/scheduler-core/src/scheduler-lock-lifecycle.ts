@@ -1,9 +1,9 @@
-import { DefaultLockingTaskExecutor, type LockingTaskExecutor, createLockConfig } from '@tslock/core';
+import { createLockConfig, DefaultLockingTaskExecutor, type LockingTaskExecutor } from '@tslock/core';
 import {
   type JobLockOptions,
   type ResolvedSchedulerLockConfig,
-  type SchedulerLockConfig,
   resolveSchedulerLockConfig,
+  type SchedulerLockConfig,
   validateJobLockOptions,
 } from './scheduler-lock-config.js';
 

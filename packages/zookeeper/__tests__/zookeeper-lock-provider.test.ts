@@ -1,4 +1,4 @@
-import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import { ZooKeeperLockProvider } from '../src/zookeeper-lock-provider.js';
 import type { ZooKeeperClient } from '../src/zookeeper-types.js';

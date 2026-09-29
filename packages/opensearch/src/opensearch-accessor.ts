@@ -1,5 +1,5 @@
 import type { Client } from '@opensearch-project/opensearch';
-import { ClockProvider, type LockConfiguration, Utils, lockAtMostUntil, unlockTime } from '@tslock/core';
+import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
 import type { OpenSearchFieldNames } from './field-names.js';
 import { OpenSearchLock } from './opensearch-lock.js';
 

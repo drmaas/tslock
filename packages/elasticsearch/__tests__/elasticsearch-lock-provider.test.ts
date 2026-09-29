@@ -65,7 +65,7 @@ describe('ElasticsearchLockProvider', () => {
     const c = client({ update: fn });
     const provider = new ElasticsearchLockProvider(c);
     await provider.lock(config());
-    const params = fn.mock.calls[0][0].body.script.params;
+    const params = fn.mock.calls[0][0].script.params;
     expect(params.lockUntilField).toBe('lockUntil');
     expect(params.lockedAtField).toBe('lockedAt');
     expect(params.lockedByField).toBe('lockedBy');
@@ -76,7 +76,7 @@ describe('ElasticsearchLockProvider', () => {
     const c = client({ update: fn });
     const provider = new ElasticsearchLockProvider(c, { fieldNames: FieldNames.SNAKE_CASE });
     await provider.lock(config());
-    const params = fn.mock.calls[0][0].body.script.params;
+    const params = fn.mock.calls[0][0].script.params;
     expect(params.lockUntilField).toBe('lock_until');
     expect(params.lockedAtField).toBe('locked_at');
     expect(params.lockedByField).toBe('locked_by');
@@ -87,7 +87,7 @@ describe('ElasticsearchLockProvider', () => {
     const c = client({ update: fn });
     const provider = new ElasticsearchLockProvider(c, { fieldNames: FieldNames.SNAKE_CASE });
     await provider.lock(config());
-    const upsert = fn.mock.calls[0][0].body.upsert;
+    const upsert = fn.mock.calls[0][0].upsert;
     expect(upsert.lock_until).toBeDefined();
     expect(upsert.locked_at).toBeDefined();
     expect(upsert.locked_by).toBeDefined();
@@ -99,7 +99,7 @@ describe('ElasticsearchLockProvider', () => {
     ClockProvider.setClock(() => 1_000_000);
     const provider = new ElasticsearchLockProvider(c);
     await provider.lock(createLockConfig('t', 30_000));
-    const params = fn.mock.calls[0][0].body.script.params;
+    const params = fn.mock.calls[0][0].script.params;
     expect(params.now).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(params.lockUntil).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(params.lockedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
