@@ -42,6 +42,12 @@ The full key is `${keyPrefix}:${env}:${lockName}`.
 
 > **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes. Redis ownership values include a hostname and random UUID because safe updates verify the stored value.
 
+## Valkey and Redis-compatible managed services
+
+Same Redis-protocol story as [`@tslock/redis`](../redis/README.md): Valkey, ElastiCache (Redis/Valkey), and MemoryDB work with this adapter when `SET`/`GET`/`DEL`/`PEXPIRE`/`EVAL` are available. Configure TLS (`rediss://`) and credentials per the managed service.
+
+**Not in this bucket:** CloudFront KeyValueStore — use [`@tslock/cloudfront-kvs`](../cloudfront-kvs/README.md).
+
 ## Integration tests
 
 Redis integration tests are opt-in and require a running Redis service:
