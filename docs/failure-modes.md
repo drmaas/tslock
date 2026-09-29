@@ -14,7 +14,7 @@ A lock is a record whose `lockUntil` is roughly `now + lockAtMostFor` at acquisi
 
 | Claim | Meaning |
 |---|---|
-| At-most-once *while the lock is held* | Concurrent `lock()` against a live, unexpired record should skip. |
+| At-most-once *while the storage lease is live* | Concurrent `lock()` against an unexpired backend record should skip. Holding a local `SimpleLock` object is not proof of exclusivity after expiry or eviction. |
 | Crash safety via expiry | If a holder dies without unlocking, the lock becomes acquirable after `lockAtMostFor` (backend permitting). |
 | Not exactly-once | Skipped runs are not retried. Overlapping runs are possible under the failures below. |
 | Not a distributed transaction | Holding a lock does not fence storage writes by itself. |

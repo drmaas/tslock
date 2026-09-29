@@ -43,19 +43,18 @@ describe('documented failure modes (in-memory harness)', () => {
     });
   });
 
-  it('maps shared-clock advance to another node being ahead of the writer', async () => {
+  it('shared ClockProvider advance past lockUntil is isomorphic to peer skew past remaining TTL', async () => {
     await withMutableClock(1_000_000, async (clock) => {
       const provider = new InMemoryLockProvider();
       const lockAtMostFor = 10_000;
-      const first = await provider.lock(createLockConfig('ahead-node', lockAtMostFor));
-      expect(first).toBeDefined();
+      expect(await provider.lock(createLockConfig('ahead-node', lockAtMostFor))).toBeDefined();
 
-      const remainingTtl = 7_000;
-      const skewPastExpiry = remainingTtl + 1;
-      clock.advance(lockAtMostFor - remainingTtl + skewPastExpiry);
+      const writerElapsed = 3_000;
+      const remainingTtl = lockAtMostFor - writerElapsed;
+      const peerAheadBy = remainingTtl + 1;
+      clock.advance(writerElapsed + peerAheadBy);
 
-      const second = await provider.lock(createLockConfig('ahead-node', lockAtMostFor));
-      expect(second).toBeDefined();
+      expect(await provider.lock(createLockConfig('ahead-node', lockAtMostFor))).toBeDefined();
     });
   });
 
