@@ -1,7 +1,7 @@
 {
-  "name": "@tslock/nats",
+  "name": "@tslock/cloudflare-do",
   "version": "2.0.1",
-  "description": "TSLock NATS JetStream KV provider",
+  "description": "Cloudflare Durable Objects lock provider for TSLock",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -19,7 +19,6 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
@@ -27,8 +26,7 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
-    "nats": "^2.0.0"
+    "@tslock/core": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -38,12 +36,10 @@
   "devDependencies": {
     "@tslock/core": "workspace:*",
     "@tslock/test-support": "workspace:*",
-    "nats": "^2.0.0",
-    "testcontainers": "^12.0.4",
+    "vitest": "^4.1.11",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
-    "vitest": "^4.1.11",
-    "@types/node": "^26.6.3"
+    "@types/node": "^22.20.2"
   },
   "publishConfig": {
     "access": "public"
@@ -51,7 +47,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/drmaas/tslock.git",
-    "directory": "packages/nats"
+    "directory": "packages/cloudflare-do"
   },
   "sideEffects": false
 }

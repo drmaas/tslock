@@ -43,6 +43,18 @@ The full key is `${keyPrefix}:${env}:${lockName}`.
 
 > **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes. Redis ownership values include a hostname and random UUID because safe updates verify the stored value.
 
+## Valkey and Redis-compatible managed services
+
+This package speaks the Redis protocol (`SET NX PX` + Lua). It works against:
+
+- **Valkey** (Redis-compatible OSS)
+- **Amazon ElastiCache** (Redis or Valkey engine)
+- **Amazon MemoryDB** (Redis OSS or Valkey)
+
+Use TLS and AUTH as required by the managed endpoint (`rediss://…`, username/password). Cluster mode and admin-command differences (for example restricted `CONFIG` / `FLUSHALL`) do not affect the lock scripts as long as `SET`, `GET`, `DEL`, `PEXPIRE`, and `EVAL`/`EVALSHA` are available.
+
+**Not Redis-compatible:** Amazon **CloudFront KeyValueStore** is a separate CloudFront edge KV API. Use [`@tslock/cloudfront-kvs`](../cloudfront-kvs/README.md) for that backend — do not point this provider at CloudFront KVS.
+
 ## Integration tests
 
 Redis integration tests are opt-in and require a running Redis service:

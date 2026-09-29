@@ -33,6 +33,7 @@ describe('MyLockProvider integration', () => {
 | `storageBasedLockProviderIntegrationTests` | Adds: create record, reject duplicate, update when expired. |
 | `fuzzTests` | N concurrent `lock()` calls — exactly one acquires. |
 | `config`, `uniqueLockName`, `sleep`, `cleanupLock` | Test helpers. |
+| `MutableClock`, `withMutableClock` | Controllable `ClockProvider` for skew / expiry scenarios (see [failure modes](../../docs/failure-modes.md)). |
 | `IntegrationTestOptions`, `StorageBasedIntegrationTestOptions` | The option types. |
 
 ## Requirements

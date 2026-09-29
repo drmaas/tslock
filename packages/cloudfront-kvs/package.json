@@ -1,7 +1,7 @@
 {
-  "name": "@tslock/nats",
+  "name": "@tslock/cloudfront-kvs",
   "version": "2.0.1",
-  "description": "TSLock NATS JetStream KV provider",
+  "description": "Amazon CloudFront KeyValueStore lock provider for TSLock (not Redis-compatible)",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -28,22 +28,24 @@
   },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
-    "nats": "^2.0.0"
+    "@aws-sdk/client-cloudfront-keyvaluestore": "^3.600.0"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
+      "optional": false
+    },
+    "@aws-sdk/client-cloudfront-keyvaluestore": {
       "optional": false
     }
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
     "@tslock/test-support": "workspace:*",
-    "nats": "^2.0.0",
-    "testcontainers": "^12.0.4",
+    "@aws-sdk/client-cloudfront-keyvaluestore": "^3.600.0",
+    "vitest": "^4.1.11",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
-    "vitest": "^4.1.11",
-    "@types/node": "^26.6.3"
+    "@types/node": "^22.20.2"
   },
   "publishConfig": {
     "access": "public"
@@ -51,7 +53,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/drmaas/tslock.git",
-    "directory": "packages/nats"
+    "directory": "packages/cloudfront-kvs"
   },
   "sideEffects": false
 }

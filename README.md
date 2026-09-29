@@ -1,8 +1,20 @@
 # TSLock
 
+[![CI](https://github.com/drmaas/tslock/actions/workflows/ci.yml/badge.svg)](https://github.com/drmaas/tslock/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@tslock/core.svg)](https://www.npmjs.com/package/@tslock/core)
+[![Node.js](https://img.shields.io/node/v/@tslock/core.svg)](https://nodejs.org)
+
 > Distributed locks for scheduled tasks in TypeScript — a port of [ShedLock](https://github.com/lukas-krecan/ShedLock).
 
 TSLock ensures that a scheduled task executes on **at most one** instance at a time across multiple Node.js processes. When a task's lock is held by another instance, the task **skips** (does not queue, does not wait).
+
+## Guides
+
+| Guide | Content |
+|---|---|
+| [Migrate from ShedLock](./docs/02-migration-from-shedlock.md) | One-page JVM → TypeScript migration (API map, durations, providers, Nest `@SchedulerLock`) |
+| [TSLock vs Redlock / BullMQ](./docs/03-comparison.md) | Correctness and model differences: skip-not-queue, clocks, Redis ≠ Redlock |
+| [Failure modes](./docs/failure-modes.md) | When double-execution is possible (clock skew, overrun, Memcached eviction, keep-alive) |
 
 ## Why?
 
@@ -44,7 +56,7 @@ const executor = new DefaultLockingTaskExecutor(provider);
 // Wrap your scheduled task:
 await executor.executeWithLock(
   () => myScheduledTask(),
-  createLockConfig({ name: 'my-task', lockAtMostFor: '5m', lockAtLeastFor: '1m' }),
+  createLockConfig('my-task', '5m', '1m'),
 );
 ```
 
@@ -112,13 +124,14 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/elasticsearch` | `@elastic/elasticsearch` | [README](./packages/elasticsearch/README.md) |
 | `@tslock/opensearch` | `@opensearch-project/opensearch` | [README](./packages/opensearch/README.md) |
 | `@tslock/arangodb` | `arangojs` | [README](./packages/arangodb/README.md) |
+| `@tslock/cloudfront-kvs` | `@aws-sdk/client-cloudfront-keyvaluestore` (not Redis) | [README](./packages/cloudfront-kvs/README.md) |
 
 ### Redis providers
 
 | Package | Driver | README |
 |---|---|---|
-| `@tslock/redis` | `redis` (node-redis, official) | [README](./packages/redis/README.md) |
-| `@tslock/redis-ioredis` | `ioredis` | [README](./packages/redis-ioredis/README.md) |
+| `@tslock/redis` | `redis` (node-redis) — also Valkey / ElastiCache / MemoryDB | [README](./packages/redis/README.md) |
+| `@tslock/redis-ioredis` | `ioredis` — also Valkey / ElastiCache / MemoryDB | [README](./packages/redis-ioredis/README.md) |
 
 ### Specialized providers
 
@@ -129,6 +142,9 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/etcd` | `etcd3` | [README](./packages/etcd/README.md) |
 | `@tslock/memcached` | `memjs` | [README](./packages/memcached/README.md) |
 | `@tslock/nats` | `nats` (JetStream KV) | [README](./packages/nats/README.md) |
+| `@tslock/cloudflare-do` | Cloudflare Durable Objects (Workers KV deferred) | [README](./packages/cloudflare-do/README.md) |
+
+**Deferred:** Apache Ignite (immature Node thin client). **Not Redis:** CloudFront KeyValueStore is `@tslock/cloudfront-kvs`, not the Redis packages.
 
 ### Middleware integrations
 
@@ -177,7 +193,7 @@ await executor.executeWithLock(
     await LockExtender.extendActiveLock('10m', 0); // extend by 10 minutes
     // ... continue work ...
   },
-  createLockConfig({ name: 'long-task', lockAtMostFor: '5m' }),
+  createLockConfig('long-task', '5m'),
 );
 ```
 
@@ -206,8 +222,10 @@ function getProvider(tenant: string): LockProvider {
 - **Set `lockAtMostFor` generously** — it's the safety net if a node crashes. If a task runs longer than `lockAtMostFor`, it may execute twice.
 - **Set `lockAtLeastFor` for short tasks** — prevents re-execution from clock drift.
 - **Do not manually delete lock rows/documents** — the in-memory `LockRecordRegistry` cache means a deleted row won't be recreated until process restart.
-- **Clocks must be synchronized** (NTP) — lock validity depends on wall-clock time.
+- **Clocks must be synchronized** (NTP) — lock validity depends on wall-clock time. TSLock does not correct skew.
 - **Memcached can evict locks early** if the cache is full — use a dedicated memcached instance or a different provider for critical locks.
+
+See **[Failure modes: when double-execution is possible](./docs/failure-modes.md)** for clock skew, `lockAtMostFor` overrun, Memcached eviction, crashed keep-alive, and the in-memory harness that documents those behaviors. Stay honest with the model: at-most-once holds only while clocks stay synced and the storage lease remains.
 
 ## Local development
 
@@ -280,7 +298,7 @@ Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) or follow the equival
 ```
 tslock/
 ├── packages/        # @tslock/* packages (core, providers, middleware, otel, nestjs)
-├── docs/            # vision, architecture, per-provider specs/plans/reviews
+├── docs/            # vision, architecture, migration/comparison guides, specs/plans/reviews
 ├── .changeset/      # changesets config
 ├── .github/         # CI workflow
 ├── AGENTS.md        # instructions for AI agents + contributor conventions
@@ -289,12 +307,15 @@ tslock/
 
 ## Documentation
 
-All design docs are in [`docs/`](./docs). Contributor workflow routing is documented in [`CONTRIBUTING.md`](./CONTRIBUTING.md), and the executable agent workflows are in [`.opencode/skills/`](./.opencode/skills/).
+All design docs are in [`docs/`](./docs). Contributor workflow routing is documented in [`CONTRIBUTING.md`](./CONTRIBUTING.md), and the executable agent workflows are in [`.opencode/skills/`](./.opencode/skills/). Newcomer-oriented guides are also linked under [Guides](#guides).
 
 | Doc | Content |
 |---|---|
 | [`docs/00-vision.md`](./docs/00-vision.md) | Product vision, scope, provider matrix, design decisions |
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
+| [`docs/02-migration-from-shedlock.md`](./docs/02-migration-from-shedlock.md) | ShedLock → TSLock migration guide |
+| [`docs/03-comparison.md`](./docs/03-comparison.md) | Comparison vs Redlock and BullMQ-style locks |
+| [`docs/failure-modes.md`](./docs/failure-modes.md) | Failure modes: when double-execution is possible |
 | [`docs/specs/`](./docs/specs/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up specifications (30 docs) |
 | [`docs/plans/`](./docs/plans/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up implementation plans (30 docs) |
 | [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including NestJS, OpenTelemetry, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (31 docs) |

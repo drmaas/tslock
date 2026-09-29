@@ -15,6 +15,8 @@ tslock/
 ├── docs/
 │   ├── 00-vision.md          # product vision, scope, provider matrix
 │   ├── 01-architecture.md    # monorepo structure, core abstractions, provider categories
+│   ├── 02-migration-from-shedlock.md  # ShedLock → TSLock migration (newcomers)
+│   ├── 03-comparison.md      # vs Redlock / BullMQ-style locks (newcomers)
 │   ├── specs/                # 30 specs, including architecture hardening, verification follow-up, NestJS, and OpenTelemetry
 │   ├── plans/                # 30 implementation plans
 │   └── reviews/              # 31 reviews, including NestJS, OpenTelemetry, and the supplemental 24-middleware-code review
@@ -26,7 +28,7 @@ tslock/
 └── package.json              # root scripts and dev dependencies
 ```
 
-The `NN-` prefix on spec/plan/review files is a 2-digit number that matches across all three directories (e.g., `docs/specs/06-spanner.md`, `docs/plans/06-spanner.md`, `docs/reviews/06-spanner.md`). `docs/reviews/24-middleware-code.md` is the one supplemental review sharing the `24` prefix.
+The `NN-` prefix on spec/plan/review files is a 2-digit number that matches across all three directories (e.g., `docs/specs/06-spanner.md`, `docs/plans/06-spanner.md`, `docs/reviews/06-spanner.md`). `docs/reviews/24-middleware-code.md` is the one supplemental review sharing the `24` prefix. User-facing numbered guides (`02-`, `03-`) live directly under `docs/` alongside vision/architecture.
 
 ## Read these first
 
@@ -65,14 +67,15 @@ Providers fall into categories that determine their implementation pattern:
 | Category | Pattern | Providers |
 |---|---|---|
 | **A — StorageBasedLockProvider** | `StorageAccessor` (insert/update/unlock/extend) + `StorageBasedLockProvider` | SQL, Neo4j, Couchbase, Spanner, Firestore, Datastore, S3, GCS, Cassandra |
-| **B — Direct LockProvider** | Custom mechanism, implements `LockProvider` directly | Mongo, DynamoDB, ES/OpenSearch, ArangoDB |
-| **C — Redis** | `SET NX PX` + Lua scripts, shared `InternalRedisLockProvider` | Redis, Redis-ioredis |
+| **B — Direct LockProvider** | Custom mechanism, implements `LockProvider` directly | Mongo, DynamoDB, ES/OpenSearch, ArangoDB, CloudFront KVS |
+| **C — Redis** | `SET NX PX` + Lua scripts, shared `InternalRedisLockProvider` | Redis, Redis-ioredis (also Valkey / ElastiCache / MemoryDB) |
 | **D — Hazelcast** | IMap entry-level lock + get-check-put + TTL | Hazelcast |
 | **E — ZooKeeper** | PERSISTENT znodes + version CAS | ZooKeeper |
 | **F — Etcd** | Lease + txn (version == 0) | Etcd |
 | **G — Memcached** | `add` (fails if exists) + `replace` | Memcached |
 | **H — NATS JetStream** | KeyValue bucket + create/update with revision | NATS |
 | **I — InMemory** | `Map<string, LockRecord>` | InMemory (only `ExtensibleLockProvider` among specialized) |
+| **J — Cloudflare Durable Objects** | DO storage + fetch protocol | Cloudflare DO (Workers KV deferred) |
 
 ## Development Workflow
 
@@ -82,7 +85,7 @@ Classify the requested work before editing. The executable, detailed workflows l
 |---|---|---|---|
 | Bug fix | `tslock-bugfix` | Reproducible bug, regression, race, or incorrect behavior | New feature/design, docs-only, or test-only work |
 | Feature/provider | `tslock-sdd` | New behavior, provider, concept, public/cross-package contract, or substantial refactor | Isolated bug, docs-only, or test-only work |
-| Documentation | `tslock-doc-improver` | Reconcile or improve READMEs, examples, links, contributor docs, specs/plans references, or API descriptions | Runtime defect or new architecture is the primary problem |
+| Documentation | `tslock-doc-improver` | Reconcile or improve READMEs, examples, links, contributor docs, newcomer guides (`docs/02-migration-from-shedlock.md`, `docs/03-comparison.md`), specs/plans references, or API descriptions | Runtime defect or new architecture is the primary problem |
 | Tests | `tslock-test-improver` | Coverage, assertions, integration, fuzz, shared contracts, or test infrastructure | Production bug or new feature design is the primary problem |
 | Refactor | `tslock-sdd` if substantial; fast track if local/mechanical | Architecture, public contracts, or multiple packages are affected | Trivial rename or mechanical cleanup |
 
