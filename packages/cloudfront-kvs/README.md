@@ -56,6 +56,8 @@ Configure the client for SigV4A as required by the CloudFront KeyValueStore API.
 
 Store-wide ETag means concurrent updates to **different** keys can still conflict. Prefer low-frequency scheduled locks; use separate stores if you need higher write parallelism. Function readers may lag control-plane publishes — do not assume immediate edge visibility.
 
+Unlock and extend require matching `lockedBy` (hostname). A late unlock after another instance has re-acquired the lock is a no-op.
+
 ## Integration tests
 
 Opt-in (requires AWS credentials and a real KeyValueStore):

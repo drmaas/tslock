@@ -135,6 +135,60 @@ describe('applyLockOp', () => {
     );
     expect(again).toEqual({ ok: false, reason: 'held' });
   });
+
+  it('late unlock from previous owner does not clobber new holder', async () => {
+    const storage = createMemoryDoLockStorage();
+    const t0 = 1_000_000;
+    await applyLockOp(
+      storage,
+      {
+        op: 'lock',
+        name: 'job',
+        lockAtMostFor: 1_000,
+        lockAtLeastFor: 0,
+        createdAt: t0,
+        lockedBy: 'a',
+      },
+      t0,
+    );
+    await applyLockOp(
+      storage,
+      {
+        op: 'lock',
+        name: 'job',
+        lockAtMostFor: 60_000,
+        lockAtLeastFor: 0,
+        createdAt: t0 + 2_000,
+        lockedBy: 'b',
+      },
+      t0 + 2_000,
+    );
+    await applyLockOp(
+      storage,
+      {
+        op: 'unlock',
+        name: 'job',
+        lockAtMostFor: 1_000,
+        lockAtLeastFor: 0,
+        createdAt: t0,
+        lockedBy: 'a',
+      },
+      t0 + 3_000,
+    );
+    const held = await applyLockOp(
+      storage,
+      {
+        op: 'lock',
+        name: 'job',
+        lockAtMostFor: 60_000,
+        lockAtLeastFor: 0,
+        createdAt: t0 + 4_000,
+        lockedBy: 'c',
+      },
+      t0 + 4_000,
+    );
+    expect(held).toEqual({ ok: false, reason: 'held' });
+  });
 });
 
 describe('handleTslockLockRequest', () => {

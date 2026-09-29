@@ -63,6 +63,10 @@ createCloudflareDoLockProvider({
 });
 ```
 
+## Ownership and clocks
+
+Unlock is a no-op when `lockedBy` does not match the caller, so a late unlock after expiry cannot release a new holder. The Durable Object compares stored `lockUntil` to its own `Date.now()` while new deadlines use client `createdAt` + durations — keep client and Worker clocks NTP-synced (same assumption as the rest of TSLock).
+
 ## Bun / Node
 
 The client runs on Node.js >= 22 (and Bun when Node-compatible `fetch` is available). There is no Bun-only package. See the root [CONTRIBUTING.md](../../CONTRIBUTING.md) Bun notes.

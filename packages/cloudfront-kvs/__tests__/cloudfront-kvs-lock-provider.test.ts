@@ -1,4 +1,4 @@
-import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
+import { ClockProvider, LockException, Utils, createLockConfig } from '@tslock/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveCloudFrontKvsConfiguration } from '../src/cloudfront-kvs-configuration.js';
 import { CloudFrontKvsLockProvider } from '../src/cloudfront-kvs-lock-provider.js';
@@ -61,8 +61,8 @@ describe('CloudFrontKvsLockProvider', () => {
   it('returns undefined when lock is held', async () => {
     client.send.mockResolvedValueOnce({ ETag: 'etag-1' }).mockResolvedValueOnce({
       Value: encodeLockRecord({
-        lockUntil: new Date(1_100_000).toISOString().replace(/Z$/, '.000Z'),
-        lockedAt: new Date(900_000).toISOString().replace(/Z$/, '.000Z'),
+        lockUntil: Utils.toIsoString(1_100_000),
+        lockedAt: Utils.toIsoString(900_000),
         lockedBy: 'other',
       }),
     });
@@ -77,8 +77,8 @@ describe('CloudFrontKvsLockProvider', () => {
       .mockResolvedValueOnce({ ETag: 'etag-1' })
       .mockResolvedValueOnce({
         Value: encodeLockRecord({
-          lockUntil: new Date(900_000).toISOString().replace(/Z$/, '.000Z'),
-          lockedAt: new Date(800_000).toISOString().replace(/Z$/, '.000Z'),
+          lockUntil: Utils.toIsoString(900_000),
+          lockedAt: Utils.toIsoString(800_000),
           lockedBy: 'other',
         }),
       })
@@ -86,6 +86,11 @@ describe('CloudFrontKvsLockProvider', () => {
 
     const lock = await provider.lock(createLockConfig('job', 60_000));
     expect(lock).toBeDefined();
+  });
+
+  it('throws LockException on corrupt lock value', async () => {
+    client.send.mockResolvedValueOnce({ ETag: 'etag-1' }).mockResolvedValueOnce({ Value: 'not-json' });
+    await expect(provider.lock(createLockConfig('job', 60_000))).rejects.toThrow(LockException);
   });
 
   it('retries on ConflictException then succeeds', async () => {
@@ -138,9 +143,9 @@ describe('CloudFrontKvsLockProvider', () => {
       .mockResolvedValueOnce({ ETag: 'etag-3' })
       .mockResolvedValueOnce({
         Value: encodeLockRecord({
-          lockUntil: '1970-01-01T00:17:40.000Z',
-          lockedAt: '1970-01-01T00:16:40.000Z',
-          lockedBy: 'host',
+          lockUntil: Utils.toIsoString(1_060_000),
+          lockedAt: Utils.toIsoString(1_000_000),
+          lockedBy: Utils.getHostname(),
         }),
       })
       .mockResolvedValueOnce({ ETag: 'etag-4' });
@@ -148,6 +153,18 @@ describe('CloudFrontKvsLockProvider', () => {
     await held!.unlock();
     const putCmd = client.send.mock.calls.at(-1)?.[0] as { input: { Value: string } };
     expect(JSON.parse(putCmd.input.Value).lockUntil).toBeTruthy();
+  });
+
+  it('unlock no-ops for a different owner', async () => {
+    client.send.mockResolvedValueOnce({ ETag: 'etag-1' }).mockResolvedValueOnce({
+      Value: encodeLockRecord({
+        lockUntil: Utils.toIsoString(1_060_000),
+        lockedAt: Utils.toIsoString(1_000_000),
+        lockedBy: 'someone-else',
+      }),
+    });
+    await provider.unlock(createLockConfig('job', 60_000));
+    expect(client.send).toHaveBeenCalledTimes(2);
   });
 
   it('extend rejects different owner', async () => {

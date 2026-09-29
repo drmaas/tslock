@@ -1,4 +1,4 @@
-import { extensibleLockProviderIntegrationTests, fuzzTests, lockProviderIntegrationTests } from '@tslock/test-support';
+import { extensibleLockProviderIntegrationTests, fuzzTests } from '@tslock/test-support';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createCloudFrontKvsLockProvider } from '../../src/index.js';
 
@@ -31,7 +31,6 @@ integrationDescribe('CloudFront KeyValueStore integration', () => {
       });
     };
 
-    lockProviderIntegrationTests(getProvider);
     extensibleLockProviderIntegrationTests(getProvider);
     fuzzTests(getProvider);
   }

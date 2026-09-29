@@ -106,14 +106,16 @@ export class CloudFrontKvsLockProvider implements ExtensibleLockProvider {
   }
 
   async unlock(config: LockConfiguration): Promise<void> {
+    const hostname = Utils.getHostname();
     for (let attempt = 0; attempt < this.config.maxEtagRetries; attempt++) {
       const etag = await this.describeEtag();
       const existing = await this.getRecord(config.name);
       if (existing === null) return;
+      if (existing.lockedBy !== hostname) return;
       const record = buildLockRecord(
         unlockTime(config),
         Date.parse(existing.lockedAt) || config.createdAt,
-        existing.lockedBy || Utils.getHostname(),
+        existing.lockedBy,
       );
       try {
         await this.putRecord(config.name, record, etag);

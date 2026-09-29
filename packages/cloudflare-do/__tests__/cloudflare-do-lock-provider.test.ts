@@ -1,5 +1,5 @@
 import { ClockProvider, createLockConfig } from '@tslock/core';
-import { extensibleLockProviderIntegrationTests, fuzzTests, lockProviderIntegrationTests } from '@tslock/test-support';
+import { extensibleLockProviderIntegrationTests, fuzzTests } from '@tslock/test-support';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createCloudflareDoLockProvider } from '../src/cloudflare-do-lock-provider.js';
 import { createMemoryDoLockStorage } from '../src/do-lock-storage.js';
@@ -55,7 +55,6 @@ describe('CloudflareDoLockProvider', () => {
 
 describe('Cloudflare DO in-process shared contracts', () => {
   const getProvider = async () => createInProcessProvider();
-  lockProviderIntegrationTests(getProvider, { timeMode: 'mock' });
   extensibleLockProviderIntegrationTests(getProvider, { timeMode: 'mock' });
   fuzzTests(getProvider);
 });

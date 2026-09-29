@@ -31,6 +31,9 @@ export async function applyLockOp(
     if (!existing) {
       return { ok: true };
     }
+    if (existing.lockedBy !== body.lockedBy) {
+      return { ok: true };
+    }
     await storage.put(key, {
       lockUntil: unlockUntilMs(body.createdAt, body.lockAtLeastFor, now),
       lockedAt: existing.lockedAt,
