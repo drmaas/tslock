@@ -10,6 +10,7 @@ Treat documentation as an executable contract for contributors and users. The go
 ## 1. Establish the source of truth
 
 - Read `CONTRIBUTING.md`, `AGENTS.md`, the relevant root/package README, and the requested docs.
+- For newcomer discoverability, also check `docs/02-migration-from-shedlock.md`, `docs/03-comparison.md`, root README Guides/badges links, and that claims match the lock model (skip-not-queue, clock sync, Redis ≠ Redlock).
 - Locate related `docs/specs/`, `docs/plans/`, and `docs/reviews/` records, implementation files, tests, package metadata, scripts, and CI configuration.
 - Build a small consistency map: claim → source document/code → current evidence → intended correction.
 - Distinguish historical design records from current guidance. Specs, plans, and reviews are immutable after creation; do not edit them to make history appear consistent. Prefer correcting current docs or creating a new design record when a contract genuinely changes.
