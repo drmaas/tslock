@@ -63,6 +63,8 @@ import { KeepAliveLockProvider } from '@tslock/core';
 const provider = new KeepAliveLockProvider(extensibleProvider);
 ```
 
+Keep-alive reduces overrun risk but does not remove clock-skew or storage-eviction failure modes — see [failure modes](../../docs/failure-modes.md).
+
 ### Metrics
 
 [`@tslock/otel`](../otel/README.md) records OpenTelemetry metrics from `LockingTaskExecutorListener`, unlock and extend calls, and the keep-alive failure callback. Prometheus and other systems can implement the listener directly. Core does not depend on a metrics library.

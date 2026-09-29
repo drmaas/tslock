@@ -14,6 +14,7 @@ TSLock ensures that a scheduled task executes on **at most one** instance at a t
 |---|---|
 | [Migrate from ShedLock](./docs/02-migration-from-shedlock.md) | One-page JVM → TypeScript migration (API map, durations, providers, Nest `@SchedulerLock`) |
 | [TSLock vs Redlock / BullMQ](./docs/03-comparison.md) | Correctness and model differences: skip-not-queue, clocks, Redis ≠ Redlock |
+| [Failure modes](./docs/failure-modes.md) | When double-execution is possible (clock skew, overrun, Memcached eviction, keep-alive) |
 
 ## Why?
 
@@ -217,8 +218,10 @@ function getProvider(tenant: string): LockProvider {
 - **Set `lockAtMostFor` generously** — it's the safety net if a node crashes. If a task runs longer than `lockAtMostFor`, it may execute twice.
 - **Set `lockAtLeastFor` for short tasks** — prevents re-execution from clock drift.
 - **Do not manually delete lock rows/documents** — the in-memory `LockRecordRegistry` cache means a deleted row won't be recreated until process restart.
-- **Clocks must be synchronized** (NTP) — lock validity depends on wall-clock time.
+- **Clocks must be synchronized** (NTP) — lock validity depends on wall-clock time. TSLock does not correct skew.
 - **Memcached can evict locks early** if the cache is full — use a dedicated memcached instance or a different provider for critical locks.
+
+See **[Failure modes: when double-execution is possible](./docs/failure-modes.md)** for clock skew, `lockAtMostFor` overrun, Memcached eviction, crashed keep-alive, and the in-memory harness that documents those behaviors. Stay honest with the model: at-most-once holds only while clocks stay synced and the storage lease remains.
 
 ## Local development
 
@@ -308,6 +311,7 @@ All design docs are in [`docs/`](./docs). Contributor workflow routing is docume
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
 | [`docs/02-migration-from-shedlock.md`](./docs/02-migration-from-shedlock.md) | ShedLock → TSLock migration guide |
 | [`docs/03-comparison.md`](./docs/03-comparison.md) | Comparison vs Redlock and BullMQ-style locks |
+| [`docs/failure-modes.md`](./docs/failure-modes.md) | Failure modes: when double-execution is possible |
 | [`docs/specs/`](./docs/specs/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up specifications (30 docs) |
 | [`docs/plans/`](./docs/plans/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up implementation plans (30 docs) |
 | [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including NestJS, OpenTelemetry, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (31 docs) |
