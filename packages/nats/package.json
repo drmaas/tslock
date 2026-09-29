@@ -19,7 +19,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "node ../../scripts/tsup.cjs",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
@@ -42,7 +42,7 @@
     "@tslock/test-support": "workspace:*",
     "nats": "^2.0.0",
     "testcontainers": "^12.0.4",
-    "typescript": "^5.5.0",
+    "typescript": "^7.0.2",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11",
     "@types/node": "^26.6.3"

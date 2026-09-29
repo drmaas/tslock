@@ -19,7 +19,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "node ../../scripts/tsup.cjs",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
@@ -44,7 +44,7 @@
     "@tslock/core": "workspace:*",
     "@tslock/test-support": "workspace:*",
     "testcontainers": "^12.0.4",
-    "typescript": "^5.5.0",
+    "typescript": "^7.0.2",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11",
     "@aws-sdk/client-dynamodb": "^3.0.0"

@@ -19,7 +19,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "node ../../scripts/tsup.cjs",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
@@ -51,7 +51,7 @@
     "@testcontainers/postgresql": "^12.1.0",
     "@types/pg": "^8.10.0",
     "pg": "^8.11.0",
-    "typescript": "^5.5.0",
+    "typescript": "^7.0.2",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11",
     "drizzle-orm": "^0.45.2"

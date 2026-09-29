@@ -31,9 +31,10 @@
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.2",
     "@types/node": "^26.6.3",
+    "@typescript/typescript6": "^6.0.2",
     "husky": "^9.1.7",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   }
 }
