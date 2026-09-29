@@ -29,7 +29,7 @@
   },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
-    "@elastic/elasticsearch": "^8.0.0"
+    "@elastic/elasticsearch": "^9.5.1"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
-    "@elastic/elasticsearch": "^8.0.0",
+    "@elastic/elasticsearch": "^9.5.1",
     "typescript": "^5.5.0",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11"
