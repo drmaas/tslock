@@ -14,6 +14,7 @@ TSLock ensures that a scheduled task executes on **at most one** instance at a t
 |---|---|
 | [Migrate from ShedLock](./docs/02-migration-from-shedlock.md) | One-page JVM → TypeScript migration (API map, durations, providers, Nest `@SchedulerLock`) |
 | [TSLock vs Redlock / BullMQ](./docs/03-comparison.md) | Correctness and model differences: skip-not-queue, clocks, Redis ≠ Redlock |
+| [Failure modes](./docs/failure-modes.md) | When double-execution is possible (clock skew, overrun, Memcached eviction, keep-alive) |
 
 ## Why?
 
@@ -310,6 +311,7 @@ All design docs are in [`docs/`](./docs). Contributor workflow routing is docume
 | [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
 | [`docs/02-migration-from-shedlock.md`](./docs/02-migration-from-shedlock.md) | ShedLock → TSLock migration guide |
 | [`docs/03-comparison.md`](./docs/03-comparison.md) | Comparison vs Redlock and BullMQ-style locks |
+| [`docs/failure-modes.md`](./docs/failure-modes.md) | Failure modes: when double-execution is possible |
 | [`docs/specs/`](./docs/specs/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up specifications (30 docs) |
 | [`docs/plans/`](./docs/plans/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up implementation plans (30 docs) |
 | [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including NestJS, OpenTelemetry, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (31 docs) |
