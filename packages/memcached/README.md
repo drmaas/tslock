@@ -4,7 +4,7 @@
 
 A [TSLock](../../README.md) provider that implements `LockProvider` directly. Lock acquisition uses the memcached `add` command, which fails atomically if the key already exists. Unlock is a `delete` (or a `replace` with a shorter TTL when `lockAtLeastFor > 0`, so the key lingers briefly to prevent immediate re-acquisition from clock drift).
 
-> **Caveat:** Memcached can evict keys early under memory pressure. Use a dedicated memcached instance (or a different provider) for critical locks.
+> **Caveat:** Memcached can evict keys early under memory pressure. Use a dedicated memcached instance (or a different provider) for critical locks. See [failure modes](../../docs/failure-modes.md#3-memcached-early-eviction).
 
 ## Installation
 
