@@ -32,11 +32,7 @@ const result = await executor.executeWithLock(
     console.log('Running the task on exactly one instance…');
     // ... your batch job, cleanup, webhook, etc.
   },
-  createLockConfig({
-    name: 'nightly-cleanup',
-    lockAtMostFor: '5m', // safety net: auto-expires if the holder crashes
-    lockAtLeastFor: '1m', // prevents immediate re-run from clock drift
-  }),
+  createLockConfig('nightly-cleanup', '5m', '1m'),
 );
 
 console.log(result.wasExecuted); // true on the winner, false on everyone else
@@ -54,7 +50,7 @@ await executor.executeWithLock(
     await LockExtender.extendActiveLock('10m', 0); // push the deadline out
     // ... keep going ...
   },
-  createLockConfig({ name: 'long-task', lockAtMostFor: '5m' }),
+  createLockConfig('long-task', '5m'),
 );
 ```
 

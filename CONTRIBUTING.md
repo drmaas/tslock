@@ -26,6 +26,7 @@ Be kind and professional. Treat everyone with respect. Harassment, personal atta
 - **Check existing issues and PRs** before opening a new one — your topic may already be in progress.
 - **Open an issue first** for new providers, breaking changes, or large architectural changes. A quick discussion up front saves everyone time.
 - Small fixes (typos, bug fixes in one function, docs tweaks) don't need an issue — just open a PR.
+- **User-facing guides** (not contributor workflow): [ShedLock migration](./docs/02-migration-from-shedlock.md) and [vs Redlock / BullMQ](./docs/03-comparison.md) — keep them accurate when changing lock semantics or README discoverability.
 
 ## Getting set up
 
@@ -60,7 +61,7 @@ If all of those pass, you're good to go.
 
 - 🐛 **Fix a bug** — check the issue tracker for `bug` labels and use `tslock-bugfix` when working with an agent.
 - 📦 **Add a provider** — see [Adding a new provider](#adding-a-new-provider). Open an issue first to claim it; use `tslock-sdd` with an agent.
-- 📝 **Improve docs** — READMEs, comments, and design docs; use `tslock-doc-improver` with an agent.
+- 📝 **Improve docs** — READMEs, comments, design docs, and newcomer guides ([`docs/02-migration-from-shedlock.md`](./docs/02-migration-from-shedlock.md), [`docs/03-comparison.md`](./docs/03-comparison.md)); use `tslock-doc-improver` with an agent.
 - ✅ **Improve tests** — especially integration test coverage for providers with emulators; use `tslock-test-improver` with an agent.
 - 🔧 **Refactor** — keep the code lean. Use `tslock-sdd` for a substantial refactor and the fast track for a local mechanical refactor (see [`AGENTS.md`](./AGENTS.md)).
 - 🌍 **Report issues** — clear reproduction steps and environment details go a long way.
@@ -73,7 +74,7 @@ The repository provides OpenCode skills under [`.opencode/skills/`](./.opencode/
 |---|---|---|---|
 | Fix a bug | `tslock-bugfix` | A reproducible defect, regression, race, or incorrect behavior needs a focused fix | The primary work is a new feature, docs audit, or test-only coverage improvement |
 | Add a feature/provider | `tslock-sdd` | New behavior, public API, provider, concept, cross-package contract, or substantial refactor | The change is an isolated bug, docs-only update, or test-only improvement |
-| Improve docs | `tslock-doc-improver` | Docs, READMEs, specs/plans references, examples, links, or contributor guidance need reconciliation | The primary problem is incorrect runtime behavior or a new design |
+| Improve docs | `tslock-doc-improver` | Docs, READMEs, newcomer guides (ShedLock migration, Redlock/BullMQ comparison), specs/plans references, examples, links, or contributor guidance need reconciliation | The primary problem is incorrect runtime behavior or a new design |
 | Improve tests | `tslock-test-improver` | Coverage, assertions, integration tests, fuzz tests, or test infrastructure need improvement | The primary task is fixing production behavior or designing a new feature |
 | Refactor | `tslock-sdd` for substantial changes; fast track for local mechanical changes | The refactor changes architecture, public contracts, or multiple packages | Do not use SDD for a trivial rename or mechanical cleanup |
 
