@@ -82,13 +82,15 @@ public void report() { ... }
 TSLock NestJS ([`@tslock/nestjs`](../packages/nestjs/README.md)):
 
 ```typescript
+import { Cron } from '@nestjs/schedule';
 import { SchedulerLock, TslockModule } from '@tslock/nestjs';
 
+@Cron('0 0 * * * *')
 @SchedulerLock({ name: 'report-task', lockAtMostFor: '50s', lockAtLeastFor: '10s' })
 async report() { ... }
 ```
 
-Register `TslockModule` with a `LockProvider`. When the lock is held, the method does not run (same skip semantics).
+Register `TslockModule` with a `LockProvider`. When the lock is held, the method body does not run (same skip semantics). For typical `void` / no-return methods, both success and skip resolve to `undefined` — use a `LockingTaskExecutorListener` (or a non-void return) if you need to observe contention.
 
 Without Nest, keep using `DefaultLockingTaskExecutor` around your existing scheduler (`node-cron`, Bree, EventBridge, `setInterval`, etc.). Optional thin adapters live under `@tslock/node-cron`, `@tslock/bree`, and `@tslock/aws-lambda`.
 
@@ -114,7 +116,7 @@ Each provider README has setup SQL/indexes, config, and a copy-paste example. In
 3. Replace `@SchedulerLock` / `LockingTaskExecutor` calls with TSLock equivalents; make every lock path `await`.
 4. Rewrite durations from `PT…` / `Duration` to TSLock `DurationInput`.
 5. Confirm NTP (or `useDbTime` on SQL) and generous `lockAtMostFor` / keep-alive for long jobs.
-6. Treat `wasExecuted === false` (or Nest `undefined`) as **expected contention**, not a failure to retry via a queue.
+6. Treat executor `wasExecuted === false` as **expected contention**, not a failure to retry via a queue. With Nest `@SchedulerLock` on void methods, skip and success both look like `undefined` at the call site — observe skips via a listener if you need that signal.
 
 ## Further reading
 
