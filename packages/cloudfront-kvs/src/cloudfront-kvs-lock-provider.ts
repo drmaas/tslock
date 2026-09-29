@@ -9,9 +9,9 @@ import {
   type ExtensibleLockProvider,
   type LockConfiguration,
   LockException,
+  lockAtMostUntil,
   type SimpleLock,
   Utils,
-  lockAtMostUntil,
   unlockTime,
 } from '@tslock/core';
 import {
@@ -22,8 +22,8 @@ import {
 import { isConflict, isNotFound } from './cloudfront-kvs-errors.js';
 import { CloudFrontKvsLock } from './cloudfront-kvs-lock.js';
 import {
-  type CloudFrontKvsLockRecord,
   buildLockRecord,
+  type CloudFrontKvsLockRecord,
   decodeLockRecord,
   encodeLockRecord,
   parseLockUntilMs,

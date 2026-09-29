@@ -1,5 +1,5 @@
 import { extensibleLockProviderIntegrationTests, fuzzTests } from '@tslock/test-support';
-import { type RedisClientType, createClient } from 'redis';
+import { createClient, type RedisClientType } from 'redis';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createNodeRedisLockProvider } from '../../src/node-redis-lock-provider.js';
 

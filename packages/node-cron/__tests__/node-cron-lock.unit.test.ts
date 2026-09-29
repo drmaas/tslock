@@ -1,5 +1,5 @@
 import type { LockConfiguration, LockProvider, SimpleLock } from '@tslock/core';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createNodeCronLock } from '../src/index.js';
 
 function acquiredLock(onUnlock?: () => void): SimpleLock {

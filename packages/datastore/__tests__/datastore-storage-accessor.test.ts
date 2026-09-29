@@ -1,6 +1,6 @@
 import type { Datastore, Transaction } from '@google-cloud/datastore';
-import { ClockProvider, LockException, createLockConfig } from '@tslock/core';
-import { type MockInstance, describe, expect, it, vi } from 'vitest';
+import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { DatastoreFieldNames } from '../src/datastore-configuration.js';
 import { DatastoreStorageAccessor } from '../src/datastore-storage-accessor.js';
 

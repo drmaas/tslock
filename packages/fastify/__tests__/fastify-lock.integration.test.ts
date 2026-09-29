@@ -1,7 +1,7 @@
 import { LockAssert } from '@tslock/core';
 import { InMemoryLockProvider } from '@tslock/in-memory';
+import type { FastifyInstance } from 'fastify';
 import Fastify from 'fastify';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { FastifyLockFactory } from '../src/fastify-lock-plugin.js';
 import { createFastifyLockPlugin } from '../src/index.js';

@@ -1,6 +1,6 @@
 import { ClockProvider, createLockConfig } from '@tslock/core';
 import type cassandra from 'cassandra-driver';
-import { type MockInstance, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { ResolvedCassandraOptions } from '../../src/cassandra-cql.js';
 import { CassandraStorageAccessor } from '../../src/cassandra-storage-accessor.js';
 

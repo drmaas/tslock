@@ -5,9 +5,9 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { DefaultLockingTaskExecutor, LockException, type LockProvider } from '@tslock/core';
 import { InMemoryLockProvider } from '@tslock/in-memory';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SchedulerLockInterceptor } from '../src/scheduler-lock-interceptor.js';
 import { SchedulerLock } from '../src/scheduler-lock.js';
-import { TSLOCK_LOCKING_TASK_EXECUTOR, TSLOCK_LOCK_PROVIDER } from '../src/tokens.js';
+import { SchedulerLockInterceptor } from '../src/scheduler-lock-interceptor.js';
+import { TSLOCK_LOCK_PROVIDER, TSLOCK_LOCKING_TASK_EXECUTOR } from '../src/tokens.js';
 import { TslockModule } from '../src/tslock-module.js';
 
 const TEST_LOCK_PROVIDER = Symbol('TEST_LOCK_PROVIDER');

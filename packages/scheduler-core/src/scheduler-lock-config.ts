@@ -1,10 +1,10 @@
 import {
   type DurationInput,
   LockException,
-  type LockProvider,
   type LockingTaskExecutorListener,
-  Utils,
+  type LockProvider,
   parseDuration,
+  Utils,
 } from '@tslock/core';
 
 export interface SchedulerLockConfig {

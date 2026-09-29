@@ -1,5 +1,5 @@
 import type { LockConfiguration } from '@tslock/core';
-import { DefaultLockingTaskExecutor, Utils, createLockConfig } from '@tslock/core';
+import { createLockConfig, DefaultLockingTaskExecutor, Utils } from '@tslock/core';
 import type { LockFailureResponse } from './lock-metadata.js';
 import { buildLockFailureResponse, defaultLockedBody } from './lock-metadata.js';
 import { deriveLockName } from './lock-name-strategy.js';
