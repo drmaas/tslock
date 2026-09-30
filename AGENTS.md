@@ -74,8 +74,9 @@ Providers fall into categories that determine their implementation pattern:
 | **F — Etcd** | Lease + txn (version == 0) | Etcd |
 | **G — Memcached** | `add` (fails if exists) + `replace` | Memcached |
 | **H — NATS JetStream** | KeyValue bucket + create/update with revision | NATS |
-| **I — InMemory** | `Map<string, LockRecord>` | InMemory (only `ExtensibleLockProvider` among specialized) |
-| **J — Cloudflare Durable Objects** | DO storage + fetch protocol | Cloudflare DO (Workers KV deferred) |
+| **I — InMemory** | `Map<string, LockRecord>` | InMemory |
+| **J — Cloudflare Durable Objects** | DO storage + fetch protocol | Cloudflare DO (strongly consistent) |
+| **K — Cloudflare Workers KV** | KV `get`/`put`/`delete` + ownership token, no CAS | Cloudflare KV (advisory; stale reads can double-acquire) |
 
 ## Development Workflow
 

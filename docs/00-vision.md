@@ -149,7 +149,7 @@ TSLock supports all 24 ShedLock providers. Each uses the canonical or most widel
 
 **Redis-compatible backends (no new package):** Valkey, Amazon ElastiCache (Redis/Valkey engines), and Amazon MemoryDB speak the Redis protocol — use `@tslock/redis` or `@tslock/redis-ioredis`. CloudFront KeyValueStore is **not** in this set.
 
-### 6.5 Specialized Providers (5 ShedLock + Cloudflare Durable Objects)
+### 6.5 Specialized Providers (5 ShedLock + Cloudflare)
 
 | ShedLock Provider | Mechanism | TS/JS Driver | TSLock Package |
 |---|---|---|---|
@@ -159,8 +159,9 @@ TSLock supports all 24 ShedLock providers. Each uses the canonical or most widel
 | Memcached | add (fails if exists) + replace | `memjs` | `@tslock/memcached` |
 | NATS JetStream | KeyValue bucket + create/update with revision | `nats` | `@tslock/nats` |
 | (new) | Cloudflare Durable Objects storage | Workers DO (fetch protocol) | `@tslock/cloudflare-do` |
+| (new) | Cloudflare Workers KV (advisory) | `KVNamespace` or REST | `@tslock/cloudflare-kv` |
 
-**Cloudflare Workers KV:** Deferred. Eventual consistency is unsuitable for lock acquire without additional coordination; Durable Objects are the supported edge lock backend.
+**Cloudflare Workers KV** is shipped as an explicitly best-effort provider. KV is eventually consistent and has no compare-and-swap, so two holders are possible. Use `@tslock/cloudflare-do` when the lock must not overlap. See [failure modes](./failure-modes.md#6-workers-kv-stale-reads-two-holders).
 
 ### 6.6 In-Memory (1)
 
@@ -178,7 +179,7 @@ The mapping:
 - jOOQ → Kysely (`@tslock/kysely`). Drizzle added as `@tslock/drizzle` (no ShedLock equivalent, user-requested).
 - Shared SQL infrastructure in `@tslock/sql-support` (used by `@tslock/sql`, `@tslock/kysely`, `@tslock/drizzle`).
 - Ignite deferred to v2 (immature Node.js driver).
-- Additive edge providers: `@tslock/cloudfront-kvs`, `@tslock/cloudflare-do`.
+- Additive edge providers: `@tslock/cloudfront-kvs`, `@tslock/cloudflare-do` (strong consistency), `@tslock/cloudflare-kv` (advisory Workers KV).
 - `@tslock/core` + `@tslock/test-support` are infrastructure packages (not providers).
 
 ## 7. Key Differences from ShedLock (Java)
@@ -234,7 +235,7 @@ Apache 2.0, matching ShedLock.
 | **Redis packages** | `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` (ioredis) | Both are widely adopted. Share `@tslock/redis-core` logic. |
 | **Ignite** | Skip for v1 / still deferred | `apache-ignite-client` is immature/low-adoption. Document as future work. |
 | **CloudFront KVS** | `@tslock/cloudfront-kvs` | Not Redis; control-plane ETag CAS. |
-| **Cloudflare edge** | `@tslock/cloudflare-do` first; Workers KV deferred | DO for coordinated locks; KV eventual consistency unsuitable without extra design. |
+| **Cloudflare edge** | `@tslock/cloudflare-do` for mutual exclusion; `@tslock/cloudflare-kv` advisory only | DO storage is strongly consistent. KV has no CAS; stale reads can yield two holders. |
 | **Test framework** | Vitest | ESM-native, fast, excellent TS support |
 | **Cloud integration tests** | LocalStack + emulators | LocalStack for S3/DynamoDB, GCP emulators for Firestore/Datastore. Skip Spanner/GCS (no emulator) — unit tests only. |
 | **Package scope** | `@tslock/*` | Short, memorable, matches project name |
