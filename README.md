@@ -14,7 +14,7 @@ TSLock ensures that a scheduled task executes on **at most one** instance at a t
 |---|---|
 | [Migrate from ShedLock](./docs/02-migration-from-shedlock.md) | One-page JVM → TypeScript migration (API map, durations, providers, Nest `@SchedulerLock`) |
 | [TSLock vs Redlock / BullMQ](./docs/03-comparison.md) | Correctness and model differences: skip-not-queue, clocks, Redis ≠ Redlock |
-| [Failure modes](./docs/failure-modes.md) | When double-execution is possible (clock skew, overrun, Memcached eviction, keep-alive) |
+| [Failure modes](./docs/failure-modes.md) | When double-execution is possible (clock skew, overrun, Memcached eviction, keep-alive, Workers KV) |
 
 ## Why?
 
@@ -142,7 +142,8 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/etcd` | `etcd3` | [README](./packages/etcd/README.md) |
 | `@tslock/memcached` | `memjs` | [README](./packages/memcached/README.md) |
 | `@tslock/nats` | `nats` (JetStream KV) | [README](./packages/nats/README.md) |
-| `@tslock/cloudflare-do` | Cloudflare Durable Objects (Workers KV deferred) | [README](./packages/cloudflare-do/README.md) |
+| `@tslock/cloudflare-do` | Cloudflare Durable Objects (strongly consistent) | [README](./packages/cloudflare-do/README.md) |
+| `@tslock/cloudflare-kv` | Cloudflare Workers KV (**advisory** — not mutual exclusion) | [README](./packages/cloudflare-kv/README.md) |
 
 **Deferred:** Apache Ignite (immature Node thin client). **Not Redis:** CloudFront KeyValueStore is `@tslock/cloudfront-kvs`, not the Redis packages.
 
@@ -224,8 +225,9 @@ function getProvider(tenant: string): LockProvider {
 - **Do not manually delete lock rows/documents** — the in-memory `LockRecordRegistry` cache means a deleted row won't be recreated until process restart.
 - **Clocks must be synchronized** (NTP) — lock validity depends on wall-clock time. TSLock does not correct skew.
 - **Memcached can evict locks early** if the cache is full — use a dedicated memcached instance or a different provider for critical locks.
+- **Workers KV is advisory.** `@tslock/cloudflare-kv` can grant two holders under stale reads. Use `@tslock/cloudflare-do` when the work must not overlap.
 
-See **[Failure modes: when double-execution is possible](./docs/failure-modes.md)** for clock skew, `lockAtMostFor` overrun, Memcached eviction, crashed keep-alive, and the in-memory harness that documents those behaviors. Stay honest with the model: at-most-once holds only while clocks stay synced and the storage lease remains.
+See **[Failure modes: when double-execution is possible](./docs/failure-modes.md)** for clock skew, `lockAtMostFor` overrun, Memcached eviction, crashed keep-alive, Workers KV stale reads, and the harnesses that document those behaviors. Stay honest with the model: at-most-once holds only while clocks stay synced and the storage lease remains. Workers KV can still double-execute when a read is stale.
 
 ## Local development
 

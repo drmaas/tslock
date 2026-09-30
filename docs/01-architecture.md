@@ -56,6 +56,8 @@ tslock/
 │   ├── memcached/               # @tslock/memcached
 │   ├── nats/                    # @tslock/nats
 │   ├── in-memory/               # @tslock/in-memory
+│   ├── cloudflare-do/           # @tslock/cloudflare-do — Durable Objects
+│   ├── cloudflare-kv/           # @tslock/cloudflare-kv — advisory Workers KV
 │   └── otel/                    # @tslock/otel — OpenTelemetry metrics
 ├── docs/
 │   ├── 00-vision.md
@@ -622,7 +624,17 @@ Plain `Map<string, number>` (name → lockedUntilEpochMillis). Synchronized acce
 @tslock/cloudflare-do
 ```
 
-Client `ExtensibleLockProvider` posts JSON lock ops to a Durable Object via an injectable `fetch` adapter. The DO persists `{ lockUntil, lockedAt, lockedBy }` in strongly consistent storage. Prefer `idFromName(lockName)` so locks shard across objects. **Workers KV is deferred** (eventual consistency).
+Client `ExtensibleLockProvider` posts JSON lock ops to a Durable Object via an injectable `fetch` adapter. The DO persists `{ lockUntil, lockedAt, lockedBy }` in strongly consistent storage. Prefer `idFromName(lockName)` so locks shard across objects. This is the Cloudflare backend to use when overlapping execution is unacceptable.
+
+### 6.11 Category K: Cloudflare Workers KV (advisory)
+
+```
+@tslock/cloudflare-kv
+```
+
+`ExtensibleLockProvider` over a structural `KVNamespace` (`get` / `put` / `delete`), plus an optional REST binding. The record is `{ lockUntil, lockedAt, lockedBy, token }`. Unlock and extend require the acquire-time token. KV `expirationTtl` is at least 60 seconds; the lease callers honor is `lockUntil`.
+
+Workers KV is eventually consistent and has no compare-and-swap. This category is **best-effort**: stale reads can grant two holders, deletes can lag, and each key allows about one write per second. It is not a substitute for Category J.
 
 ## 7. Test Architecture
 
@@ -650,6 +662,8 @@ AbstractStorageBasedLockProviderIntegrationTest extends ...:
 FuzzTester:
   ✓ shouldHandleConcurrentLockAttempts (N concurrent tasks, exactly one acquires)
 ```
+
+Category K (`@tslock/cloudflare-kv`) runs the extensible contract on an in-memory namespace and does not run `fuzzTests`. Workers KV does not guarantee a single winner; a passing fuzz run against a linearizable fake would over-claim. See `docs/specs/31-cloudflare-kv.md`.
 
 Each provider's test suite extends these abstract tests and provides the `LockProvider` instance + backend setup/teardown.
 

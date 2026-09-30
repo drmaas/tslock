@@ -65,6 +65,30 @@ After expiry or eviction, a second instance may hold the lock. If the first inst
 
 Do not treat "I still have a `SimpleLock` object" as proof that the storage lease is exclusive after `lockUntil`.
 
+### 6. Workers KV stale reads (two holders)
+
+[`@tslock/cloudflare-kv`](../packages/cloudflare-kv/README.md) is an advisory provider. Workers KV has no compare-and-swap. Reads, including “this key is missing”, are cached at the edge for about 60 seconds, and same-location visibility of a write is not guaranteed.
+
+Two isolates can both `GET` a miss, both `PUT` their own ownership token, and both observe that token on a follow-up read. Both `lock()` calls return a `SimpleLock`. A confirm read only proves that *this* caller saw its token.
+
+**Mitigation:** use [`@tslock/cloudflare-do`](../packages/cloudflare-do/README.md) when overlapping execution is unacceptable. If you stay on KV, make the task idempotent and pass `acknowledgeAdvisoryLock: true` knowingly.
+
+### 7. Workers KV delayed deletes (phantom holds)
+
+`unlock()` deletes the key when `lockAtLeastFor` has already elapsed, or writes a shorter `lockUntil` otherwise. Another location can keep serving the previous value until its cache expires, so a second acquire skips while the key is already gone at the writer (`phantom hold`).
+
+The inverse is worse: a holder whose cache still shows *its own* token will `DELETE` or `PUT` unconditionally. That write can remove a newer holder who acquired after a stale read. KV deletes are not conditional.
+
+### 8. Workers KV 60 second expiration floor
+
+KV rejects `expirationTtl` below 60 seconds. TSLock still treats `lockUntil` as the lease, so a 5 second `lockAtMostFor` can be re-acquired once that deadline passes even though the key remains. The stored TTL is `max(60, floor(remainingMs / 1000) + 1)` so the platform does not drop the key before the logical deadline. KV’s clock can still delete the key after that TTL; a later reader then sees a miss and may acquire while a slow holder is in the section.
+
+### 9. Workers KV one write per second per key
+
+KV returns HTTP 429 when the same key is written more than once per second. Acquire plus an immediate unlock is two writes. `KeepAliveLockProvider` renews about every `lockAtMostFor / 2`, so a lease under about two seconds renews too fast. The provider propagates the 429; it does not turn it into “lock not acquired”.
+
+**Mitigation:** keep `lockAtMostFor` large enough that renewals are at least a second apart. For a hot key, use Durable Objects.
+
 ## What the automated harness covers
 
 [`packages/in-memory/__tests__/failure-modes.test.ts`](../packages/in-memory/__tests__/failure-modes.test.ts) uses `@tslock/in-memory` plus `ClockProvider` / helpers from `@tslock/test-support` to **simulate** these outcomes in one process:
@@ -76,7 +100,17 @@ Do not treat "I still have a `SimpleLock` object" as proof that the storage leas
 | Crashed / failed keep-alive | Stop renewals and expire, or delete the map entry then tick renewals | Second `lock()` succeeds after expiry; `onKeepAliveFailure` fires when extend finds no lease |
 | `lockAtLeastFor` small drift | Unlock with a minimum hold, advance less than `lockAtLeastFor` | Second `lock()` still skipped |
 
-Advancing one shared `ClockProvider` is **isomorphic** to another node being ahead of the writer's clock by more than the remaining TTL. It does not claim to reproduce multi-host NTP chaos or real Memcached LRU — only the lock-protocol consequences documented above.
+[`packages/cloudflare-kv/__tests__/failure-modes.test.ts`](../packages/cloudflare-kv/__tests__/failure-modes.test.ts) uses a `MutableClock` plus in-memory KV fakes (including a per-location cache) for the Workers KV rows:
+
+| Scenario | Simulation | Asserted behavior |
+|---|---|---|
+| Stale reads / two holders | Two caches that still remember a miss | Both `lock()` calls return a lock |
+| Delayed delete | Reader cache keeps the pre-delete value | Next `lock()` skips until that cache entry is dropped |
+| 60 second TTL floor | 5 second lease, clock advanced past `lockUntil` | `expirationTtl >= 60`, key still present, second `lock()` succeeds |
+| 1 write/second/key | Fake throws 429 on the second write | `unlock()` rejects; the key remains |
+| Stale unlock | Writer cache still shows its own token after a newer acquire | `DELETE` clears the newer holder; a third acquire succeeds |
+
+Advancing one shared `ClockProvider` is **isomorphic** to another node being ahead of the writer's clock by more than the remaining TTL. It does not claim to reproduce multi-host NTP chaos, real Memcached LRU, or Cloudflare’s edge cache — only the lock-protocol consequences documented above. The KV tests model a cached miss and a cached hit; they do not open a network connection to Cloudflare.
 
 ## Operator checklist
 
@@ -84,12 +118,14 @@ Advancing one shared `ClockProvider` is **isomorphic** to another node being ahe
 2. Size `lockAtMostFor` ≫ expected runtime (+ skew budget); use keep-alive for long work.
 3. Set `lockAtLeastFor` on short, frequent jobs to absorb small drift after unlock.
 4. Avoid Memcached for locks that must not overlap; if you use it, isolate and size it.
-5. Make the scheduled work idempotent — locks reduce duplicates; they do not make unsafe work safe.
-6. Prefer durable providers for money-moving or irreversible side effects.
+5. On Cloudflare, use Durable Objects (`@tslock/cloudflare-do`) for locks that must not overlap. Treat Workers KV as advisory.
+6. Make the scheduled work idempotent — locks reduce duplicates; they do not make unsafe work safe.
+7. Prefer durable providers for money-moving or irreversible side effects.
 
 ## Related reading
 
 - Root [README caveats](../README.md#caveats)
 - Vision: synchronized clocks ([`docs/00-vision.md`](./00-vision.md))
-- Architecture: Memcached caveat ([`docs/01-architecture.md`](./01-architecture.md))
+- Architecture: Memcached caveat and Category K ([`docs/01-architecture.md`](./01-architecture.md))
+- Workers KV provider ([`packages/cloudflare-kv/README.md`](../packages/cloudflare-kv/README.md))
 - Keep-alive and lock health ([`packages/core/README.md`](../packages/core/README.md))

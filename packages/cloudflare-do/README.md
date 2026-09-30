@@ -2,7 +2,7 @@
 
 > TSLock provider backed by [Cloudflare Durable Objects](https://developers.cloudflare.com/durable-objects/).
 
-Strongly consistent, per-object serialized storage makes Durable Objects a good fit for ShedLock-style locks at the edge. **Workers KV is not supported here** — KV is eventually consistent and lacks a safe compare-and-swap for distributed locks; treat KV as a deferred follow-up only if a coordinated design is proposed.
+Strongly consistent, per-object serialized storage makes Durable Objects a good fit for ShedLock-style locks at the edge. **Use this package when overlapping execution is unacceptable.** [`@tslock/cloudflare-kv`](../cloudflare-kv/README.md) is a separate, explicitly best-effort provider: Workers KV is eventually consistent and has no compare-and-swap, so two holders are possible.
 
 ## Installation
 
