@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Semver bump when forcing a changeset (or when none pending)
+        required: true
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      force_changeset:
+        description: Always write a changeset with the selected bump before versioning
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # environment: npm-publish   # uncomment if trustci used --env npm-publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Enable corepack / ensure modern npm for OIDC
+        run: |
+          corepack enable
+          npm install -g npm@^11.15.0
+          node -v && npm -v && pnpm -v
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          CI: true
+
+      - name: Verify
+        run: |
+          pnpm check
+          pnpm build
+          pnpm typecheck
+          pnpm test
+          pnpm check:packed-peers
+
+      - name: Ensure changeset for requested bump (if needed)
+        env:
+          BUMP: ${{ inputs.bump }}
+          FORCE: ${{ inputs.force_changeset }}
+        run: |
+          set -euo pipefail
+          pending=$(find .changeset -maxdepth 1 -type f -name '*.md' ! -name 'README.md' | wc -l | tr -d ' ')
+          if [ "$FORCE" = "true" ] || [ "$pending" = "0" ]; then
+            file=".changeset/release-${BUMP}-$(date +%s).md"
+            {
+              echo '---'
+              echo "\"@tslock/core\": ${BUMP}"
+              echo '---'
+              echo
+              echo "Automated ${BUMP} release via workflow_dispatch."
+            } > "$file"
+            echo "Wrote forced/empty-queue changeset for bump=${BUMP} -> $file"
+          else
+            echo "Using ${pending} existing changeset(s); bump input=${BUMP} is advisory only"
+          fi
+
+      - name: Version packages
+        run: pnpm version-packages
+
+      - name: Format after version bump
+        run: pnpm format
+
+      - name: Read new version
+        id: ver
+        run: |
+          V=$(node -p "require('./packages/core/package.json').version")
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$V"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: release v${{ steps.ver.outputs.version }}"
+          git tag "v${{ steps.ver.outputs.version }}"
+          git push origin HEAD:main --follow-tags
+
+      - name: Publish to npm (OIDC)
+        run: |
+          # changeset publish uses npm under the hood; OIDC is auto-detected
+          # when id-token: write is set and trusted publishers match this workflow file
+          pnpm exec changeset publish
+        env:
+          NODE_AUTH_TOKEN: ""

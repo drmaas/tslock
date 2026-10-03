@@ -72,3 +72,21 @@ jobs:
         env:
           TSLOCK_REDIS_INTEGRATION: '1'
           REDIS_URL: redis://127.0.0.1:6379
+
+  pack:
+    needs: lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable && pnpm install --frozen-lockfile
+        env:
+          CI: true
+      - run: pnpm build
+      - run: pnpm check:packed-peers
+      - name: Pack all workspace packages
+        run: |
+          mkdir -p /tmp/tslock-packs
+          pnpm -r exec pnpm pack --pack-destination /tmp/tslock-packs

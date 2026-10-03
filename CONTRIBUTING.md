@@ -226,7 +226,7 @@ Scope is usually the provider name (e.g. `redis`, `s3`, `core`, `sql-support`) o
 
 ## Releasing
 
-Releases are **admin only** and performed locally (npm 2FA is interactive). See the [Publishing section of the README](./README.md#publishing). Contributors don't need to worry about this — maintainers cut releases from accumulated changesets.
+Releases are **admin only**. Prefer GitHub Actions → **Release** (`patch` / `minor` / `major`) with npm trusted publishing. Contributors only need to add changesets on user-facing PRs; maintainers cut lockstep releases from those changesets (or a forced bump). See the [Publishing section of the README](./README.md#publishing) for Actions usage, one-time `trustci` setup, hardening, and the emergency local path.
 
 ## Questions?
 
