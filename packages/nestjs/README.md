@@ -98,7 +98,7 @@ export class ReportsController {
 ## Requirements
 
 - Node.js >= 22
-- Peers: `@nestjs/common` and `@nestjs/core` 10 or 11, `rxjs` 7
+- Peers: `@nestjs/common` and `@nestjs/core` 10, 11, or 12, `rxjs` 7
 
 ## License
 
