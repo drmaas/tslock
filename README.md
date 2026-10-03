@@ -328,7 +328,7 @@ All packages are implemented and verified. See `docs/` for design documentation.
 
 ## Publishing
 
-Releases are **admin only**. Preferred path: GitHub Actions + npm trusted publishing (OIDC). No long-lived npm tokens in GitHub secrets.
+Releases are **admin only**. Preferred path: GitHub Actions + npm trusted publishing (OIDC). No long-lived npm tokens in GitHub secrets. No direct pushes to `main` from the release bot.
 
 All `@tslock/*` packages share one version (lockstep via Changesets `fixed: [["@tslock/*"]]`).
 
@@ -338,10 +338,13 @@ All `@tslock/*` packages share one version (lockstep via Changesets `fixed: [["@
 2. GitHub → **Actions** → **Release** → **Run workflow**.
 3. Choose `bump`: `patch` | `minor` | `major`.
 4. Leave `force_changeset` false unless you need to force that bump (see below).
+5. The workflow opens (or updates) a PR titled `chore: release vX.Y.Z` from branch `release/vX.Y.Z`.
+6. Wait for CI on that PR (it is dispatched explicitly — see below), review, then **squash-merge** into `main` keeping the `chore: release vX.Y.Z` title.
+7. On push to `main`, the same `release.yml` publish job detects the release commit, publishes to npm over OIDC, creates tag `vX.Y.Z`, and creates a GitHub Release. Normal (non-release) pushes to `main` are a no-op.
 
-The workflow (`.github/workflows/release.yml`) verifies the monorepo, versions packages, formats, commits, tags `v*`, pushes to `main`, and runs `changeset publish` over OIDC.
+`changeset publish` shells out to `pnpm publish`. The repo pins `packageManager: pnpm@11.14.0`, which natively exchanges GitHub OIDC tokens with npm (trusted publishing) and rewrites `workspace:` dependency ranges to concrete versions on pack/publish. The publish job does **not** use `actions/setup-node` `registry-url` or a long-lived `NODE_AUTH_TOKEN` / `NPM_TOKEN`.
 
-`changeset publish` shells out to `pnpm publish`. The repo pins `packageManager: pnpm@11.14.0`, which natively exchanges GitHub OIDC tokens with npm (trusted publishing) and rewrites `workspace:` dependency ranges to concrete versions on pack/publish. The release job does **not** use `actions/setup-node` `registry-url` or a long-lived `NODE_AUTH_TOKEN` / `NPM_TOKEN`, so publish stays on the OIDC path.
+Pushes and PRs created with `GITHUB_TOKEN` do not trigger other workflows. After opening the release PR, `release.yml` dispatches `ci.yml` via `workflow_dispatch` on `release/vX.Y.Z` so lockfile/verify/integration/pack still run. Main branch rulesets currently list **no** required status check contexts and have **no** tag rulesets (tag creation from the publish job is allowed).
 
 | Intent | What to do |
 | --- | --- |
@@ -375,7 +378,7 @@ npx trustci \
 # add -y only after reviewing the dry-run output
 ```
 
-`--file` is only the filename (`release.yml`), not `.github/workflows/release.yml`. If you pass `--env npm-publish`, uncomment `environment: npm-publish` on the publish job so the names match.
+`--file` is only the filename (`release.yml`), not `.github/workflows/release.yml`. If you pass `--env npm-publish`, uncomment `environment: npm-publish` on the **publish** job so the names match.
 
 Verify / revoke:
 
@@ -393,7 +396,7 @@ On npm package settings → Publishing access: **Require two-factor authenticati
 
 ### Emergency local publish
 
-Use only if OIDC / Actions publish is broken. Still no committed tokens — interactive `npm login` / 2FA only:
+Use only if OIDC / Actions publish is broken. Still no committed tokens — interactive `npm login` / 2FA only. Prefer opening a normal release PR into `main` (branch rules block direct pushes):
 
 ```bash
 pnpm login
@@ -401,12 +404,13 @@ pnpm changeset            # if needed
 pnpm version-packages
 pnpm format
 pnpm check:packed-peers
+git checkout -B release/v<version>
 git add -A && git commit -m "chore: release v<version>"
+git push -u origin HEAD
+# open PR, squash-merge, then either let the publish job run or:
 pnpm exec changeset publish
 git tag v<version> && git push origin v<version>
 ```
-
-Direct pushes to `main` may be blocked by branch rules; prefer a release PR or a ruleset bypass for maintainers when recovering manually.
 
 ## Tech stack
 

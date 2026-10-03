@@ -14,19 +14,21 @@ on:
         required: false
         type: boolean
         default: false
-
-permissions:
-  contents: write
-  id-token: write
+  push:
+    branches: [main]
 
 concurrency:
-  group: release
+  group: release-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
-  publish:
+  prepare-release-pr:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # environment: npm-publish   # uncomment if trustci used --env npm-publish
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,16 +38,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          # Do not set registry-url: setup-node would write
-          # //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} and export a
-          # dummy NODE_AUTH_TOKEN. pnpm@11.14+ can still OIDC-override that, but
-          # omitting it keeps the publish path token-free.
 
-      - name: Enable corepack / ensure modern npm for OIDC
+      - name: Enable corepack
         run: |
           corepack enable
-          npm install -g npm@^11.15.0
-          node -v && npm -v && pnpm -v
+          node -v && pnpm -v
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -92,21 +89,175 @@ jobs:
         run: |
           V=$(node -p "require('./packages/core/package.json').version")
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "Releasing v$V"
+          echo "Prepared release v$V"
 
-      - name: Commit version bump
+      - name: Push release branch and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
+          set -euo pipefail
+          branch="release/v${VERSION}"
+          title="chore: release v${VERSION}"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No version changes to commit; aborting."
+            exit 1
+          fi
+
+          git checkout -B "$branch"
           git add -A
-          git commit -m "chore: release v${{ steps.ver.outputs.version }}"
-          git tag "v${{ steps.ver.outputs.version }}"
-          git push origin HEAD:main --follow-tags
+          HUSKY=0 git commit -m "$title"
+          git push -u origin "HEAD:refs/heads/${branch}" --force
+
+          body=$(cat <<EOF
+          ## Release v${VERSION}
+
+          Lockstep version bump for all \`@tslock/*\` packages (Changesets fixed mode).
+
+          ### After review
+          1. Wait for CI checks on this branch (dispatched explicitly because \`GITHUB_TOKEN\` pushes do not trigger \`push\`/\`pull_request\` workflows).
+          2. Squash-merge this PR into \`main\` (keep the title \`${title}\`).
+          3. The Release workflow's publish job on \`main\` will publish to npm via OIDC, tag \`v${VERSION}\`, and create a GitHub Release.
+          EOF
+          )
+          # Strip the common leading indent from the heredoc above.
+          body=$(printf '%s\n' "$body" | sed 's/^          //')
+
+          existing="$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "$title" --body "$body"
+            echo "Updated PR #$existing"
+          else
+            gh pr create --base main --head "$branch" --title "$title" --body "$body"
+          fi
+
+      - name: Dispatch CI on release branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          branch="release/v${VERSION}"
+          # GITHUB_TOKEN push/PR events do not chain into other workflows; workflow_dispatch does.
+          gh workflow run ci.yml --ref "$branch"
+          echo "Dispatched CI workflow on $branch"
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # environment: npm-publish   # uncomment if trustci used --env npm-publish
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable corepack / ensure modern npm for OIDC
+        run: |
+          corepack enable
+          npm install -g npm@^11.15.0
+          node -v && npm -v && pnpm -v
+
+      - name: Detect pending release
+        id: pending
+        run: |
+          set -euo pipefail
+          V=$(node -p "require('./packages/core/package.json').version")
+          SUBJECT=$(git log -1 --pretty=%s)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "subject=$SUBJECT"
+
+          published=false
+          if npm view "@tslock/core@${V}" version >/dev/null 2>&1; then
+            published=true
+          fi
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+
+          is_release_commit=false
+          if printf '%s\n' "$SUBJECT" | grep -Eq '^chore: release v[0-9]+\.[0-9]+\.[0-9]+'; then
+            is_release_commit=true
+          fi
+          echo "is_release_commit=$is_release_commit" >> "$GITHUB_OUTPUT"
+
+          if [ "$published" = true ]; then
+            echo "Package @tslock/core@${V} is already on npm; will ensure tag/release only."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "should_ensure_tag=true" >> "$GITHUB_OUTPUT"
+          elif [ "$is_release_commit" = true ]; then
+            echo "Release commit detected and version ${V} is unpublished."
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            echo "should_ensure_tag=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No release pending (not a release commit; version may already match registry intent)."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "should_ensure_tag=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install
+        if: steps.pending.outputs.should_publish == 'true'
+        run: pnpm install --frozen-lockfile
+        env:
+          CI: true
+
+      - name: Verify
+        if: steps.pending.outputs.should_publish == 'true'
+        run: |
+          pnpm check
+          pnpm build
+          pnpm typecheck
+          pnpm test
+          pnpm check:packed-peers
 
       - name: Publish to npm (OIDC)
+        if: steps.pending.outputs.should_publish == 'true'
         run: |
           # changeset publish shells out to `pnpm publish` in this workspace.
           # Pinned pnpm@11.14.0 performs native OIDC token exchange (id-token: write)
           # and rewrites workspace: ranges on pack/publish. No long-lived npm token.
           unset NODE_AUTH_TOKEN NPM_TOKEN
           pnpm exec changeset publish
+
+      - name: Ensure git tag
+        if: steps.pending.outputs.should_ensure_tag == 'true'
+        env:
+          VERSION: ${{ steps.pending.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="v${VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --tags origin "refs/tags/${tag}" | grep -q .; then
+            echo "Tag ${tag} already exists on origin."
+          else
+            git tag "$tag"
+            git push origin "refs/tags/${tag}"
+            echo "Created and pushed ${tag}."
+          fi
+
+      - name: Ensure GitHub Release
+        if: steps.pending.outputs.should_ensure_tag == 'true'
+        env:
+          VERSION: ${{ steps.pending.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="v${VERSION}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "GitHub Release ${tag} already exists."
+          else
+            gh release create "$tag" --title "$tag" --generate-notes
+            echo "Created GitHub Release ${tag}."
+          fi
