@@ -1,6 +1,6 @@
 {
   "name": "@tslock/cloudfront-kvs",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Amazon CloudFront KeyValueStore lock provider for TSLock (not Redis-compatible)",
   "license": "Apache-2.0",
   "type": "module",
