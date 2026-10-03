@@ -1,6 +1,6 @@
 import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
-import type { DocumentCollection, EdgeCollection } from 'arangojs/collection';
-import type { Database } from 'arangojs/database';
+import type { DocumentCollection, EdgeCollection } from 'arangojs/collections';
+import type { Database } from 'arangojs/databases';
 import { ArangoDbLock } from './arangodb-lock.js';
 import type { ArangoDbLockDocument } from './arangodb-lock-document.js';
 
