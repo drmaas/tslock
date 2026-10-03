@@ -41,7 +41,7 @@ await executor.executeWithLock(
 ## Requirements
 
 - Node.js >= 22
-- Peer: `arangojs`
+- Peer: `arangojs` `^10.5.0`
 
 ## License
 

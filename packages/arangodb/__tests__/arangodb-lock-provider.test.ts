@@ -1,6 +1,6 @@
 import { ClockProvider, createLockConfig, Utils } from '@tslock/core';
-import type { DocumentCollection, EdgeCollection } from 'arangojs/collection';
-import type { Database } from 'arangojs/database';
+import type { DocumentCollection, EdgeCollection } from 'arangojs/collections';
+import type { Database } from 'arangojs/databases';
 import { describe, expect, it, vi } from 'vitest';
 import type { ArangoDbLockDocument } from '../src/arangodb-lock-document.js';
 import { ArangoDbLockProvider } from '../src/arangodb-lock-provider.js';
