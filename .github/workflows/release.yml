@@ -100,18 +100,15 @@ jobs:
           branch="release/v${VERSION}"
           title="chore: release v${VERSION}"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if git diff --quiet && git diff --cached --quiet; then
+          if git diff --quiet HEAD && [ -z "$(git ls-files -o --exclude-standard)" ]; then
             echo "No version changes to commit; aborting."
             exit 1
           fi
 
-          git checkout -B "$branch"
-          git add -A
-          HUSKY=0 git commit -m "$title"
+          # Point the branch at the current commit first so createCommitOnBranch
+          # can add one GitHub-signed commit as github-actions[bot].
           git push -u origin "HEAD:refs/heads/${branch}" --force
+          node scripts/create-signed-commit.mjs --branch "$branch" --headline "$title"
 
           body=$(cat <<EOF
           ## Release v${VERSION}

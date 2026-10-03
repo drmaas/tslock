@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 22
       - name: Reject an unparseable pnpm-lock.yaml
-        run: node --test scripts/validate-lockfile.test.mjs && node scripts/validate-lockfile.mjs
+        run: node --test scripts/validate-lockfile.test.mjs scripts/create-signed-commit.test.mjs && node scripts/validate-lockfile.mjs
       - name: Enable pnpm
         run: corepack enable
       - name: Fail if the lockfile is out of date

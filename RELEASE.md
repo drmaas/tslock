@@ -10,7 +10,7 @@ All `@tslock/*` packages share one version (lockstep via Changesets `fixed: [["@
 2. GitHub → **Actions** → **Release** → **Run workflow**.
 3. Choose `bump`: `patch` | `minor` | `major`.
 4. Leave `force_changeset` false unless you need to force that bump (see below).
-5. The workflow opens (or updates) a PR titled `chore: release vX.Y.Z` from branch `release/vX.Y.Z`.
+5. The workflow opens (or updates) a PR titled `chore: release vX.Y.Z` from branch `release/vX.Y.Z`. The release commit is created with GitHub's `createCommitOnBranch` API as `github-actions[bot]`. GitHub signs that commit, so the pull request can squash-merge under the `main` ruleset that requires verified signatures.
 6. Wait for CI on that PR (it is dispatched explicitly — see below), review, then **squash-merge** into `main` keeping the `chore: release vX.Y.Z` title.
 7. On push to `main`, the same `release.yml` publish job detects the release commit, publishes to npm over OIDC, creates tag `vX.Y.Z`, and creates a GitHub Release. Normal (non-release) pushes to `main` are a no-op.
 
