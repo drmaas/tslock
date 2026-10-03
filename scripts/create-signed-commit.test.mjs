@@ -163,10 +163,7 @@ describe('create-signed-commit', () => {
   it('reads the owner and repo from an origin URL without keeping credentials', () => {
     assert.equal(repositoryNameFromRemoteUrl('https://github.com/drmaas/tslock'), 'drmaas/tslock');
     assert.equal(repositoryNameFromRemoteUrl('git@github.com:drmaas/tslock.git'), 'drmaas/tslock');
-    assert.equal(
-      repositoryNameFromRemoteUrl('https://user:placeholder@github.com/drmaas/tslock'),
-      'drmaas/tslock',
-    );
+    assert.equal(repositoryNameFromRemoteUrl('https://user:placeholder@github.com/drmaas/tslock'), 'drmaas/tslock');
     assert.throws(
       () => repositoryNameFromRemoteUrl('https://example.com/drmaas/tslock'),
       /Cannot determine repository/,
