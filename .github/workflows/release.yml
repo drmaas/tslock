@@ -36,7 +36,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
+          # Do not set registry-url: setup-node would write
+          # //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} and export a
+          # dummy NODE_AUTH_TOKEN. pnpm@11.14+ can still OIDC-override that, but
+          # omitting it keeps the publish path token-free.
 
       - name: Enable corepack / ensure modern npm for OIDC
         run: |
@@ -102,8 +105,8 @@ jobs:
 
       - name: Publish to npm (OIDC)
         run: |
-          # changeset publish uses npm under the hood; OIDC is auto-detected
-          # when id-token: write is set and trusted publishers match this workflow file
+          # changeset publish shells out to `pnpm publish` in this workspace.
+          # Pinned pnpm@11.14.0 performs native OIDC token exchange (id-token: write)
+          # and rewrites workspace: ranges on pack/publish. No long-lived npm token.
+          unset NODE_AUTH_TOKEN NPM_TOKEN
           pnpm exec changeset publish
-        env:
-          NODE_AUTH_TOKEN: ""

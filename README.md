@@ -341,6 +341,8 @@ All `@tslock/*` packages share one version (lockstep via Changesets `fixed: [["@
 
 The workflow (`.github/workflows/release.yml`) verifies the monorepo, versions packages, formats, commits, tags `v*`, pushes to `main`, and runs `changeset publish` over OIDC.
 
+`changeset publish` shells out to `pnpm publish`. The repo pins `packageManager: pnpm@11.14.0`, which natively exchanges GitHub OIDC tokens with npm (trusted publishing) and rewrites `workspace:` dependency ranges to concrete versions on pack/publish. The release job does **not** use `actions/setup-node` `registry-url` or a long-lived `NODE_AUTH_TOKEN` / `NPM_TOKEN`, so publish stays on the OIDC path.
+
 | Intent | What to do |
 | --- | --- |
 | Normal release | Pending changesets already say `patch` / `minor` / `major`. Run the workflow with any `bump` and `force_changeset=false`. Changesets picks the highest bump in the fixed group; the `bump` input is advisory only. |
