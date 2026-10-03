@@ -173,19 +173,8 @@ pnpm check:fix            # combined format + lint with fixes
 
 ## Publishing
 
-All releases are done locally (npm 2FA is interactive):
+Release steps are in [`RELEASE.md`](./RELEASE.md). All `@tslock/*` packages share one version (lockstep via Changesets fixed mode).
 
-```bash
-pnpm login                              # one-time auth with 2FA
-pnpm changeset                          # describe changes, pick semver bump
-pnpm version-packages                   # bump versions + update CHANGELOGs
-pnpm format                             # reformat package.json (changeset uses JSON.stringify)
-git add -A && git commit -m "chore: release v<version>"
-pnpm publish -r                         # publish all packages to npm
-git tag v<version> && git push --follow-tags
-```
-
-All `@tslock/*` packages share one version (lockstep via Changesets fixed mode).
 CI runs `pnpm validate:lockfile` and `pnpm install --lockfile-only --frozen-lockfile` before verify and integration, then verification plus a non-blocking `pnpm audit --prod`. The integration job runs the Docker-backed suites. Dependabot pull requests target `main` and run that same workflow. `overrides` in `pnpm-workspace.yaml` pin patched transitive versions that parent ranges will not accept; see CONTRIBUTING.md for the advisories that stay blocked upstream. Dependabot's `VulnerabilityAuditor: missing lockfile` line means there is no `package-lock.json`; `pnpm-lock.yaml` and `packageManager` are how pnpm is selected. Packed peer dependency verification is a local release-gate command. The workspace explicitly denies optional `cpu-features` and `ssh2` install scripts. Docker-over-SSH is unsupported under the default policy; a local-only override may set both entries to `true` in `pnpm-workspace.yaml` before reinstalling with the required native toolchain.
 
 ## Rules

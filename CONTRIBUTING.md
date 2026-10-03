@@ -226,7 +226,7 @@ Scope is usually the provider name (e.g. `redis`, `s3`, `core`, `sql-support`) o
 
 ## Releasing
 
-Releases are **admin only**. Prefer GitHub Actions → **Release** (`patch` / `minor` / `major`): that opens a `chore: release vX.Y.Z` PR; after you squash-merge it, publish to npm (OIDC), the git tag, and the GitHub Release run automatically. Contributors only need to add changesets on user-facing PRs. See the [Publishing section of the README](./README.md#publishing) for the full flow, one-time `trustci` setup, hardening, and the emergency local path.
+Releases are **admin only**. Prefer GitHub Actions → **Release** (`patch` / `minor` / `major`): that opens a `chore: release vX.Y.Z` PR; after you squash-merge it, publish to npm (OIDC), the git tag, and the GitHub Release run automatically. Contributors only need to add changesets on user-facing PRs. See [`RELEASE.md`](./RELEASE.md) for the full flow, one-time `trustci` setup, hardening, and the emergency local path.
 
 ## Questions?
 
