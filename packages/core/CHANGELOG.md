@@ -1,5 +1,13 @@
 # @tslock/core
 
+## 2.1.0
+
+### Minor Changes
+
+- [#52](https://github.com/drmaas/tslock/pull/52) [`41f79fb`](https://github.com/drmaas/tslock/commit/41f79fbdd38e9e7b6e9d00ae5f176798dbacb055) Thanks [@drmaas](https://github.com/drmaas)! - Add a read-only lock health snapshot (`createLockHealthMonitor`) on top of `TrackingLockProviderWrapper` for ops introspection (active locks, last acquire/skip, keep-alive failures, overdue leases).
+
+- Add @tslock/otel, @tslock/scheduler-core, @tslock/node-cron, @tslock/nestjs, @tslock/bree, @tslock/aws-lambda, @tslock/cloudflare-do, @tslock/cloudflare-kv, and @tslock/cloudfront-kvs, and switch releases to npm trusted publishing.
+
 ## 2.0.1
 
 ### Patch Changes

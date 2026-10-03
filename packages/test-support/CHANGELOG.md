@@ -1,5 +1,17 @@
 # @tslock/test-support
 
+## 2.1.0
+
+### Minor Changes
+
+- Add @tslock/otel, @tslock/scheduler-core, @tslock/node-cron, @tslock/nestjs, @tslock/bree, @tslock/aws-lambda, @tslock/cloudflare-do, @tslock/cloudflare-kv, and @tslock/cloudfront-kvs, and switch releases to npm trusted publishing.
+
+### Patch Changes
+
+- [#60](https://github.com/drmaas/tslock/pull/60) [`8c4b8cf`](https://github.com/drmaas/tslock/commit/8c4b8cf1d5b394165f8ea0ed88d12aa5589f8f28) Thanks [@drmaas](https://github.com/drmaas)! - Document clock-skew and related failure modes, and add an in-memory harness (`MutableClock` / `withMutableClock`) that asserts documented double-execution scenarios without claiming stronger guarantees than the time-based lock model.
+- Updated dependencies [[`41f79fb`](https://github.com/drmaas/tslock/commit/41f79fbdd38e9e7b6e9d00ae5f176798dbacb055)]:
+  - @tslock/core@2.1.0
+
 ## 2.0.1
 
 ### Patch Changes
