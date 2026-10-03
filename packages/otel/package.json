@@ -1,6 +1,6 @@
 {
   "name": "@tslock/otel",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "OpenTelemetry metrics for TSLock lock acquire, skip, unlock, extend, and keep-alive",
   "license": "Apache-2.0",
   "type": "module",
