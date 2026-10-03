@@ -29,7 +29,7 @@
   },
   "peerDependencies": {
     "@tslock/core": "workspace:*",
-    "arangojs": "^8.0.0"
+    "arangojs": "^10.5.0"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
-    "arangojs": "^8.0.0",
+    "arangojs": "^10.5.0",
     "typescript": "^7.0.2",
     "tsup": "^8.0.0",
     "vitest": "^4.1.11"
