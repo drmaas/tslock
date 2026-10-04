@@ -1,6 +1,6 @@
 {
   "name": "@tslock/datastore",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "TSLock provider for Google Cloud Datastore",
   "license": "Apache-2.0",
   "type": "module",
