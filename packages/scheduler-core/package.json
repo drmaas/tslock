@@ -1,6 +1,6 @@
 {
   "name": "@tslock/scheduler-core",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Shared scheduler lock wrap lifecycle for TSLock adapters",
   "license": "Apache-2.0",
   "type": "module",

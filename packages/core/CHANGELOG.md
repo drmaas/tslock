@@ -1,5 +1,11 @@
 # @tslock/core
 
+## 2.2.1
+
+### Patch Changes
+
+- Automated patch release via workflow_dispatch.
+
 ## 2.2.0
 
 ### Minor Changes

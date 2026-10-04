@@ -1,5 +1,12 @@
 # @tslock/sql-support
 
+## 2.2.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @tslock/core@2.2.1
+
 ## 2.2.0
 
 ### Minor Changes
