@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildLockFailureResponse, type LockedBody } from '../src/lock-metadata.js';
 import type { MiddlewareConfig } from '../src/middleware-config.js';
 import { mergeRouteConfig, resolveMiddlewareConfig, snapshotRouteConfig } from '../src/middleware-config.js';
 
@@ -105,8 +106,37 @@ describe('mergeRouteConfig', () => {
     expect(resolved.lockedBody).toBe(body);
   });
 
-  it('preserves arbitrary public body values', () => {
-    const body = new Date(0);
+  it('round-trips static JSON and function lockedBody values', () => {
+    const staticBody = { custom: 'error' };
+    const functionBody = (meta: { lockName: string }) => ({ lockName: meta.lockName });
+    const withStatic = resolveMiddlewareConfig({
+      lockProvider: mockLockProvider(),
+      defaultLockedBody: staticBody,
+    });
+    const resolvedStatic = mergeRouteConfig(withStatic);
+
+    expect(resolvedStatic.lockedBody).toBe(staticBody);
+    expect(
+      buildLockFailureResponse(503, resolvedStatic.lockedBody, 'GET:/static', 'host', Date.now() + 1000).body,
+    ).toBe(staticBody);
+
+    const withFn = resolveMiddlewareConfig({
+      lockProvider: mockLockProvider(),
+      defaultLockedBody: functionBody,
+    });
+    const resolvedFn = mergeRouteConfig(withFn, { lockedBody: functionBody });
+
+    expect(resolvedFn.lockedBody).toBe(functionBody);
+    expect(buildLockFailureResponse(503, resolvedFn.lockedBody, 'GET:/fn', 'host', Date.now() + 5000).body).toEqual({
+      lockName: 'GET:/fn',
+    });
+  });
+
+  it('requires an explicit cast for non-JSON exotic lockedBody values', () => {
+    // @ts-expect-error Date is not a StaticLockedBody
+    const _invalid: LockedBody = new Date(0);
+
+    const body = new Date(0) as unknown as LockedBody;
     const global = resolveMiddlewareConfig({ lockProvider: mockLockProvider(), defaultLockedBody: body });
 
     expect(mergeRouteConfig(global).lockedBody).toBe(body);

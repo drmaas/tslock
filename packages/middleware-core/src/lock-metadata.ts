@@ -17,7 +17,7 @@ export interface LockFailureResponse {
 
 export function buildLockFailureResponse(
   status: number,
-  body: unknown,
+  body: LockedBody | undefined,
   lockName: string,
   lockedBy: string,
   lockUntil: number,
