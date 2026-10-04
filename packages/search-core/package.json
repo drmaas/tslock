@@ -1,6 +1,6 @@
 {
   "name": "@tslock/search-core",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "TSLock search-core — shared Painless scripts, field names, and HTTP status helpers for Elasticsearch/OpenSearch",
   "license": "Apache-2.0",
   "type": "module",
