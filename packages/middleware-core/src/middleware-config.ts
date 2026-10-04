@@ -8,7 +8,7 @@ export interface MiddlewareConfig {
   lockAtLeastFor: DurationInput;
   lockNamePrefix: string;
   defaultLockedStatus: number;
-  defaultLockedBody: unknown;
+  defaultLockedBody: LockedBody | undefined;
   lockNameStrategy: LockNameStrategy;
 }
 
@@ -18,7 +18,7 @@ export interface RouteLockConfig {
   lockAtMostFor?: DurationInput;
   lockAtLeastFor?: DurationInput;
   lockedStatus?: number;
-  lockedBody?: unknown;
+  lockedBody?: LockedBody;
 }
 
 export interface ResolvedRouteConfig {
@@ -38,7 +38,7 @@ const DEFAULTS = {
   lockAtLeastFor: 0 as DurationInput,
   lockNamePrefix: '',
   defaultLockedStatus: 503,
-  defaultLockedBody: undefined as unknown,
+  defaultLockedBody: undefined,
 };
 
 const durationCache = new WeakMap<MiddlewareConfig, ResolvedDurations>();
@@ -90,7 +90,7 @@ export function mergeRouteConfig(global: MiddlewareConfig, route?: RouteLockConf
       lockAtMostFor: durations.lockAtMostFor,
       lockAtLeastFor: durations.lockAtLeastFor,
       lockedStatus: global.defaultLockedStatus,
-      lockedBody: global.defaultLockedBody as LockedBody | undefined,
+      lockedBody: global.defaultLockedBody,
     };
     globalRouteCache.set(global, resolved);
     return resolved;
@@ -110,7 +110,7 @@ export function mergeRouteConfig(global: MiddlewareConfig, route?: RouteLockConf
     lockAtMostFor: route.lockAtMostFor !== undefined ? parseDuration(route.lockAtMostFor) : durations.lockAtMostFor,
     lockAtLeastFor: route.lockAtLeastFor !== undefined ? parseDuration(route.lockAtLeastFor) : durations.lockAtLeastFor,
     lockedStatus: route.lockedStatus ?? global.defaultLockedStatus,
-    lockedBody: (route.lockedBody ?? global.defaultLockedBody) as LockedBody | undefined,
+    lockedBody: route.lockedBody ?? global.defaultLockedBody,
   };
   if (canCache) routesForGlobal?.set(route, resolved);
   return resolved;
