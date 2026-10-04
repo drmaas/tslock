@@ -1,41 +1,8 @@
 import type { Client } from '@opensearch-project/opensearch';
 import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import { EXTEND_SCRIPT, isConflictError, isNotFoundError, LOCK_SCRIPT, UNLOCK_SCRIPT } from '@tslock/search-core';
 import type { OpenSearchFieldNames } from './field-names.js';
 import { OpenSearchLock } from './opensearch-lock.js';
-
-const LOCK_SCRIPT = `
-if (ctx._source[params.lockUntilField] <= params.now) {
-  ctx._source[params.lockUntilField] = params.lockUntil;
-  ctx._source[params.lockedAtField] = params.lockedAt;
-  ctx._source[params.lockedByField] = params.lockedBy;
-} else {
-  ctx.op = 'none';
-}
-`;
-
-const UNLOCK_SCRIPT = 'ctx._source[params.lockUntilField] = params.unlockTime';
-
-const EXTEND_SCRIPT = `
-if (ctx._source[params.lockedByField] == params.lockedBy && ctx._source[params.lockUntilField] > params.now) {
-  ctx._source[params.lockUntilField] = params.lockUntil;
-} else {
-  ctx.op = 'none';
-}
-`;
-
-function isConflictError(e: unknown): boolean {
-  const err = e as Record<string, unknown> | null;
-  return (
-    ((err?.meta as Record<string, unknown> | null)?.statusCode as number) === 409 || (err?.statusCode as number) === 409
-  );
-}
-
-function isNotFoundError(e: unknown): boolean {
-  const err = e as Record<string, unknown> | null;
-  return (
-    ((err?.meta as Record<string, unknown> | null)?.statusCode as number) === 404 || (err?.statusCode as number) === 404
-  );
-}
 
 export class OpenSearchAccessor {
   constructor(

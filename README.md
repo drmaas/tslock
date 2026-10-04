@@ -85,6 +85,7 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/core` | Lock model, executor, `LockAssert`, `LockExtender`, `KeepAliveLockProvider`. Zero runtime deps. | [README](./packages/core/README.md) |
 | `@tslock/sql-support` | Shared SQL infra (`DatabaseProduct`, `SqlConfiguration`, statements). | [README](./packages/sql-support/README.md) |
 | `@tslock/redis-core` | Shared Redis locking logic (`InternalRedisLockProvider`, Lua scripts). | [README](./packages/redis-core/README.md) |
+| `@tslock/search-core` | Shared Elasticsearch/OpenSearch Painless scripts, field names, and HTTP status helpers. | [README](./packages/search-core/README.md) |
 | `@tslock/test-support` | Shared integration test contracts + fuzz tests (dev-only). | [README](./packages/test-support/README.md) |
 | `@tslock/in-memory` | In-memory provider — testing/local only, **not** for production. | [README](./packages/in-memory/README.md) |
 
