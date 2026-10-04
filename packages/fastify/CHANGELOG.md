@@ -1,5 +1,17 @@
 # @tslock/fastify
 
+## 2.2.0
+
+### Minor Changes
+
+- shared Painless scripts, field-name presets, HTTP status helpers moved to @tslock/search-core. Provider public exports stay compatible via type aliases
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @tslock/core@2.2.0
+  - @tslock/middleware-core@2.2.0
+
 ## 2.1.1
 
 ### Patch Changes
