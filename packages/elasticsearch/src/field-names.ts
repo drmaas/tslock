@@ -1,10 +1,2 @@
-export interface ElasticsearchFieldNames {
-  lockUntil: string;
-  lockedAt: string;
-  lockedBy: string;
-}
-
-export const FieldNames = {
-  DEFAULT: { lockUntil: 'lockUntil', lockedAt: 'lockedAt', lockedBy: 'lockedBy' } as const,
-  SNAKE_CASE: { lockUntil: 'lock_until', lockedAt: 'locked_at', lockedBy: 'locked_by' } as const,
-};
+export type { SearchFieldNames as ElasticsearchFieldNames } from '@tslock/search-core';
+export { FieldNames } from '@tslock/search-core';
