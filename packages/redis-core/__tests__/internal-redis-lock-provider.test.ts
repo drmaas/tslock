@@ -8,7 +8,13 @@ import {
   type RedisTemplate,
 } from '../src/index.js';
 
-function makeRedis(overrides: Partial<RedisTemplate> = {}): RedisTemplate & { eval: ReturnType<typeof vi.fn> } {
+type MockRedis = RedisTemplate & {
+  eval: ReturnType<typeof vi.fn>;
+  setIfAbsent: ReturnType<typeof vi.fn>;
+  setIfPresent: ReturnType<typeof vi.fn>;
+};
+
+function makeRedis(overrides: Partial<RedisTemplate> = {}): MockRedis {
   return {
     setIfAbsent: vi.fn().mockResolvedValue(true),
     setIfPresent: vi.fn().mockResolvedValue(true),
@@ -16,7 +22,7 @@ function makeRedis(overrides: Partial<RedisTemplate> = {}): RedisTemplate & { ev
     eval: vi.fn().mockResolvedValue(1),
     deleteKey: vi.fn().mockResolvedValue(undefined),
     ...overrides,
-  } as RedisTemplate & { eval: ReturnType<typeof vi.fn> };
+  } as MockRedis;
 }
 
 describe('InternalRedisLockProvider', () => {

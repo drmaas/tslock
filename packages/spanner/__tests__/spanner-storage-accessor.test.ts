@@ -240,11 +240,11 @@ describe('SpannerStorageAccessor', () => {
         'my-host',
       );
       await accessor.unlock(cfg('test'));
-      expect(captured[0].sql).toContain('UPDATE `shedlock`');
-      expect(captured[0].sql).toContain('SET `lu` = @unlockTime');
-      expect(captured[0].sql).toContain('WHERE `n` = @name');
-      expect(captured[0].sql).toContain('AND `lb` = @lockedBy');
-      expect(captured[0].params).toMatchObject({
+      expect(captured[0]!.sql).toContain('UPDATE `shedlock`');
+      expect(captured[0]!.sql).toContain('SET `lu` = @unlockTime');
+      expect(captured[0]!.sql).toContain('WHERE `n` = @name');
+      expect(captured[0]!.sql).toContain('AND `lb` = @lockedBy');
+      expect(captured[0]!.params).toMatchObject({
         unlockTime: expect.any(String),
         name: 'test',
         lockedBy: 'my-host',
@@ -292,8 +292,8 @@ describe('SpannerStorageAccessor', () => {
       });
       const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
       await accessor.extend(cfg());
-      expect(captured[0].sql).toContain('AND `lockUntil` > @now');
-      expect(captured[0].params).toMatchObject({
+      expect(captured[0]!.sql).toContain('AND `lockUntil` > @now');
+      expect(captured[0]!.params).toMatchObject({
         lockUntil: expect.any(String),
         name: 'test',
         lockedBy: 'my-host',

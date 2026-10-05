@@ -125,7 +125,7 @@ describe('EtcdLockProvider', () => {
       const provider = new EtcdLockProvider(client);
       await provider.lock(makeConfig('val', 30_000));
 
-      const valueArg = putBuilder.value.mock.calls[0][0];
+      const valueArg = putBuilder.value.mock.calls[0]![0];
       expect(valueArg).toMatch(/^ADDED:/);
       expect(valueArg).toContain(Utils.getHostname());
     });

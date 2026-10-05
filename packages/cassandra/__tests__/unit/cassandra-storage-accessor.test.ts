@@ -126,7 +126,7 @@ describe('CassandraStorageAccessor', () => {
     (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     await accessor.insertRecord(config());
-    const params = (client.execute as unknown as MockInstance).mock.calls[0][1];
+    const params = (client.execute as unknown as MockInstance).mock.calls[0]![1];
     params.slice(1, 3).forEach((p: unknown) => {
       expect(p instanceof Date).toBe(true);
     });

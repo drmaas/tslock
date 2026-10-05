@@ -28,8 +28,8 @@ describe('createAwsLambdaLock', () => {
       defaultLockAtMostFor: '1m',
     });
     const handler = lock.wrapHandler(
-      async (event: { id: string }, context: { awsRequestId: string }) => {
-        return `${event.id}:${context.awsRequestId}`;
+      async (event: { id: string }, context: unknown) => {
+        return `${event.id}:${(context as { awsRequestId: string }).awsRequestId}`;
       },
       { name: 'scheduled', lockAtMostFor: '30s' },
     );

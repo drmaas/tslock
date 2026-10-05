@@ -1,11 +1,12 @@
 import { ClockProvider, createLockConfig } from '@tslock/core';
 import { withMutableClock } from '@tslock/test-support';
 import { afterEach, describe, expect, it } from 'vitest';
+import type { CloudflareKvLockProviderOptions } from '../src/cloudflare-kv-configuration.js';
 import { createCloudflareKvLockProvider } from '../src/cloudflare-kv-lock-provider.js';
 import { decodeLockRecord } from '../src/lock-record.js';
 import { MemoryKvNamespace, PopCacheKv, RateLimitedKv } from './memory-kv.js';
 
-function providerFor(kv: ConstructorParameters<typeof createCloudflareKvLockProvider>[0]['kv']) {
+function providerFor(kv: CloudflareKvLockProviderOptions['kv']) {
   return createCloudflareKvLockProvider({
     kv,
     acknowledgeAdvisoryLock: true,

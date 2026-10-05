@@ -236,7 +236,7 @@ describe('FirestoreStorageAccessor', () => {
       });
       const accessor = makeAccessor({ firestore, useTimestamps: false });
       await accessor.insertRecord(cfg());
-      const data = txn.create.mock.calls[0][1];
+      const data = txn.create.mock.calls[0]![1];
       expect(typeof data.lockUntil).toBe('string');
       expect(typeof data.lockedAt).toBe('string');
     });
@@ -248,7 +248,7 @@ describe('FirestoreStorageAccessor', () => {
       });
       const accessor = makeAccessor({ firestore, useTimestamps: true });
       await accessor.insertRecord(cfg());
-      const data = txn.create.mock.calls[0][1];
+      const data = txn.create.mock.calls[0]![1];
       expect(typeof data.lockUntil).toBe('object');
       expect(typeof (data.lockUntil as { toMillis: unknown }).toMillis).toBe('function');
       expect(typeof data.lockedAt).toBe('object');

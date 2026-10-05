@@ -172,7 +172,7 @@ describe('Neo4jStorageAccessor', () => {
     );
     const cfg = config('my-task', 10_000);
     await accessor.insertRecord(cfg);
-    const params = txRun.mock.calls[0][1];
+    const params = txRun.mock.calls[0]![1];
     expect(params.name).toBe('my-task');
     expect(params.lockUntil).toBe(1_010_000);
     expect(params.lockedBy).toBe('my-host');

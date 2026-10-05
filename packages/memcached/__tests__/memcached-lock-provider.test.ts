@@ -37,7 +37,7 @@ describe('MemcachedLockProvider', () => {
     const add = vi.fn().mockResolvedValue({ success: true });
     const provider = new MemcachedLockProvider(makeClient({ add }), { servers: '', env: 'prod' });
     await provider.lock(config('my-task'));
-    expect(add.mock.calls[0][0]).toBe('shedlock:prod:my-task');
+    expect(add.mock.calls[0]![0]).toBe('shedlock:prod:my-task');
   });
 
   it('unlock() calls delete when keepLockFor <= 0', async () => {

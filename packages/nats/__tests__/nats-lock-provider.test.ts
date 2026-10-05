@@ -1,5 +1,5 @@
 import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
-import type { KeyValueEntry, KV } from 'nats';
+import type { KV, KvEntry } from 'nats';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { longToBytes } from '../src/long-utils.js';
 import { NatsLock } from '../src/nats-lock.js';
@@ -14,7 +14,7 @@ function mockKv(): KV {
   } as unknown as KV;
 }
 
-function entry(value: number, revision = 1): KeyValueEntry {
+function entry(value: number, revision = 1): KvEntry {
   return {
     value: longToBytes(value),
     revision,
@@ -22,6 +22,14 @@ function entry(value: number, revision = 1): KeyValueEntry {
     bucket: '',
     delta: 0,
     created: new Date(),
+    operation: 'PUT',
+    length: 0,
+    json() {
+      throw new Error('not implemented');
+    },
+    string() {
+      return '';
+    },
   };
 }
 

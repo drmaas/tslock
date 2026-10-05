@@ -54,7 +54,7 @@ describe('GcsStorageAccessor', () => {
       expect(result).toBe(true);
       expect(mockFile.exists).toHaveBeenCalledTimes(1);
       expect(mockFile.save).toHaveBeenCalledTimes(1);
-      const saveOptions = mockFile.save.mock.calls[0][1];
+      const saveOptions = mockFile.save.mock.calls[0]![1];
       expect(saveOptions.preconditionOpts.ifGenerationMatch).toBe(0);
       expect(saveOptions.gzip).toBe(false);
       expect(saveOptions.metadata.lockUntil).toBeTruthy();
@@ -108,7 +108,7 @@ describe('GcsStorageAccessor', () => {
 
       expect(result).toBe(true);
       expect(mockFile.save).toHaveBeenCalledTimes(1);
-      const saveOptions = mockFile.save.mock.calls[0][1];
+      const saveOptions = mockFile.save.mock.calls[0]![1];
       expect(saveOptions.preconditionOpts.ifGenerationMatch).toBe(1);
     });
 
@@ -165,7 +165,7 @@ describe('GcsStorageAccessor', () => {
       await accessor.unlock(defaultConfig);
 
       expect(mockFile.setMetadata).toHaveBeenCalledTimes(1);
-      const [meta, options] = mockFile.setMetadata.mock.calls[0];
+      const [meta, options] = mockFile.setMetadata.mock.calls[0]!;
       expect(options.preconditionOpts.ifGenerationMatch).toBe(1);
       expect(meta.lockUntil).toBeTruthy();
     });
@@ -217,7 +217,7 @@ describe('GcsStorageAccessor', () => {
 
       expect(result).toBe(true);
       expect(mockFile.setMetadata).toHaveBeenCalledTimes(1);
-      const [meta, options] = mockFile.setMetadata.mock.calls[0];
+      const [meta, options] = mockFile.setMetadata.mock.calls[0]!;
       expect(options.preconditionOpts.ifGenerationMatch).toBe(2);
       expect(meta.lockedAt).toBe('1970-01-01T00:00:00.000Z');
       expect(meta.lockedBy).toBe('test-host');

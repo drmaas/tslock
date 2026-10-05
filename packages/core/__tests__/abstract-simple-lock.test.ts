@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig } from '../src/lock-configuration.js';
+import { createLockConfig, type LockConfiguration } from '../src/lock-configuration.js';
 import { LockException } from '../src/lock-exception.js';
 import type { SimpleLock } from '../src/simple-lock.js';
 import { AbstractSimpleLock } from '../src/simple-lock.js';
@@ -8,17 +8,17 @@ class TestLock extends AbstractSimpleLock {
   doUnlockMock = vi.fn();
   doExtendMock = vi.fn();
 
-  protected async doUnlock(): Promise<void> {
+  protected override async doUnlock(): Promise<void> {
     this.doUnlockMock();
   }
 
-  protected async doExtend(): Promise<SimpleLock | undefined> {
+  protected override async doExtend(_config: LockConfiguration): Promise<SimpleLock | undefined> {
     return this.doExtendMock();
   }
 }
 
 class NonExtensibleLock extends AbstractSimpleLock {
-  protected async doUnlock(): Promise<void> {}
+  protected override async doUnlock(): Promise<void> {}
 }
 
 describe('AbstractSimpleLock', () => {

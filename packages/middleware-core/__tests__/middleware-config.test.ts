@@ -1,3 +1,4 @@
+import type { DurationInput } from '@tslock/core';
 import { describe, expect, it } from 'vitest';
 import { buildLockFailureResponse, type LockedBody } from '../src/lock-metadata.js';
 import type { MiddlewareConfig } from '../src/middleware-config.js';
@@ -151,7 +152,7 @@ describe('mergeRouteConfig', () => {
 
   it('does not cache mutable route objects', () => {
     const global = baseConfig();
-    const route = { lockAtMostFor: '1s' as const };
+    const route: { lockAtMostFor: DurationInput } = { lockAtMostFor: '1s' };
     const first = mergeRouteConfig(global, route);
     route.lockAtMostFor = '2s';
     const second = mergeRouteConfig(global, route);

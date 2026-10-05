@@ -46,7 +46,7 @@ describe('S3StorageAccessor', () => {
 
       expect(result).toBe(true);
       expect(mockSend).toHaveBeenCalledTimes(2);
-      const putCmd = mockSend.mock.calls[1][0];
+      const putCmd = mockSend.mock.calls[1]![0];
       expect(putCmd.input.IfNoneMatch).toBe('*');
       expect(putCmd.input.Bucket).toBe('test-bucket');
       expect(putCmd.input.Metadata.lockUntil).toBeTruthy();
@@ -122,7 +122,7 @@ describe('S3StorageAccessor', () => {
 
       expect(result).toBe(true);
       expect(mockSend).toHaveBeenCalledTimes(2);
-      const putCmd = mockSend.mock.calls[1][0];
+      const putCmd = mockSend.mock.calls[1]![0];
       expect(putCmd.input.IfMatch).toBe('"etag1"');
     });
 
@@ -201,7 +201,7 @@ describe('S3StorageAccessor', () => {
       await accessor.unlock(defaultConfig);
 
       expect(mockSend).toHaveBeenCalledTimes(2);
-      const putCmd = mockSend.mock.calls[1][0];
+      const putCmd = mockSend.mock.calls[1]![0];
       expect(putCmd.input.IfMatch).toBe('"etag1"');
     });
 
@@ -269,7 +269,7 @@ describe('S3StorageAccessor', () => {
 
       expect(result).toBe(true);
       expect(mockSend).toHaveBeenCalledTimes(2);
-      const putCmd = mockSend.mock.calls[1][0];
+      const putCmd = mockSend.mock.calls[1]![0];
       expect(putCmd.input.IfMatch).toBe('"etag1"');
     });
 

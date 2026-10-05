@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { LockCanNotBeExtendedException, LockExtender, NoActiveLockException } from '../src/lock-extender.js';
+import { LockCanNotBeExtendedException, NoActiveLockException } from '../src/lock-exception.js';
+import { LockExtender } from '../src/lock-extender.js';
 import type { SimpleLock } from '../src/simple-lock.js';
 
 function makeLock(): SimpleLock {
