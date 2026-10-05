@@ -1,6 +1,13 @@
-import { ClockProvider, type LockConfiguration, lockAtLeastUntil, lockAtMostUntil, Utils } from '@tslock/core';
+import {
+  ClockProvider,
+  DelegatingSimpleLock,
+  type LockConfiguration,
+  lockAtLeastUntil,
+  lockAtMostUntil,
+  type SimpleLock,
+  Utils,
+} from '@tslock/core';
 import type { Client as HazelcastClient } from 'hazelcast-client';
-import { HazelcastLock } from './hazelcast-lock.js';
 import type { HazelcastLockRecord } from './hazelcast-lock-record.js';
 
 export class HazelcastAccessor {
@@ -10,7 +17,7 @@ export class HazelcastAccessor {
     private readonly lockLeaseTimeMs: number,
   ) {}
 
-  async lock(config: LockConfiguration): Promise<HazelcastLock | undefined> {
+  async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const lockUntil = lockAtMostUntil(config);
     const keyLockTimeMs = lockUntil - now;
@@ -33,7 +40,7 @@ export class HazelcastAccessor {
           },
           config.lockAtMostFor,
         );
-        return new HazelcastLock(config, this);
+        return new DelegatingSimpleLock(config, this);
       }
 
       const existingLockUntil = Date.parse(existing.lockUntil);
@@ -47,7 +54,7 @@ export class HazelcastAccessor {
           },
           config.lockAtMostFor,
         );
-        return new HazelcastLock(config, this);
+        return new DelegatingSimpleLock(config, this);
       }
 
       return undefined;

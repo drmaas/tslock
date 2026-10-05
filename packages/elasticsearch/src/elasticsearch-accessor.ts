@@ -1,7 +1,14 @@
 import type { Client } from '@elastic/elasticsearch';
-import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import {
+  ClockProvider,
+  DelegatingSimpleLock,
+  type LockConfiguration,
+  lockAtMostUntil,
+  type SimpleLock,
+  Utils,
+  unlockTime,
+} from '@tslock/core';
 import { EXTEND_SCRIPT, isConflictError, isNotFoundError, LOCK_SCRIPT, UNLOCK_SCRIPT } from '@tslock/search-core';
-import { ElasticsearchLock } from './elasticsearch-lock.js';
 import type { ElasticsearchFieldNames } from './field-names.js';
 
 export class ElasticsearchAccessor {
@@ -11,7 +18,7 @@ export class ElasticsearchAccessor {
     private readonly fieldNames: ElasticsearchFieldNames,
   ) {}
 
-  async lock(config: LockConfiguration): Promise<ElasticsearchLock | undefined> {
+  async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const isoNow = Utils.toIsoString(now);
@@ -42,14 +49,14 @@ export class ElasticsearchAccessor {
       });
 
       if (response.result === 'noop') return undefined;
-      return new ElasticsearchLock(config, this);
+      return new DelegatingSimpleLock(config, this);
     } catch (e) {
       if (isConflictError(e)) return undefined;
       throw e;
     }
   }
 
-  async extend(config: LockConfiguration): Promise<ElasticsearchLock | undefined> {
+  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const isoNow = Utils.toIsoString(now);
@@ -73,7 +80,7 @@ export class ElasticsearchAccessor {
       });
 
       if (response.result === 'noop') return undefined;
-      return new ElasticsearchLock(config, this);
+      return new DelegatingSimpleLock(config, this);
     } catch (e) {
       if (isConflictError(e)) return undefined;
       if (isNotFoundError(e)) return undefined;

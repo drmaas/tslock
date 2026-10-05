@@ -1,13 +1,20 @@
-import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import {
+  ClockProvider,
+  DelegatingSimpleLock,
+  type LockConfiguration,
+  lockAtMostUntil,
+  type SimpleLock,
+  Utils,
+  unlockTime,
+} from '@tslock/core';
 import type { Collection, Document, Filter, FindOneAndUpdateOptions } from 'mongodb';
 import { MongoServerError } from 'mongodb';
-import { MongoLock } from './mongo-lock.js';
 import type { MongoLockDocument } from './mongo-lock-document.js';
 
 export class MongoAccessor {
   constructor(private readonly collection: Collection<MongoLockDocument>) {}
 
-  async lock(config: LockConfiguration): Promise<MongoLock | undefined> {
+  async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     try {
@@ -23,7 +30,7 @@ export class MongoAccessor {
         { upsert: true, returnDocument: 'after' } as FindOneAndUpdateOptions,
       );
       if (!result) return undefined;
-      return new MongoLock(config, this);
+      return new DelegatingSimpleLock(config, this);
     } catch (e) {
       if (e instanceof MongoServerError && e.code === 11000) {
         return undefined;
@@ -32,7 +39,7 @@ export class MongoAccessor {
     }
   }
 
-  async extend(config: LockConfiguration): Promise<MongoLock | undefined> {
+  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const result = await this.collection.findOneAndUpdate(
@@ -45,7 +52,7 @@ export class MongoAccessor {
       { returnDocument: 'after' } as FindOneAndUpdateOptions,
     );
     if (!result) return undefined;
-    return new MongoLock(config, this);
+    return new DelegatingSimpleLock(config, this);
   }
 
   async unlock(config: LockConfiguration): Promise<void> {
