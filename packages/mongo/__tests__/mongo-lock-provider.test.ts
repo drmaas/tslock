@@ -55,7 +55,7 @@ describe('MongoLockProvider', () => {
     const provider = new MongoLockProvider(col);
     ClockProvider.setClock(() => 5_000_000);
     await provider.lock(createLockConfig('my-lock', 10_000));
-    const filter = fn.mock.calls[0][0];
+    const filter = fn.mock.calls[0]![0];
     expect(filter._id).toBe('my-lock');
     expect(filter.lockUntil.$lte).toBeInstanceOf(Date);
   });

@@ -156,7 +156,8 @@ corepack enable pnpm   # ensure pnpm is available via corepack
 
 ```bash
 pnpm install              # install all workspace deps (optional testcontainers native builds are denied by policy)
-pnpm -r typecheck         # tsc --noEmit across all packages
+pnpm typecheck:tests      # tsc --noEmit for packages/*/__tests__ via root tsconfig.test.json
+pnpm typecheck            # per-package tsc --noEmit, then typecheck:tests
 pnpm -r test              # vitest run (unit tests) across all packages
 pnpm test:integration     # in-memory, MongoDB, and PostgreSQL suites; Redis is opt-in via TSLOCK_REDIS_INTEGRATION=1
 pnpm -r build             # tsup build across all packages

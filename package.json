@@ -6,7 +6,8 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@11.14.0",
   "scripts": {
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && pnpm typecheck:tests",
+    "typecheck:tests": "tsc -p tsconfig.test.json",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",

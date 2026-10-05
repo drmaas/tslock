@@ -258,7 +258,7 @@ describe('DatastoreStorageAccessor', () => {
       });
       const accessor = makeAccessor({ datastore, useDate: false });
       await accessor.insertRecord(cfg());
-      const data = (txn.upsert as unknown as MockInstance).mock.calls[0][0].data as Record<string, unknown>;
+      const data = (txn.upsert as unknown as MockInstance).mock.calls[0]![0].data as Record<string, unknown>;
       expect(typeof data.lockUntil).toBe('string');
       expect(typeof data.lockedAt).toBe('string');
     });
@@ -270,7 +270,7 @@ describe('DatastoreStorageAccessor', () => {
       });
       const accessor = makeAccessor({ datastore, useDate: true });
       await accessor.insertRecord(cfg());
-      const data = (txn.upsert as unknown as MockInstance).mock.calls[0][0].data as Record<string, unknown>;
+      const data = (txn.upsert as unknown as MockInstance).mock.calls[0]![0].data as Record<string, unknown>;
       expect(data.lockUntil instanceof Date).toBe(true);
       expect(data.lockedAt instanceof Date).toBe(true);
     });

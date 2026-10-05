@@ -77,7 +77,7 @@ describe('createLockMiddlewareLifecycle', () => {
     expect(result.wasExecuted).toBe(false);
     expect(handler).not.toHaveBeenCalled();
     expect(sendLocked).toHaveBeenCalledOnce();
-    const response: LockFailureResponse = sendLocked.mock.calls[0][0];
+    const response: LockFailureResponse = sendLocked.mock.calls[0]![0];
     expect(response.status).toBe(503);
     expect(response.headers['Lock-Name']).toBe('GET:/api/test');
     expect(response.headers['Retry-After']).toBeDefined();
@@ -91,7 +91,7 @@ describe('createLockMiddlewareLifecycle', () => {
 
     await lifecycle.executeWithLock({ method: 'GET', path: '/api/test' }, undefined, async () => {}, sendLocked);
 
-    const response: LockFailureResponse = sendLocked.mock.calls[0][0];
+    const response: LockFailureResponse = sendLocked.mock.calls[0]![0];
     expect(response.status).toBe(423);
   });
 
@@ -104,7 +104,7 @@ describe('createLockMiddlewareLifecycle', () => {
 
     await lifecycle.executeWithLock({ method: 'GET', path: '/api/test' }, undefined, async () => {}, sendLocked);
 
-    const response: LockFailureResponse = sendLocked.mock.calls[0][0];
+    const response: LockFailureResponse = sendLocked.mock.calls[0]![0];
     expect(response.body).toBe(customBody);
   });
 
@@ -117,7 +117,7 @@ describe('createLockMiddlewareLifecycle', () => {
 
     await lifecycle.executeWithLock({ method: 'GET', path: '/api/test' }, undefined, async () => {}, sendLocked);
 
-    const response: LockFailureResponse = sendLocked.mock.calls[0][0];
+    const response: LockFailureResponse = sendLocked.mock.calls[0]![0];
     expect(fn).toHaveBeenCalled();
     expect(response.body).toEqual({ dynamic: true });
   });
@@ -211,7 +211,7 @@ describe('createLockMiddlewareLifecycle', () => {
       sendLocked,
     );
 
-    const response: LockFailureResponse = sendLocked.mock.calls[0][0];
+    const response: LockFailureResponse = sendLocked.mock.calls[0]![0];
     expect(response.status).toBe(409);
   });
 });

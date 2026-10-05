@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig, StorageBasedLockProvider } from '@tslock/core';
+import { ClockProvider, createLockConfig, type StorageAccessor, StorageBasedLockProvider } from '@tslock/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SpannerColumnNames } from '../src/spanner-configuration.js';
 
@@ -35,7 +35,7 @@ describe('SpannerLockProvider', () => {
 
   beforeEach(() => {
     accessor = makeAccessor();
-    provider = new StorageBasedLockProvider(accessor);
+    provider = new StorageBasedLockProvider(accessor as unknown as StorageAccessor);
   });
 
   it('acquires lock on first insert', async () => {

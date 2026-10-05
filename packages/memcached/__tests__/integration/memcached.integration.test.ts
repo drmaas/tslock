@@ -8,6 +8,10 @@ let container: StartedTestContainer | undefined;
 let client: Client | undefined;
 let provider: MemcachedLockProvider | undefined;
 
+function quitClient(value: Client | undefined): void {
+  (value as { quit?: () => void } | undefined)?.quit?.();
+}
+
 beforeAll(async () => {
   container = await new GenericContainer('memcached:alpine')
     .withExposedPorts(11211)
@@ -17,7 +21,7 @@ beforeAll(async () => {
     client = Client.create(`${container.getHost()}:${container.getMappedPort(11211)}`);
     provider = new MemcachedLockProvider(client);
   } catch (error) {
-    client?.quit();
+    quitClient(client);
     await container.stop().catch(() => undefined);
     client = undefined;
     container = undefined;
@@ -34,6 +38,6 @@ lockProviderIntegrationTests(getProvider);
 fuzzTests(getProvider);
 
 afterAll(async () => {
-  client?.quit();
+  quitClient(client);
   await container?.stop();
 });

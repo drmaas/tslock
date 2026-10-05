@@ -44,7 +44,7 @@ describe('DefaultSqlStatementsSource', () => {
     expect(params.name).toBe('test');
     expect(params.lockUntil).toBeInstanceOf(Date);
     expect(params.now).toBeInstanceOf(Date);
-    expect(params.lockedBy.length).toBeGreaterThan(0);
+    expect(String(params.lockedBy).length).toBeGreaterThan(0);
     expect(params.unlockTime).toBeInstanceOf(Date);
   });
 });

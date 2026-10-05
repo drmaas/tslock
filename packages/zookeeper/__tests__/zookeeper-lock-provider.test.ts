@@ -182,7 +182,7 @@ describe('ZooKeeperLockProvider', () => {
     });
     const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
     await provider.lock(config());
-    expect(Buffer.isBuffer((client.set as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1])).toBe(true);
+    expect(Buffer.isBuffer((client.set as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![1])).toBe(true);
   });
 
   it('uses default basePath when no options given', async () => {

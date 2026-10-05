@@ -44,7 +44,7 @@ describe('DynamoDBLockProvider', () => {
     ClockProvider.setClock(() => 5_000_000);
     const provider = new DynamoDBLockProvider({ tableName: 'my-table', client });
     await provider.lock(createLockConfig('my-lock', 10_000));
-    const cmd = send.mock.calls[0][0];
+    const cmd = send.mock.calls[0]![0];
     expect(cmd.input.TableName).toBe('my-table');
     expect(cmd.input.ConditionExpression).toContain('lockUntil <= :lockedAt');
     expect(cmd.input.ConditionExpression).toContain('attribute_not_exists(lockUntil)');
@@ -61,7 +61,7 @@ describe('DynamoDBLockProvider', () => {
       sortKey: { name: 'sk', value: 'global' },
     });
     await provider.lock(config());
-    const cmd = send.mock.calls[0][0];
+    const cmd = send.mock.calls[0]![0];
     expect(cmd.input.Key.pk.S).toBe('test');
     expect(cmd.input.Key.sk.S).toBe('global');
   });
@@ -75,7 +75,7 @@ describe('DynamoDBLockProvider', () => {
     send.mockClear();
     await lock.unlock();
 
-    const cmd = send.mock.calls[0][0];
+    const cmd = send.mock.calls[0]![0];
     expect(cmd.input.ConditionExpression).toBe('attribute_exists(#partitionKey)');
     expect(cmd.input.ExpressionAttributeNames).toEqual({ '#partitionKey': '_id' });
   });

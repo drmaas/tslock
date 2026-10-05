@@ -142,7 +142,7 @@ describe('HazelcastLockProvider', () => {
     const provider = new HazelcastLockProvider(client);
     const cfg = createLockConfig('my-lock', 10_000);
     await provider.lock(cfg);
-    const record = store.put.mock.calls[0][1];
+    const record = store.put.mock.calls[0]![1];
     expect(record.lockUntil).toBe('1970-01-01T01:23:30.000Z');
     expect(record.lockedAt).toBe('1970-01-01T01:23:20.000Z');
     expect(record.lockedBy).toBeDefined();
@@ -154,6 +154,6 @@ describe('HazelcastLockProvider', () => {
     const provider = new HazelcastLockProvider(client);
     const cfg = createLockConfig('ttl-test', 120_000);
     await provider.lock(cfg);
-    expect(store.put.mock.calls[0][2]).toBe(120_000);
+    expect(store.put.mock.calls[0]![2]).toBe(120_000);
   });
 });

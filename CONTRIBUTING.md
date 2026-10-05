@@ -113,7 +113,8 @@ Before opening a PR, run:
 
 ```bash
 pnpm check             # format check + lint (Biome)
-pnpm -r typecheck      # tsc --noEmit across all packages
+pnpm typecheck:tests   # tsc --noEmit for packages/*/__tests__ via root tsconfig.test.json
+pnpm typecheck         # per-package tsc --noEmit, then typecheck:tests
 pnpm -r test           # vitest run (unit tests)
 pnpm test:integration  # in-memory, MongoDB, and PostgreSQL; Redis is opt-in
 pnpm -r build          # tsup build across all packages
