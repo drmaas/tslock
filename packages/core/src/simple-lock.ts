@@ -43,3 +43,26 @@ export abstract class AbstractSimpleLock implements SimpleLock {
     }
   }
 }
+
+export interface SimpleLockDelegate {
+  unlock(config: LockConfiguration): Promise<void>;
+  extend?(config: LockConfiguration): Promise<SimpleLock | undefined>;
+}
+
+export class DelegatingSimpleLock extends AbstractSimpleLock {
+  constructor(
+    config: LockConfiguration,
+    private readonly delegate: SimpleLockDelegate,
+  ) {
+    super(config);
+  }
+
+  protected override async doUnlock(): Promise<void> {
+    await this.delegate.unlock(this.config);
+  }
+
+  protected override async doExtend(newConfig: LockConfiguration): Promise<SimpleLock | undefined> {
+    if (!this.delegate.extend) return super.doExtend(newConfig);
+    return await this.delegate.extend(newConfig);
+  }
+}

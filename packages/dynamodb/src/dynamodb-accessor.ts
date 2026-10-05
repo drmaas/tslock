@@ -1,7 +1,14 @@
 import type { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { ConditionalCheckFailedException, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
-import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
-import { DynamoDBLock } from './dynamodb-lock.js';
+import {
+  ClockProvider,
+  DelegatingSimpleLock,
+  type LockConfiguration,
+  lockAtMostUntil,
+  type SimpleLock,
+  Utils,
+  unlockTime,
+} from '@tslock/core';
 
 export class DynamoDBAccessor {
   constructor(
@@ -19,7 +26,7 @@ export class DynamoDBAccessor {
     return key;
   }
 
-  async lock(config: LockConfiguration): Promise<DynamoDBLock | undefined> {
+  async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const isoNow = Utils.toIsoString(now);
     const isoLockAtMostUntil = Utils.toIsoString(lockAtMostUntil(config));
@@ -39,14 +46,14 @@ export class DynamoDBAccessor {
           },
         }),
       );
-      return new DynamoDBLock(config, this);
+      return new DelegatingSimpleLock(config, this);
     } catch (e) {
       if (e instanceof ConditionalCheckFailedException) return undefined;
       throw e;
     }
   }
 
-  async extend(config: LockConfiguration): Promise<DynamoDBLock | undefined> {
+  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const isoNow = Utils.toIsoString(now);
     const isoNewLockAtMostUntil = Utils.toIsoString(lockAtMostUntil(config));
@@ -66,7 +73,7 @@ export class DynamoDBAccessor {
           },
         }),
       );
-      return new DynamoDBLock(config, this);
+      return new DelegatingSimpleLock(config, this);
     } catch (e) {
       if (e instanceof ConditionalCheckFailedException) return undefined;
       throw e;

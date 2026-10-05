@@ -40,8 +40,8 @@ export {
 } from './locking-task-executor-listener.js';
 export type { Disposable, Scheduler } from './scheduler.js';
 export { DefaultScheduler } from './scheduler.js';
-export type { SimpleLock } from './simple-lock.js';
-export { AbstractSimpleLock } from './simple-lock.js';
+export type { SimpleLock, SimpleLockDelegate } from './simple-lock.js';
+export { AbstractSimpleLock, DelegatingSimpleLock } from './simple-lock.js';
 export type { SimpleLockWithConfiguration } from './simple-lock-with-configuration.js';
 export type { StorageAccessor } from './storage-based-lock-provider.js';
 export {

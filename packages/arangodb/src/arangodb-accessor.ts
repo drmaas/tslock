@@ -1,7 +1,14 @@
-import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import {
+  ClockProvider,
+  DelegatingSimpleLock,
+  type LockConfiguration,
+  lockAtMostUntil,
+  type SimpleLock,
+  Utils,
+  unlockTime,
+} from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collections';
 import type { Database } from 'arangojs/databases';
-import { ArangoDbLock } from './arangodb-lock.js';
 import type { ArangoDbLockDocument } from './arangodb-lock-document.js';
 
 type ArangoCollection<T extends Record<string, unknown>> = DocumentCollection<T> & EdgeCollection<T>;
@@ -22,7 +29,7 @@ export class ArangoDbAccessor {
     private readonly database: Database,
   ) {}
 
-  async lock(config: LockConfiguration): Promise<ArangoDbLock | undefined> {
+  async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const collectionName = this.collection.name;
@@ -55,7 +62,7 @@ export class ArangoDbAccessor {
           }),
         );
         await txn.commit();
-        return new ArangoDbLock(config, this);
+        return new DelegatingSimpleLock(config, this);
       }
 
       const lockUntilMillis = Date.parse(existing.lockUntil);
@@ -68,7 +75,7 @@ export class ArangoDbAccessor {
           }),
         );
         await txn.commit();
-        return new ArangoDbLock(config, this);
+        return new DelegatingSimpleLock(config, this);
       }
 
       await txn.abort();
@@ -81,7 +88,7 @@ export class ArangoDbAccessor {
     }
   }
 
-  async extend(config: LockConfiguration): Promise<ArangoDbLock | undefined> {
+  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const documentId = config.name;
@@ -109,7 +116,7 @@ export class ArangoDbAccessor {
       throw e;
     }
 
-    return new ArangoDbLock(config, this);
+    return new DelegatingSimpleLock(config, this);
   }
 
   async unlock(config: LockConfiguration): Promise<void> {

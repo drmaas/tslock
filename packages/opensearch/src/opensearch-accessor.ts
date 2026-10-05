@@ -1,8 +1,15 @@
 import type { Client } from '@opensearch-project/opensearch';
-import { ClockProvider, type LockConfiguration, lockAtMostUntil, Utils, unlockTime } from '@tslock/core';
+import {
+  ClockProvider,
+  DelegatingSimpleLock,
+  type LockConfiguration,
+  lockAtMostUntil,
+  type SimpleLock,
+  Utils,
+  unlockTime,
+} from '@tslock/core';
 import { EXTEND_SCRIPT, isConflictError, isNotFoundError, LOCK_SCRIPT, UNLOCK_SCRIPT } from '@tslock/search-core';
 import type { OpenSearchFieldNames } from './field-names.js';
-import { OpenSearchLock } from './opensearch-lock.js';
 
 export class OpenSearchAccessor {
   constructor(
@@ -11,7 +18,7 @@ export class OpenSearchAccessor {
     private readonly fieldNames: OpenSearchFieldNames,
   ) {}
 
-  async lock(config: LockConfiguration): Promise<OpenSearchLock | undefined> {
+  async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const isoNow = Utils.toIsoString(now);
@@ -44,14 +51,14 @@ export class OpenSearchAccessor {
       });
 
       if (response.body.result === 'noop') return undefined;
-      return new OpenSearchLock(config, this);
+      return new DelegatingSimpleLock(config, this);
     } catch (e) {
       if (isConflictError(e)) return undefined;
       throw e;
     }
   }
 
-  async extend(config: LockConfiguration): Promise<OpenSearchLock | undefined> {
+  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const isoNow = Utils.toIsoString(now);
@@ -77,7 +84,7 @@ export class OpenSearchAccessor {
       });
 
       if (response.body.result === 'noop') return undefined;
-      return new OpenSearchLock(config, this);
+      return new DelegatingSimpleLock(config, this);
     } catch (e) {
       if (isConflictError(e)) return undefined;
       if (isNotFoundError(e)) return undefined;
