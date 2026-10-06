@@ -19,6 +19,7 @@ export type { SqlStatements } from './sql-statements.js';
 export {
   buildPositionalParams,
   NAMED_PARAM_PATTERN,
+  prefixNamedParams,
   SQL_PARAM_NAMES,
   translateNamedParams,
   translateToPositional,
