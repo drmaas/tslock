@@ -1,1 +1,4 @@
-export { translateNamedParams as translateToPositional, prefixNamedParams as translateToNamed } from '@tslock/sql-support';
+export {
+  prefixNamedParams as translateToNamed,
+  translateNamedParams as translateToPositional,
+} from '@tslock/sql-support';
