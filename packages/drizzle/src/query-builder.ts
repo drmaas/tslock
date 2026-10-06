@@ -1,6 +1,6 @@
+import { LockException } from '@tslock/core';
+import { NAMED_PARAM_PATTERN } from '@tslock/sql-support';
 import { param, type SQL, sql } from 'drizzle-orm';
-
-const NAMED_PARAM_PATTERN = /:([a-zA-Z_][a-zA-Z0-9_]*)/g;
 
 export function buildDrizzleQuery(rawSql: string, params: Record<string, unknown>): SQL {
   const chunks: SQL[] = [];
@@ -13,7 +13,7 @@ export function buildDrizzleQuery(rawSql: string, params: Record<string, unknown
     }
     const name = match[1]!;
     if (!(name in params)) {
-      throw new Error(`Missing param: ${name}`);
+      throw new LockException(`Missing param: ${name}`);
     }
     chunks.push(param(params[name]) as unknown as SQL);
     lastIndex = regex.lastIndex;

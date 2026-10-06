@@ -1,3 +1,5 @@
+import { LockException } from '@tslock/core';
+
 export interface SqlStatements {
   readonly insert: string;
   readonly update: string;
@@ -26,10 +28,10 @@ export function buildPositionalParams(params: Record<string, unknown>, paramOrde
   return paramOrder.map((name) => params[name]);
 }
 
-export function translateNamedParams(
+function replaceNamedParams(
   sql: string,
   params: Record<string, unknown>,
-  placeholder: (index: number) => string,
+  render: (name: string, index: number) => string,
 ): { sql: string; values: unknown[] } {
   const seen = new Map<string, number>();
   const values: unknown[] = [];
@@ -37,7 +39,7 @@ export function translateNamedParams(
 
   const result = sql.replace(NAMED_PARAM_PATTERN, (_match, name: string) => {
     if (!(name in params)) {
-      throw new Error(`Missing param: ${name}`);
+      throw new LockException(`Missing param: ${name}`);
     }
     let idx = seen.get(name);
     if (idx === undefined) {
@@ -46,8 +48,25 @@ export function translateNamedParams(
       seen.set(name, idx);
       values.push(params[name]);
     }
-    return placeholder(idx);
+    return render(name, idx);
   });
 
   return { sql: result, values };
+}
+
+export function translateNamedParams(
+  sql: string,
+  params: Record<string, unknown>,
+  placeholder: (index: number) => string,
+): { sql: string; values: unknown[] } {
+  return replaceNamedParams(sql, params, (_name, index) => placeholder(index));
+}
+
+export function prefixNamedParams(
+  sql: string,
+  params: Record<string, unknown>,
+  prefix: string,
+): { sql: string; params: Record<string, unknown> } {
+  const { sql: result } = replaceNamedParams(sql, params, (name) => prefix + name);
+  return { sql: result, params };
 }

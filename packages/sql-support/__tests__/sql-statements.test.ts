@@ -1,5 +1,11 @@
+import { LockException } from '@tslock/core';
 import { describe, expect, it } from 'vitest';
-import { buildPositionalParams, translateToPositional } from '../src/sql-statements.js';
+import {
+  buildPositionalParams,
+  prefixNamedParams,
+  translateNamedParams,
+  translateToPositional,
+} from '../src/sql-statements.js';
 
 describe('translateToPositional', () => {
   it('replaces named params with $1, $2, ...', () => {
@@ -26,5 +32,42 @@ describe('buildPositionalParams', () => {
     const params = { a: 1, b: 'two' };
     const result = buildPositionalParams(params, ['a', 'b']);
     expect(result).toEqual([1, 'two']);
+  });
+});
+
+describe('translateNamedParams', () => {
+  it('reuses the index for a repeated name', () => {
+    const { sql, values } = translateNamedParams('WHERE x = :now AND y < :now', { now: 100 }, (i) => `$${i}`);
+    expect(sql).toBe('WHERE x = $1 AND y < $1');
+    expect(values).toEqual([100]);
+  });
+
+  it('throws LockException on a missing param', () => {
+    expect(() => translateNamedParams('WHERE n = :name', {}, (i) => `$${i}`)).toThrow(LockException);
+  });
+
+  it('passes through SQL with no params', () => {
+    const { sql, values } = translateNamedParams('SELECT 1', {}, (i) => `$${i}`);
+    expect(sql).toBe('SELECT 1');
+    expect(values).toEqual([]);
+  });
+});
+
+describe('prefixNamedParams', () => {
+  it('rewrites to @name', () => {
+    const params = { name: 'foo', lockedBy: 'host1' };
+    const { sql, params: out } = prefixNamedParams('WHERE n=:name AND lb=:lockedBy', params, '@');
+    expect(sql).toBe('WHERE n=@name AND lb=@lockedBy');
+    expect(out).toBe(params);
+  });
+
+  it('throws LockException on a missing param', () => {
+    expect(() => prefixNamedParams('WHERE n=:name', {}, '@')).toThrow(LockException);
+  });
+
+  it('returns the same params object', () => {
+    const params = { name: 'foo' };
+    const { params: out } = prefixNamedParams('WHERE n=:name', params, '@');
+    expect(out).toBe(params);
   });
 });
