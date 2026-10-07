@@ -20,6 +20,10 @@ function makeDb(
   return { db: { execute: executeMock }, executeMock };
 }
 
+function driverCause(shape: Record<string, unknown>): Error {
+  return shape as unknown as Error;
+}
+
 const source = new DefaultSqlStatementsSource(new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES }));
 const pgDialect = DRIZZLE_DIALECT_INFOS.postgresql;
 const mysqlDialect = DRIZZLE_DIALECT_INFOS.mysql;
@@ -63,21 +67,21 @@ describe('DrizzleStorageAccessor', () => {
   });
 
   it('insertRecord false on DrizzleQueryError cause errno 1062 (mysql)', async () => {
-    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], { errno: 1062 });
+    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], driverCause({ errno: 1062 }));
     const { db } = makeDb(0, wrapped);
     const acc = new DrizzleStorageAccessor(db, source, mysqlDialect);
     expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
   });
 
   it('insertRecord false on DrizzleQueryError cause ER_DUP_ENTRY (mysql)', async () => {
-    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], { code: 'ER_DUP_ENTRY' });
+    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], driverCause({ code: 'ER_DUP_ENTRY' }));
     const { db } = makeDb(0, wrapped);
     const acc = new DrizzleStorageAccessor(db, source, mysqlDialect);
     expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
   });
 
   it('insertRecord false on DrizzleQueryError cause 23505 (postgresql)', async () => {
-    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], { code: '23505' });
+    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], driverCause({ code: '23505' }));
     const { db } = makeDb(0, wrapped);
     const acc = new DrizzleStorageAccessor(db, source, pgDialect);
     expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
@@ -108,7 +112,7 @@ describe('DrizzleStorageAccessor', () => {
   });
 
   it('insertRecord false on cyclic duplicate-key cause without hanging', async () => {
-    const cause: { errno: number; cause?: unknown } = { errno: 1062 };
+    const cause = driverCause({ errno: 1062 }) as Error & { cause?: unknown };
     cause.cause = cause;
     const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], cause);
     const { db } = makeDb(0, wrapped);
@@ -158,7 +162,7 @@ describe('DrizzleLockProvider mysql duplicate-key wrapped in DrizzleQueryError',
   it('lock succeeds after wrapped 1062 insert and second lock skips insert', async () => {
     const executeMock = vi.fn();
     executeMock
-      .mockRejectedValueOnce(new DrizzleQueryError('INSERT INTO shedlock', [], { errno: 1062 }))
+      .mockRejectedValueOnce(new DrizzleQueryError('INSERT INTO shedlock', [], driverCause({ errno: 1062 })))
       .mockResolvedValue({ affectedRows: 1 });
 
     const provider = new DrizzleLockProvider(
