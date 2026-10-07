@@ -79,6 +79,8 @@ jobs:
           fi
 
       - name: Version packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm version-packages
 
       - name: Format after version bump
