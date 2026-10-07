@@ -4,8 +4,45 @@ import type { NextFunction, Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 import { createExpressLock } from '../src/index.js';
 
-function createMockRequest(method: string, path: string) {
-  return { method, path };
+function createMockRequest(
+  method: string,
+  path: string,
+  options: {
+    baseUrl?: string;
+    routePath?: string | RegExp;
+    caseSensitiveRouting?: boolean;
+    strictRouting?: boolean;
+  } = {},
+) {
+  return {
+    method,
+    path,
+    baseUrl: options.baseUrl ?? '',
+    route: options.routePath !== undefined ? { path: options.routePath } : undefined,
+    app: {
+      get(name: string) {
+        if (name === 'case sensitive routing') return options.caseSensitiveRouting ?? false;
+        if (name === 'strict routing') return options.strictRouting ?? false;
+        return undefined;
+      },
+    },
+  };
+}
+
+function createCapturingLockProvider() {
+  const lockNames: string[] = [];
+  const provider: LockProvider = {
+    async lock(config) {
+      lockNames.push(config.name);
+      return {
+        async unlock() {},
+        async extend() {
+          return undefined;
+        },
+      } as SimpleLock;
+    },
+  };
+  return { provider, lockNames };
 }
 
 function createMockResponse() {
@@ -231,6 +268,98 @@ describe('createExpressLock', () => {
     await vi.waitFor(
       () => {
         expect(next).toHaveBeenCalledWith(expect.any(Error));
+      },
+      { timeout: 2000 },
+    );
+  });
+
+  it('uses matched route path with baseUrl for lock name', async () => {
+    const { provider, lockNames } = createCapturingLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider });
+    const middleware = tslock();
+
+    const req = createMockRequest('GET', '/items/9', {
+      baseUrl: '/api',
+      routePath: '/items/:id',
+    });
+    const res = createMockResponse();
+    const next = vi.fn();
+
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
+
+    await vi.waitFor(
+      () => {
+        expect(lockNames).toEqual(['GET:/api/items/:id']);
+      },
+      { timeout: 2000 },
+    );
+  });
+
+  it('lowercases lock path when case sensitive routing is off', async () => {
+    const { provider, lockNames } = createCapturingLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider });
+    const middleware = tslock();
+
+    const req = createMockRequest('GET', '/RUN', {
+      baseUrl: '/API',
+      routePath: '/run',
+      caseSensitiveRouting: false,
+    });
+    const res = createMockResponse();
+    const next = vi.fn();
+
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
+
+    await vi.waitFor(
+      () => {
+        expect(lockNames).toEqual(['GET:/api/run']);
+      },
+      { timeout: 2000 },
+    );
+  });
+
+  it('strips trailing slash when strict routing is off', async () => {
+    const { provider, lockNames } = createCapturingLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider });
+    const middleware = tslock();
+
+    const req = createMockRequest('GET', '/x/', {
+      baseUrl: '/use-only',
+      caseSensitiveRouting: false,
+      strictRouting: false,
+    });
+    const res = createMockResponse();
+    const next = vi.fn();
+
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
+
+    await vi.waitFor(
+      () => {
+        expect(lockNames).toEqual(['GET:/use-only/x']);
+      },
+      { timeout: 2000 },
+    );
+  });
+
+  it('preserves case and trailing slash when Express routing settings are enabled', async () => {
+    const { provider, lockNames } = createCapturingLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider });
+    const middleware = tslock();
+
+    const req = createMockRequest('GET', '/Run/', {
+      baseUrl: '/API',
+      routePath: '/Run/',
+      caseSensitiveRouting: true,
+      strictRouting: true,
+    });
+    const res = createMockResponse();
+    const next = vi.fn();
+
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
+
+    await vi.waitFor(
+      () => {
+        expect(lockNames).toEqual(['GET:/API/Run/']);
       },
       { timeout: 2000 },
     );

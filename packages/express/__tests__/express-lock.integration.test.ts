@@ -229,4 +229,115 @@ describe('Express lock integration', () => {
     expect(res.status).toBe(200);
     expect(handlerCalls).toBe(1);
   });
+
+  it('serializes concurrent /run and /RUN onto the same lock', async () => {
+    const provider = new InMemoryLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider, lockAtMostFor: 10000 });
+
+    let releaseBarrier: () => void;
+    const barrier = new Promise<void>((r) => {
+      releaseBarrier = r;
+    });
+    let handlerEntries = 0;
+
+    const app = express();
+    app.get('/run', tslock(), (_req, res) => {
+      handlerEntries++;
+      if (handlerEntries === 1) {
+        barrier.then(() => res.json({ ok: true }));
+        return;
+      }
+      res.json({ ok: true, raced: true });
+    });
+
+    ctx.server = await startServer(app);
+
+    const firstReq = makeRequest('/run');
+    try {
+      await new Promise((r) => setTimeout(r, 50));
+
+      const res2 = await makeRequest('/RUN');
+      expect(res2.status).toBe(503);
+      expect(res2.headers['lock-name']).toBe('GET:/run');
+      expect(handlerEntries).toBe(1);
+    } finally {
+      releaseBarrier!();
+    }
+    const res1 = await firstReq;
+    expect(res1.status).toBe(200);
+  });
+
+  it('serializes concurrent /run and /run/ onto the same lock', async () => {
+    const provider = new InMemoryLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider, lockAtMostFor: 10000 });
+
+    let releaseBarrier: () => void;
+    const barrier = new Promise<void>((r) => {
+      releaseBarrier = r;
+    });
+    let handlerEntries = 0;
+
+    const app = express();
+    app.get('/run', tslock(), (_req, res) => {
+      handlerEntries++;
+      if (handlerEntries === 1) {
+        barrier.then(() => res.json({ ok: true }));
+        return;
+      }
+      res.json({ ok: true, raced: true });
+    });
+
+    ctx.server = await startServer(app);
+
+    const firstReq = makeRequest('/run');
+    try {
+      await new Promise((r) => setTimeout(r, 50));
+
+      const res2 = await makeRequest('/run/');
+      expect(res2.status).toBe(503);
+      expect(res2.headers['lock-name']).toBe('GET:/run');
+      expect(handlerEntries).toBe(1);
+    } finally {
+      releaseBarrier!();
+    }
+    const res1 = await firstReq;
+    expect(res1.status).toBe(200);
+  });
+
+  it('serializes concurrent parameterized route ids onto the matched pattern lock', async () => {
+    const provider = new InMemoryLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider, lockAtMostFor: 10000 });
+
+    let releaseBarrier: () => void;
+    const barrier = new Promise<void>((r) => {
+      releaseBarrier = r;
+    });
+    let handlerEntries = 0;
+
+    const app = express();
+    app.get('/jobs/:id', tslock(), (_req, res) => {
+      handlerEntries++;
+      if (handlerEntries === 1) {
+        barrier.then(() => res.json({ ok: true }));
+        return;
+      }
+      res.json({ ok: true, raced: true });
+    });
+
+    ctx.server = await startServer(app);
+
+    const firstReq = makeRequest('/jobs/1');
+    try {
+      await new Promise((r) => setTimeout(r, 50));
+
+      const res2 = await makeRequest('/jobs/2');
+      expect(res2.status).toBe(503);
+      expect(res2.headers['lock-name']).toBe('GET:/jobs/:id');
+      expect(handlerEntries).toBe(1);
+    } finally {
+      releaseBarrier!();
+    }
+    const res1 = await firstReq;
+    expect(res1.status).toBe(200);
+  });
 });
