@@ -6,12 +6,32 @@ import {
   resolveMiddlewareConfig,
   snapshotRouteConfig,
 } from '@tslock/middleware-core';
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 
 export interface ExpressLockFactory {
   (routeConfig?: RouteLockConfig): RequestHandler;
   lockProvider: LockProvider;
   config: MiddlewareConfig;
+}
+
+function normalizeExpressLockPath(path: string, caseSensitive: boolean, strict: boolean): string {
+  let normalized = path;
+  if (!caseSensitive) {
+    normalized = normalized.toLowerCase();
+  }
+  if (!strict && normalized.length > 1 && normalized.endsWith('/')) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
+}
+
+function resolveExpressLockPath(req: Request): string {
+  const caseSensitive = Boolean(req.app?.get?.('case sensitive routing'));
+  const strict = Boolean(req.app?.get?.('strict routing'));
+  const baseUrl = typeof req.baseUrl === 'string' ? req.baseUrl : '';
+  const routeSegment =
+    req.route != null && req.route.path != null ? String(req.route.path) : typeof req.path === 'string' ? req.path : '';
+  return normalizeExpressLockPath(`${baseUrl}${routeSegment}`, caseSensitive, strict);
 }
 
 export function createExpressLock(
@@ -65,7 +85,7 @@ export function createExpressLock(
           };
 
           await lifecycle.executeWithLock(
-            { method: req.method, path: req.path },
+            { method: req.method, path: resolveExpressLockPath(req) },
             registeredRouteConfig,
             runHandler,
             sendLockedResponse,

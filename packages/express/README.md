@@ -28,7 +28,9 @@ app.get('/reports', tslock(), (_req, res) => {
 });
 ```
 
-The default lock name is derived from the HTTP method and route path. Configure `lockNamePrefix`, `lockAtMostFor`, `lockAtLeastFor`, `defaultLockedStatus`, or a custom locked response through `createExpressLock`.
+The default lock name is derived from the HTTP method and the matched Express route pattern (`req.baseUrl` + `req.route.path` when a route is matched; otherwise `req.baseUrl` + `req.path`). The path is lowercased when `case sensitive routing` is off and a trailing slash is stripped when `strict routing` is off — matching Express defaults — so `/run`, `/RUN`, and `/run/` share one lock, and `/jobs/:id` shares one lock across ids. Configure `lockNamePrefix`, `lockAtMostFor`, `lockAtLeastFor`, `defaultLockedStatus`, or a custom locked response through `createExpressLock`.
+
+**Upgrade note:** parameterized routes previously locked per concrete path (`GET:/jobs/1`). After upgrading they lock on the pattern (`GET:/jobs/:id`). Old per-id lock records may remain until they expire; they are unused by the new names.
 
 ## Integration tests
 
