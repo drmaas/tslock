@@ -15,7 +15,11 @@ export const DRIZZLE_DIALECT_INFOS: Record<DrizzleDialectName, DrizzleDialectInf
   },
   mysql: {
     dialect: 'mysql',
-    isDuplicateKeyError: (e) => typeof e === 'object' && e !== null && (e as { errno?: number }).errno === 1062,
+    isDuplicateKeyError: (e) => {
+      if (typeof e !== 'object' || e === null) return false;
+      const err = e as { errno?: number; code?: string };
+      return err.errno === 1062 || err.code === 'ER_DUP_ENTRY';
+    },
     getAffectedRows: (result) => {
       if (typeof result !== 'object' || result === null) return 0;
       const r = result as { affectedRows?: number };

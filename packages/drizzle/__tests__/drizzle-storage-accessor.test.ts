@@ -1,7 +1,8 @@
 import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@tslock/sql-support';
+import { DrizzleQueryError } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
-import { DRIZZLE_DIALECT_INFOS } from '../src/drizzle-lock-provider.js';
+import { DRIZZLE_DIALECT_INFOS, DrizzleLockProvider } from '../src/drizzle-lock-provider.js';
 import { type DrizzleExecutor, DrizzleStorageAccessor } from '../src/drizzle-storage-accessor.js';
 
 function makeDb(
@@ -49,8 +50,46 @@ describe('DrizzleStorageAccessor', () => {
     expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
   });
 
+  it('insertRecord false on duplicate key (mysql ER_DUP_ENTRY)', async () => {
+    const { db } = makeDb(0, { code: 'ER_DUP_ENTRY' });
+    const acc = new DrizzleStorageAccessor(db, source, mysqlDialect);
+    expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
+  });
+
   it('insertRecord false on duplicate key (sqlite UNIQUE constraint failed)', async () => {
     const { db } = makeDb(0, new Error('UNIQUE constraint failed: t.n'));
+    const acc = new DrizzleStorageAccessor(db, source, sqliteDialect);
+    expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
+  });
+
+  it('insertRecord false on DrizzleQueryError cause errno 1062 (mysql)', async () => {
+    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], { errno: 1062 });
+    const { db } = makeDb(0, wrapped);
+    const acc = new DrizzleStorageAccessor(db, source, mysqlDialect);
+    expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
+  });
+
+  it('insertRecord false on DrizzleQueryError cause ER_DUP_ENTRY (mysql)', async () => {
+    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], { code: 'ER_DUP_ENTRY' });
+    const { db } = makeDb(0, wrapped);
+    const acc = new DrizzleStorageAccessor(db, source, mysqlDialect);
+    expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
+  });
+
+  it('insertRecord false on DrizzleQueryError cause 23505 (postgresql)', async () => {
+    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], { code: '23505' });
+    const { db } = makeDb(0, wrapped);
+    const acc = new DrizzleStorageAccessor(db, source, pgDialect);
+    expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
+  });
+
+  it('insertRecord false on DrizzleQueryError cause UNIQUE constraint failed (sqlite)', async () => {
+    const wrapped = new DrizzleQueryError(
+      'INSERT INTO shedlock',
+      [],
+      new Error('UNIQUE constraint failed: shedlock.name'),
+    );
+    const { db } = makeDb(0, wrapped);
     const acc = new DrizzleStorageAccessor(db, source, sqliteDialect);
     expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
   });
@@ -59,6 +98,22 @@ describe('DrizzleStorageAccessor', () => {
     const { db } = makeDb(0, new Error('connection lost'));
     const acc = new DrizzleStorageAccessor(db, source, pgDialect);
     await expect(acc.insertRecord(createLockConfig('t', 1000))).rejects.toThrow('connection lost');
+  });
+
+  it('insertRecord rethrows original DrizzleQueryError when cause is not a duplicate', async () => {
+    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], new Error('connection lost'));
+    const { db } = makeDb(0, wrapped);
+    const acc = new DrizzleStorageAccessor(db, source, mysqlDialect);
+    await expect(acc.insertRecord(createLockConfig('t', 1000))).rejects.toBe(wrapped);
+  });
+
+  it('insertRecord false on cyclic duplicate-key cause without hanging', async () => {
+    const cause: { errno: number; cause?: unknown } = { errno: 1062 };
+    cause.cause = cause;
+    const wrapped = new DrizzleQueryError('INSERT INTO shedlock', [], cause);
+    const { db } = makeDb(0, wrapped);
+    const acc = new DrizzleStorageAccessor(db, source, mysqlDialect);
+    expect(await acc.insertRecord(createLockConfig('t', 1000))).toBe(false);
   });
 
   it('updateRecord true/false', async () => {
@@ -96,5 +151,28 @@ describe('DrizzleStorageAccessor', () => {
     expect(pgDialect.getAffectedRows({ affectedRows: 5 })).toBe(5);
     expect(pgDialect.getAffectedRows({ rowCount: 5 })).toBe(5);
     expect(pgDialect.getAffectedRows({})).toBe(0);
+  });
+});
+
+describe('DrizzleLockProvider mysql duplicate-key wrapped in DrizzleQueryError', () => {
+  it('lock succeeds after wrapped 1062 insert and second lock skips insert', async () => {
+    const executeMock = vi.fn();
+    executeMock
+      .mockRejectedValueOnce(new DrizzleQueryError('INSERT INTO shedlock', [], { errno: 1062 }))
+      .mockResolvedValue({ affectedRows: 1 });
+
+    const provider = new DrizzleLockProvider(
+      { execute: executeMock },
+      'mysql',
+      new SqlConfiguration({ databaseProduct: DatabaseProduct.MYSQL }),
+    );
+
+    const first = await provider.lock(createLockConfig('job', 1000));
+    expect(first).toBeDefined();
+    expect(executeMock).toHaveBeenCalledTimes(2);
+
+    const second = await provider.lock(createLockConfig('job', 1000));
+    expect(second).toBeDefined();
+    expect(executeMock).toHaveBeenCalledTimes(3);
   });
 });

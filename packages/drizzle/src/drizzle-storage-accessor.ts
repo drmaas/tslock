@@ -2,6 +2,7 @@ import { AbstractStorageAccessor, type LockConfiguration } from '@tslock/core';
 import type { SqlStatementsSource } from '@tslock/sql-support';
 import type { SQL } from 'drizzle-orm';
 import type { DrizzleDialectInfo } from './dialect-info.js';
+import { errorChain } from './error-chain.js';
 import { buildDrizzleQuery } from './query-builder.js';
 
 export interface DrizzleExecutor {
@@ -29,7 +30,9 @@ export class DrizzleStorageAccessor extends AbstractStorageAccessor {
       const result = await this.db.execute(query);
       return this.dialectInfo.getAffectedRows(result) > 0;
     } catch (e) {
-      if (this.dialectInfo.isDuplicateKeyError(e)) return false;
+      for (const link of errorChain(e)) {
+        if (this.dialectInfo.isDuplicateKeyError(link)) return false;
+      }
       throw e;
     }
   }
