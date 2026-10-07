@@ -2,7 +2,7 @@
 
 > TSLock SQL provider via the [Drizzle ORM](https://orm.drizzle.team/).
 
-A [TSLock](../../README.md) provider that runs the standard ShedLock insert-or-update SQL through Drizzle's `db.execute()` / `db.run()` APIs, sharing configuration and statement generation with [`@tslock/sql-support`](../sql-support/README.md). Supports PostgreSQL, MySQL, and SQLite.
+A [TSLock](../../README.md) provider that runs the standard ShedLock insert-or-update SQL through Drizzle's `db.execute()` API, sharing configuration and statement generation with [`@tslock/sql-support`](../sql-support/README.md). Supports PostgreSQL, MySQL, and SQLite.
 
 ## Installation
 
