@@ -1,6 +1,6 @@
 {
   "name": "@tslock/redis-core",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "TSLock Redis core — shared InternalRedisLockProvider and Lua scripts",
   "license": "Apache-2.0",
   "type": "module",

@@ -1,5 +1,13 @@
 # @tslock/test-support
 
+## 2.3.0
+
+### Patch Changes
+
+- [#93](https://github.com/drmaas/tslock/pull/93) [`ba74e3d`](https://github.com/drmaas/tslock/commit/ba74e3da4bd6881e5207dc2c110b27d4354ae92b) Thanks [@drmaas](https://github.com/drmaas)! - Make `storageBasedLockProviderIntegrationTests` include the extensible contract so storage-based providers exercise extend.
+- Updated dependencies [[`cb95d37`](https://github.com/drmaas/tslock/commit/cb95d37cea0a82a3621947c92292d6f89a8927d8)]:
+  - @tslock/core@2.3.0
+
 ## 2.2.1
 
 ### Patch Changes

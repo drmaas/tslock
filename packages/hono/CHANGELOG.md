@@ -1,5 +1,13 @@
 # @tslock/hono
 
+## 2.3.0
+
+### Patch Changes
+
+- Updated dependencies [[`cb95d37`](https://github.com/drmaas/tslock/commit/cb95d37cea0a82a3621947c92292d6f89a8927d8), [`7f11b71`](https://github.com/drmaas/tslock/commit/7f11b7182bd2aab185f4cff2084214ed8b140dbd)]:
+  - @tslock/core@2.3.0
+  - @tslock/middleware-core@2.3.0
+
 ## 2.2.1
 
 ### Patch Changes

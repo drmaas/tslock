@@ -1,5 +1,14 @@
 # @tslock/elasticsearch
 
+## 2.3.0
+
+### Patch Changes
+
+- [#86](https://github.com/drmaas/tslock/pull/86) [`cb95d37`](https://github.com/drmaas/tslock/commit/cb95d37cea0a82a3621947c92292d6f89a8927d8) Thanks [@drmaas](https://github.com/drmaas)! - Replace six copy-pasted provider lock classes with core `DelegatingSimpleLock`.
+- Updated dependencies [[`cb95d37`](https://github.com/drmaas/tslock/commit/cb95d37cea0a82a3621947c92292d6f89a8927d8)]:
+  - @tslock/core@2.3.0
+  - @tslock/search-core@2.3.0
+
 ## 2.2.1
 
 ### Patch Changes

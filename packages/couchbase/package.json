@@ -1,6 +1,6 @@
 {
   "name": "@tslock/couchbase",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "TSLock provider for Couchbase Server",
   "license": "Apache-2.0",
   "type": "module",
