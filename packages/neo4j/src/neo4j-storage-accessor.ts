@@ -92,6 +92,7 @@ export class Neo4jStorageAccessor extends AbstractStorageAccessor {
       tx.run(this.unlockCypher, {
         name: config.name,
         unlockTime: unlockTime(config),
+        lockedBy: this.lockedByValue,
       }),
     );
   }

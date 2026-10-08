@@ -122,6 +122,27 @@ describe('Neo4jStorageAccessor', () => {
     expect(txRun).toHaveBeenCalledOnce();
   });
 
+  it('unlock passes lockedBy for this instance', async () => {
+    const txRun = vi.fn().mockResolvedValue({ records: [] });
+    const driver = makeDriver(txRun);
+    const accessor = new Neo4jStorageAccessor(
+      driver,
+      {
+        label: 'ShedLock',
+        nameCol: 'name',
+        lockUntilCol: 'lockUntil',
+        lockedAtCol: 'lockedAt',
+        lockedByCol: 'lockedBy',
+      },
+      'my-host',
+    );
+    await accessor.unlock(config('test'));
+    expect(txRun).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE lock.`lockedBy` = $lockedBy'),
+      expect.objectContaining({ name: 'test', lockedBy: 'my-host' }),
+    );
+  });
+
   it('extend returns true when record matched', async () => {
     const txRun = vi.fn().mockResolvedValue({ records: [{}] });
     const driver = makeDriver(txRun);

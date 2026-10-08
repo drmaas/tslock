@@ -106,6 +106,7 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
   override async unlock(config: LockConfiguration): Promise<void> {
     const current = await this.getWithMetadata(config.name);
     if (current === null) return;
+    if (current.metadata.lockedBy !== this.getHostname()) return;
     const file = this.file(config.name);
     try {
       await file.setMetadata(

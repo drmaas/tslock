@@ -2,7 +2,7 @@
 
 > TSLock provider backed by Amazon [S3](https://aws.amazon.com/s3/).
 
-A [TSLock](../../README.md) provider that uses the `StorageBasedLockProvider` pattern with a `StorageAccessor` over the S3 client. First-time locks are created with `PutObject` + `IfNoneMatch: "*"` (fails if the object exists); updates use conditional `PutObject` with generation matching. Each lock is a small object under a configurable prefix.
+A [TSLock](../../README.md) provider that uses the `StorageBasedLockProvider` pattern with a `StorageAccessor` over the S3 client. First-time locks are created with `PutObject` + `IfNoneMatch: "*"` (fails if the object exists); updates use conditional `PutObject` with generation matching. Each lock is a small object under a configurable prefix. The object body is a JSON lock record so the ETag changes when `lockedBy` or `lockUntil` changes. Lock state is read from object metadata, including objects stored with an empty body.
 
 ## Installation
 

@@ -83,6 +83,7 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
       throw e;
     }
     const existing = getResult.content as Record<string, unknown>;
+    if (existing[this.opts.lockedByCol] !== this.lockedByValue) return;
     try {
       await this.collection.replace(
         this.docId(config.name),
