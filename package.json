@@ -2,6 +2,7 @@
   "name": "tslock",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "TSLock monorepo — distributed locks for scheduled tasks in TypeScript",
   "license": "Apache-2.0",
   "packageManager": "pnpm@12.10.1",
