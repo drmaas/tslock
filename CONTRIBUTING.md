@@ -32,12 +32,12 @@ Be kind and professional. Treat everyone with respect. Harassment, personal atta
 
 ### Prerequisites
 
-- **Node.js >= 22** (the repo pins `22.x` in [`.nvmrc`](./.nvmrc); use [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) to match it)
-- **pnpm 11+** (enable via corepack: `corepack enable`)
+- **Node.js 26.11.1** (pinned in [`.nvmrc`](./.nvmrc); use [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) to match it. Published packages still allow Node >= 22.)
+- **pnpm 12** (pinned as `packageManager`. Node 26 does not ship Corepack: `npm install -g corepack@latest && corepack enable`)
 
 ### Bun compatibility
 
-TSLock targets the **Node.js API surface** (Node >= 22): `AsyncLocalStorage`, `node:os` hostname, Timers, and standard `fetch` where providers use it. There is **no Bun-only package**. Running under [Bun](https://bun.sh) is best-effort: if Bun's Node compatibility layer covers the APIs a given provider needs (and its peer driver works on Bun), the same `@tslock/*` packages should work. Prefer Node 22+ for CI and production unless you have verified your provider + driver combination under Bun.
+TSLock targets the **Node.js API surface** (Node >= 22): `AsyncLocalStorage`, `node:os` hostname, Timers, and standard `fetch` where providers use it. There is **no Bun-only package**. Running under [Bun](https://bun.sh) is best-effort: if Bun's Node compatibility layer covers the APIs a given provider needs (and its peer driver works on Bun), the same `@tslock/*` packages should work. CI and local development use the Node 26 pin in `.nvmrc`. Published packages still allow Node >= 22. Prefer that Node line over Bun unless you have verified your provider + driver combination under Bun.
 
 Provider drivers (Redis clients, AWS SDK, database drivers, Cloudflare Workers runtime for Durable Objects, etc.) each have their own Bun support story — validate those separately.
 
@@ -46,7 +46,7 @@ Provider drivers (Redis clients, AWS SDK, database drivers, Cloudflare Workers r
 ```bash
 git clone https://github.com/drmaas/tslock.git
 cd tslock
-corepack enable
+npm install -g corepack@latest && corepack enable
 pnpm install
 ```
 
@@ -158,11 +158,11 @@ CI runs a `lockfile` job first, then `pnpm check && pnpm typecheck && pnpm test 
 
 ## Dependency and lockfile updates
 
-The workspace has one root `pnpm-lock.yaml`. `packageManager` is `pnpm@11.14.0`, and that file is what Dependabot's npm updater reads for every workspace package. Run `pnpm validate:lockfile` before pushing a lockfile change. It rejects duplicated YAML keys (the `ERR_PNPM_BROKEN_LOCKFILE` failure) with a line number. CI runs that check, then `pnpm install --lockfile-only --frozen-lockfile`, before `verify` and `integration`. Dependabot pull requests run the same workflow. Regenerate a bad lockfile with `pnpm install` and commit a single copy of each package and snapshot key.
+The workspace has one root `pnpm-lock.yaml`. `packageManager` is `pnpm@12.10.1`, and that file is what Dependabot's npm updater reads for every workspace package. Run `pnpm validate:lockfile` before pushing a lockfile change. It rejects duplicated YAML keys inside one document (the `ERR_PNPM_BROKEN_LOCKFILE` failure) with a line number. pnpm 12 prepends a package-manager document and separates it with `---`; keys may repeat across that boundary. CI runs that check, then `pnpm install --lockfile-only --frozen-lockfile`, before `verify` and `integration`. Dependabot pull requests run the same workflow. Regenerate a bad lockfile with `pnpm install` and commit a single copy of each package and snapshot key.
 
 Dependabot security logs can say `VulnerabilityAuditor: missing lockfile` and still run `pnpm update … --lockfile-only`. That line is the npm audit helper looking for `package-lock.json`. This repo does not commit an npm lockfile.
 
-`overrides` in `pnpm-workspace.yaml` force a patched transitive version when the parent range will not accept it and the replacement stays on a compatible line. pnpm 11 reads that file, not a `pnpm` key in `package.json`. Do not delete an override to silence a resolution. These overrides apply to this workspace install. They are not published inside `@tslock/*` packages; driver peers stay the caller's choice.
+`overrides` in `pnpm-workspace.yaml` force a patched transitive version when the parent range will not accept it and the replacement stays on a compatible line. pnpm reads that file, not a `pnpm` key in `package.json`. Do not delete an override to silence a resolution. These overrides apply to this workspace install. They are not published inside `@tslock/*` packages; driver peers stay the caller's choice.
 
 Some advisories stay open because the patched release is a major the parent does not allow:
 

@@ -83,6 +83,22 @@ packages: {}
     assert.deepEqual(findDuplicateMappingKeys(text), []);
   });
 
+  it('allows repeated top-level keys after a YAML document separator', () => {
+    const text = `lockfileVersion: '9.0'
+importers:
+  .: {}
+packages:
+snapshots:
+---
+lockfileVersion: '9.0'
+importers:
+  .: {}
+packages:
+snapshots:
+`;
+    assert.deepEqual(validateLockfileText(text), []);
+  });
+
   it('rejects a missing lockfileVersion', () => {
     const errors = validateLockfileText('importers:\npackages:\n');
     assert.match(errors.join('\n'), /lockfileVersion/);

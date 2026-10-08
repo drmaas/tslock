@@ -23,6 +23,11 @@ export function findDuplicateMappingKeys(text) {
 
     const indent = line.length - line.trimStart().length;
     const trimmed = line.slice(indent);
+    if (trimmed === '---') {
+      stack.length = 0;
+      stack.push({ indent: -1, keys: new Set() });
+      continue;
+    }
     if (trimmed.startsWith('- ')) continue;
 
     const parsed = splitMappingKey(trimmed);
@@ -193,7 +198,7 @@ function skipQuoted(text, start) {
 export function validateLockfileText(text) {
   const errors = [];
   if (!/^lockfileVersion:\s*['"]9\.0['"]\s*$/m.test(text)) {
-    errors.push("expected lockfileVersion: '9.0' (packageManager pnpm@11.14.0).");
+    errors.push("expected lockfileVersion: '9.0' (packageManager pnpm@12.10.1).");
   }
   if (!/^importers:\s*$/m.test(text) || !/^packages:\s*$/m.test(text)) {
     errors.push('expected top-level importers: and packages: sections.');

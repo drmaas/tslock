@@ -743,8 +743,8 @@ Each provider package:
 
 ### 8.4 Node.js Target
 
-- **Minimum**: Node 22+ (current LTS).
-- **Recommended**: Node 22+ (LTS, `AsyncLocalStorage` stable, `performance.now()` stable).
+- **Minimum**: Node 22+ (Maintenance LTS).
+- **Recommended**: Node 26 (pinned in `.nvmrc`). `AsyncLocalStorage` and `performance.now()` are stable.
 - **AsyncLocalStorage**: Available since Node 13.10, stable since Node 16. No concern.
 
 ## 9. Error Handling

@@ -48,7 +48,7 @@ Before implementing anything, read in this order:
 | Monorepo | pnpm workspaces |
 | Package scope | `@tslock/*` |
 | Module format | Dual ESM + CJS (tsup) |
-| Node.js minimum | 22+ |
+| Node.js minimum | 22+ for published packages; workspace and CI pin Node 26 via `.nvmrc` |
 | Test framework | Vitest |
 | Config API | Plain typed objects + `parseDuration()` — no builder classes |
 | Concurrency model | `AsyncLocalStorage` (replaces Java's `ThreadLocal`) |
@@ -149,7 +149,7 @@ Before running any commands, ensure the correct Node.js version and pnpm are act
 
 ```bash
 nvm use                # match the version in .nvmrc
-corepack enable pnpm   # ensure pnpm is available via corepack
+npm install -g corepack@latest && corepack enable pnpm   # Node 26 does not ship Corepack
 ```
 
 ## Commands
