@@ -180,13 +180,31 @@ describe('GcsStorageAccessor', () => {
 
     it('concurrent modify: setMetadata throws 412 → no-op resolves', async () => {
       mockFile.getMetadata.mockResolvedValue([
-        { generation: '1', metadata: { lockUntil: '1970-01-01T00:00:10.000Z' } },
+        { generation: '1', metadata: { lockUntil: '1970-01-01T00:00:10.000Z', lockedBy: 'test-host' } },
       ]);
       mockFile.setMetadata.mockRejectedValue(gcsError(412));
 
       await accessor.unlock(defaultConfig);
 
       expect(mockFile.setMetadata).toHaveBeenCalledTimes(1);
+    });
+
+    it('different owner: no setMetadata and resolves', async () => {
+      mockFile.getMetadata.mockResolvedValue([
+        {
+          generation: '1',
+          metadata: {
+            lockUntil: '1970-01-01T00:00:10.000Z',
+            lockedAt: '1970-01-01T00:00:00.000Z',
+            lockedBy: 'other-host',
+            lockName: 'test-lock',
+          },
+        },
+      ]);
+
+      await expect(accessor.unlock(defaultConfig)).resolves.toBeUndefined();
+
+      expect(mockFile.setMetadata).not.toHaveBeenCalled();
     });
   });
 

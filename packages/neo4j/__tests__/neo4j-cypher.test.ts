@@ -47,6 +47,7 @@ describe('buildUpdateCypher', () => {
 describe('buildUnlockCypher', () => {
   it('builds unlock cypher without RETURN', () => {
     const result = buildUnlockCypher(defaultOpts);
+    expect(result).toContain('WHERE lock.`lockedBy` = $lockedBy');
     expect(result).toContain('SET lock.`lockUntil` = $unlockTime');
     expect(result).not.toContain('RETURN');
   });

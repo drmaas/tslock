@@ -1,5 +1,5 @@
 import type { S3Client } from '@aws-sdk/client-s3';
-import { S3ServiceException } from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3ServiceException } from '@aws-sdk/client-s3';
 import { ClockProvider } from '@tslock/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { S3ProviderConfig } from '../src/s3-provider-config.js';
@@ -185,6 +185,10 @@ describe('S3StorageAccessor', () => {
   });
 
   describe('unlock', () => {
+    beforeEach(() => {
+      vi.spyOn(accessor as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host1');
+    });
+
     it('happy path: HeadObject → PutObject IfMatch succeeds → resolves', async () => {
       mockSend
         .mockResolvedValueOnce({
@@ -202,7 +206,9 @@ describe('S3StorageAccessor', () => {
 
       expect(mockSend).toHaveBeenCalledTimes(2);
       const putCmd = mockSend.mock.calls[1]![0];
+      expect(putCmd).toBeInstanceOf(PutObjectCommand);
       expect(putCmd.input.IfMatch).toBe('"etag1"');
+      expect(putCmd.input.Metadata.lockUntil).toBeTruthy();
     });
 
     it('missing record: HeadObject 404 → no-op resolves', async () => {
@@ -217,7 +223,7 @@ describe('S3StorageAccessor', () => {
       mockSend
         .mockResolvedValueOnce({
           ETag: '"etag1"',
-          Metadata: { lockuntil: '1970-01-01T00:00:10.000Z' },
+          Metadata: { lockuntil: '1970-01-01T00:00:10.000Z', lockedby: 'host1' },
           $metadata: { httpStatusCode: 200 },
         })
         .mockRejectedValueOnce(mockS3Error('PreconditionFailed', 412));
@@ -231,7 +237,7 @@ describe('S3StorageAccessor', () => {
       mockSend
         .mockResolvedValueOnce({
           ETag: '"etag1"',
-          Metadata: { lockuntil: '1970-01-01T00:00:10.000Z' },
+          Metadata: { lockuntil: '1970-01-01T00:00:10.000Z', lockedby: 'host1' },
           $metadata: { httpStatusCode: 200 },
         })
         .mockRejectedValueOnce(mockS3Error('Conflict', 409));
@@ -239,6 +245,22 @@ describe('S3StorageAccessor', () => {
       await accessor.unlock(defaultConfig);
 
       expect(mockSend).toHaveBeenCalledTimes(2);
+    });
+
+    it('different owner: no PutObjectCommand and resolves', async () => {
+      mockSend.mockResolvedValueOnce({
+        ETag: '"etag1"',
+        Metadata: {
+          lockuntil: '1970-01-01T00:00:10.000Z',
+          lockedat: '1970-01-01T00:00:00.000Z',
+          lockedby: 'other-host',
+        },
+        $metadata: { httpStatusCode: 200 },
+      });
+
+      await expect(accessor.unlock(defaultConfig)).resolves.toBeUndefined();
+
+      expect(mockSend.mock.calls.some((call) => call[0] instanceof PutObjectCommand)).toBe(false);
     });
   });
 

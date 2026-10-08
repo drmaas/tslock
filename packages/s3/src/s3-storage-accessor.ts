@@ -109,6 +109,7 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
   override async unlock(config: LockConfiguration): Promise<void> {
     const head = await this.headObject(config.name);
     if (head === null) return;
+    if (getMetadataValue(head.metadata, 'lockedBy') !== this.getHostname()) return;
     try {
       await this.s3.send(
         new PutObjectCommand({
