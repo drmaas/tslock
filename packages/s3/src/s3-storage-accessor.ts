@@ -16,6 +16,14 @@ function getMetadataValue(metadata: Record<string, string> | undefined, key: str
   return metadata[key] ?? metadata[key.toLowerCase()];
 }
 
+function lockRecordBody(record: Record<string, string>): string {
+  return JSON.stringify({
+    lockUntil: record.lockUntil,
+    lockedAt: record.lockedAt,
+    lockedBy: record.lockedBy,
+  });
+}
+
 type HeadResult = { etag: string; metadata: Record<string, string> } | null;
 
 export class S3StorageAccessor extends AbstractStorageAccessor {
@@ -67,13 +75,14 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
   override async insertRecord(config: LockConfiguration): Promise<boolean> {
     const head = await this.headObject(config.name);
     if (head !== null) return false;
+    const metadata = this.buildMetadata(config);
     try {
       await this.s3.send(
         new PutObjectCommand({
           Bucket: this.config.bucket,
           Key: this.objectKey(config.name),
-          Body: '',
-          Metadata: this.buildMetadata(config),
+          Body: lockRecordBody(metadata),
+          Metadata: metadata,
           IfNoneMatch: '*',
         }),
       );
@@ -89,13 +98,14 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
     if (head === null) throw new LockException(`Lock record not found: ${config.name}`);
     const lockUntil = this.parseLockUntil(head.metadata);
     if (lockUntil > ClockProvider.now()) return false;
+    const metadata = this.buildMetadata(config);
     try {
       await this.s3.send(
         new PutObjectCommand({
           Bucket: this.config.bucket,
           Key: this.objectKey(config.name),
-          Body: '',
-          Metadata: this.buildMetadata(config),
+          Body: lockRecordBody(metadata),
+          Metadata: metadata,
           IfMatch: head.etag,
         }),
       );
@@ -110,17 +120,18 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
     const head = await this.headObject(config.name);
     if (head === null) return;
     if (getMetadataValue(head.metadata, 'lockedBy') !== this.getHostname()) return;
+    const metadata = {
+      lockUntil: Utils.toIsoString(unlockTime(config)),
+      lockedAt: getMetadataValue(head.metadata, 'lockedAt') ?? Utils.toIsoString(config.createdAt),
+      lockedBy: getMetadataValue(head.metadata, 'lockedBy') ?? this.getHostname(),
+    };
     try {
       await this.s3.send(
         new PutObjectCommand({
           Bucket: this.config.bucket,
           Key: this.objectKey(config.name),
-          Body: '',
-          Metadata: {
-            lockUntil: Utils.toIsoString(unlockTime(config)),
-            lockedAt: getMetadataValue(head.metadata, 'lockedAt') ?? Utils.toIsoString(config.createdAt),
-            lockedBy: getMetadataValue(head.metadata, 'lockedBy') ?? this.getHostname(),
-          },
+          Body: lockRecordBody(metadata),
+          Metadata: metadata,
           IfMatch: head.etag,
         }),
       );
@@ -137,17 +148,18 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
     const lockedBy = getMetadataValue(head.metadata, 'lockedBy');
     if (lockedBy !== this.getHostname()) return false;
     if (lockUntil <= ClockProvider.now()) return false;
+    const metadata = {
+      lockUntil: Utils.toIsoString(lockAtMostUntil(config)),
+      lockedAt: getMetadataValue(head.metadata, 'lockedAt') ?? Utils.toIsoString(config.createdAt),
+      lockedBy: getMetadataValue(head.metadata, 'lockedBy') ?? this.getHostname(),
+    };
     try {
       await this.s3.send(
         new PutObjectCommand({
           Bucket: this.config.bucket,
           Key: this.objectKey(config.name),
-          Body: '',
-          Metadata: {
-            lockUntil: Utils.toIsoString(lockAtMostUntil(config)),
-            lockedAt: getMetadataValue(head.metadata, 'lockedAt') ?? Utils.toIsoString(config.createdAt),
-            lockedBy: getMetadataValue(head.metadata, 'lockedBy') ?? this.getHostname(),
-          },
+          Body: lockRecordBody(metadata),
+          Metadata: metadata,
           IfMatch: head.etag,
         }),
       );
