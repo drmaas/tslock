@@ -4,7 +4,7 @@
   "private": true,
   "description": "TSLock monorepo — distributed locks for scheduled tasks in TypeScript",
   "license": "Apache-2.0",
-  "packageManager": "pnpm@11.14.0",
+  "packageManager": "pnpm@12.10.1",
   "scripts": {
     "typecheck": "pnpm -r typecheck && pnpm typecheck:tests",
     "typecheck:tests": "tsc -p tsconfig.test.json",
@@ -25,7 +25,7 @@
     "prepare": "husky"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=26"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",

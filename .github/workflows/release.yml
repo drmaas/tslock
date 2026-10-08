@@ -37,11 +37,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
 
       - name: Enable corepack
         run: |
-          corepack enable
+          npm install -g corepack@latest && corepack enable
           node -v && pnpm -v
 
       - name: Install
@@ -160,11 +160,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
 
       - name: Enable corepack / ensure modern npm for OIDC
         run: |
-          corepack enable
+          npm install -g corepack@latest && corepack enable
           npm install -g npm@^11.15.0
           node -v && npm -v && pnpm -v
 
@@ -222,7 +222,7 @@ jobs:
         if: steps.pending.outputs.should_publish == 'true'
         run: |
           # changeset publish shells out to `pnpm publish` in this workspace.
-          # Pinned pnpm@11.14.0 performs native OIDC token exchange (id-token: write)
+          # Pinned pnpm@12.10.1 performs native OIDC token exchange (id-token: write)
           # and rewrites workspace: ranges on pack/publish. No long-lived npm token.
           unset NODE_AUTH_TOKEN NPM_TOKEN
           pnpm exec changeset publish

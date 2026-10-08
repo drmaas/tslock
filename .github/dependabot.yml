@@ -1,5 +1,5 @@
 # npm ecosystem + pnpm-lock.yaml at the repo root covers the whole pnpm workspace.
-# packageManager in package.json (pnpm@11.14.0) is what selects the pnpm updater.
+# packageManager in package.json (pnpm@12.10.1) is what selects the pnpm updater.
 # Dependabot's "VulnerabilityAuditor: missing lockfile" line only means the npm
 # audit helper did not find package-lock.json. This repo does not commit one.
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file

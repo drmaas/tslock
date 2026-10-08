@@ -236,8 +236,8 @@ Contributions are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the
 
 ### Prerequisites
 
-- **Node.js >= 22** (check with `node -v`; manage versions with [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) — the repo pins `22.x` in [`.nvmrc`](./.nvmrc))
-- **pnpm 11+** (enable via corepack: `corepack enable`)
+- **Node.js 26.11.1** (check with `node -v`; manage versions with [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) — pinned in [`.nvmrc`](./.nvmrc). Published packages still allow Node >= 22.)
+- **pnpm 12** (pinned as `packageManager`. Node 26 does not ship Corepack: `npm install -g corepack@latest && corepack enable`)
 - **Docker** (only for integration tests, which use testcontainers / emulators)
 
 ### Clone & install
@@ -245,7 +245,7 @@ Contributions are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the
 ```bash
 git clone https://github.com/drmaas/tslock.git
 cd tslock
-corepack enable
+npm install -g corepack@latest && corepack enable
 pnpm install
 ```
 

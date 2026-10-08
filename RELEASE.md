@@ -14,7 +14,7 @@ All `@tslock/*` packages share one version (lockstep via Changesets `fixed: [["@
 6. Wait for CI on that PR (it is dispatched explicitly — see below), review, then **squash-merge** into `main` keeping the `chore: release vX.Y.Z` title.
 7. On push to `main`, the same `release.yml` publish job detects the release commit, publishes to npm over OIDC, creates tag `vX.Y.Z`, and creates a GitHub Release. Normal (non-release) pushes to `main` are a no-op.
 
-`changeset publish` shells out to `pnpm publish`. The repo pins `packageManager: pnpm@11.14.0`, which natively exchanges GitHub OIDC tokens with npm (trusted publishing) and rewrites `workspace:` dependency ranges to concrete versions on pack/publish. The publish job does **not** use `actions/setup-node` `registry-url` or a long-lived `NODE_AUTH_TOKEN` / `NPM_TOKEN`.
+`changeset publish` shells out to `pnpm publish`. The repo pins `packageManager: pnpm@12.10.1`, which natively exchanges GitHub OIDC tokens with npm (trusted publishing) and rewrites `workspace:` dependency ranges to concrete versions on pack/publish. The publish job does **not** use `actions/setup-node` `registry-url` or a long-lived `NODE_AUTH_TOKEN` / `NPM_TOKEN`.
 
 Pushes and PRs created with `GITHUB_TOKEN` do not trigger other workflows. After opening the release PR, `release.yml` dispatches `ci.yml` via `workflow_dispatch` on `release/vX.Y.Z` so lockfile/verify/integration/pack still run. Main branch rulesets currently list **no** required status check contexts and have **no** tag rulesets (tag creation from the publish job is allowed).
 
