@@ -42,6 +42,17 @@ describe('translateNamedParams', () => {
     expect(values).toEqual([100]);
   });
 
+  it('binds a value for each ? occurrence of a repeated name', () => {
+    const { sql, values } = translateNamedParams(
+      'SET locked_at = :now, locked_by = :lockedBy WHERE name = :name AND lock_until <= :now',
+      { now: 100, lockedBy: 'host', name: 'job' },
+      () => '?',
+    );
+    expect(sql).toBe('SET locked_at = ?, locked_by = ? WHERE name = ? AND lock_until <= ?');
+    expect(values).toEqual([100, 'host', 'job', 100]);
+    expect(values).toHaveLength(sql.split('?').length - 1);
+  });
+
   it('throws LockException on a missing param', () => {
     expect(() => translateNamedParams('WHERE n = :name', {}, (i) => `$${i}`)).toThrow(LockException);
   });
