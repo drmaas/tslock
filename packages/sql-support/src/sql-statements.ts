@@ -41,14 +41,18 @@ function replaceNamedParams(
     if (!(name in params)) {
       throw new LockException(`Missing param: ${name}`);
     }
-    let idx = seen.get(name);
-    if (idx === undefined) {
+    const existing = seen.get(name);
+    if (existing === undefined) {
       counter++;
-      idx = counter;
-      seen.set(name, idx);
+      seen.set(name, counter);
+      values.push(params[name]);
+      return render(name, counter);
+    }
+    const placeholder = render(name, existing);
+    if (placeholder === '?') {
       values.push(params[name]);
     }
-    return render(name, idx);
+    return placeholder;
   });
 
   return { sql: result, values };
