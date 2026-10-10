@@ -243,6 +243,17 @@ describe('createKoaLock', () => {
     expect(lockNames).toEqual(['GET:/jobs/:id']);
   });
 
+  it('records one lock name when _matchedRoute is a RegExp', async () => {
+    const { provider, lockNames } = createCapturingLockProvider();
+    const middleware = createKoaLock({ lockProvider: provider })();
+    const route = /^\/files\/(.*)/;
+
+    await middleware({ ...createMockContext('GET', '/files/a'), _matchedRoute: route } as unknown as Context, vi.fn());
+    await middleware({ ...createMockContext('GET', '/files/b'), _matchedRoute: route } as unknown as Context, vi.fn());
+
+    expect(lockNames).toEqual([`GET:${route.toString()}`, `GET:${route.toString()}`]);
+  });
+
   it('uses ctx.path when _matchedRoute is an empty string', async () => {
     const { provider, lockNames } = createCapturingLockProvider();
     const middleware = createKoaLock({ lockProvider: provider })();

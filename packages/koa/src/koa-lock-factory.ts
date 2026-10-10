@@ -31,9 +31,20 @@ function normalizeKoaLockPath(path: string, sensitive: boolean, strict: boolean)
   return normalized;
 }
 
+function matchedRoutePath(matchedRoute: unknown): string | undefined {
+  if (typeof matchedRoute === 'string') return matchedRoute.length > 0 ? matchedRoute : undefined;
+  if (matchedRoute instanceof RegExp) return matchedRoute.toString();
+  return undefined;
+}
+
 function resolveKoaLockPath(ctx: KoaLockContext): string {
-  const matchedRoute = ctx._matchedRoute;
-  const rawPath = typeof matchedRoute === 'string' && matchedRoute.length > 0 ? matchedRoute : ctx.path;
+  const matched = matchedRoutePath(ctx._matchedRoute);
+  // Leave RegExp#toString() unchanged. Lowercasing can merge distinct patterns,
+  // a trailing-slash strip drops the closing delimiter, and `?` is a quantifier.
+  if (ctx._matchedRoute instanceof RegExp && matched !== undefined) {
+    return matched;
+  }
+  const rawPath = matched ?? ctx.path;
   const sensitive = ctx.router?.opts?.sensitive === true;
   const strict = ctx.router?.opts?.strict === true;
   return normalizeKoaLockPath(rawPath, sensitive, strict);
