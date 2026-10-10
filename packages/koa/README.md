@@ -29,7 +29,15 @@ app.use((ctx) => {
 });
 ```
 
-The default lock name is derived from the HTTP method and request path. Configure `lockNamePrefix`, `lockAtMostFor`, `lockAtLeastFor`, or `defaultLockedStatus` through `createKoaLock`.
+The default lock name is the HTTP method and path. A non-empty `ctx._matchedRoute` is used after the router matches. Otherwise the name uses `ctx.path`. The query string is omitted. Case and trailing-slash variants share a lock unless the router sets `sensitive` or `strict`. Put `tslock()` on the route, after the router matches, so `/jobs/:id` is one lock.
+
+```typescript
+router.get('/jobs/:id', tslock(), (ctx) => {
+  ctx.body = { ok: true };
+});
+```
+
+Configure `lockNamePrefix`, `lockAtMostFor`, `lockAtLeastFor`, or `defaultLockedStatus` through `createKoaLock`.
 
 ## Integration tests
 
