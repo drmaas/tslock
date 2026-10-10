@@ -1,5 +1,13 @@
 # @tslock/sql-support
 
+## 2.3.1
+
+### Patch Changes
+
+- [#109](https://github.com/drmaas/tslock/pull/109) [`4af83f7`](https://github.com/drmaas/tslock/commit/4af83f7db8365b0964679d9072e7a04c9a0254c4) Thanks [@drmaas](https://github.com/drmaas)! - Bind a value for every `?` placeholder when a named parameter is repeated, so MySQL and SQLite queries keep the same number of placeholders and values. PostgreSQL `$n` placeholders still reuse one index per name.
+- Updated dependencies []:
+  - @tslock/core@2.3.1
+
 ## 2.3.0
 
 ### Minor Changes

@@ -1,5 +1,14 @@
 # @tslock/drizzle
 
+## 2.3.1
+
+### Patch Changes
+
+- [#99](https://github.com/drmaas/tslock/pull/99) [`f257941`](https://github.com/drmaas/tslock/commit/f257941bfadb74039a1628b2de086bed18979795) Thanks [@drmaas](https://github.com/drmaas)! - Recognize duplicate-key errors wrapped in drizzle-orm's `DrizzleQueryError` (driver error on `.cause`) so MySQL/SQLite `lock()` returns false instead of throwing once the shedlock row exists.
+- Updated dependencies [[`4af83f7`](https://github.com/drmaas/tslock/commit/4af83f7db8365b0964679d9072e7a04c9a0254c4)]:
+  - @tslock/sql-support@2.3.1
+  - @tslock/core@2.3.1
+
 ## 2.3.0
 
 ### Patch Changes

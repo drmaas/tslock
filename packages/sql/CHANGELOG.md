@@ -1,5 +1,13 @@
 # @tslock/sql
 
+## 2.3.1
+
+### Patch Changes
+
+- Updated dependencies [[`4af83f7`](https://github.com/drmaas/tslock/commit/4af83f7db8365b0964679d9072e7a04c9a0254c4)]:
+  - @tslock/sql-support@2.3.1
+  - @tslock/core@2.3.1
+
 ## 2.3.0
 
 ### Patch Changes
