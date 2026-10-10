@@ -1,5 +1,13 @@
 # @tslock/node-cron
 
+## 2.3.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @tslock/core@2.3.1
+  - @tslock/scheduler-core@2.3.1
+
 ## 2.3.0
 
 ### Patch Changes

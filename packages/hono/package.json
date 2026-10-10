@@ -1,6 +1,6 @@
 {
   "name": "@tslock/hono",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "TSLock Hono middleware integration",
   "license": "Apache-2.0",
   "type": "module",

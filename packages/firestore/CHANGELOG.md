@@ -1,5 +1,12 @@
 # @tslock/firestore
 
+## 2.3.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @tslock/core@2.3.1
+
 ## 2.3.0
 
 ### Patch Changes

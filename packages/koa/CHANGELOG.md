@@ -1,5 +1,14 @@
 # @tslock/koa
 
+## 2.3.1
+
+### Patch Changes
+
+- [#111](https://github.com/drmaas/tslock/pull/111) [`036603c`](https://github.com/drmaas/tslock/commit/036603cce0c0f95d06788802baf75dd3b3f139d0) Thanks [@drmaas](https://github.com/drmaas)! - Normalize default Koa lock names when the matched route is missing, including case, a trailing slash, and the query string.
+- Updated dependencies []:
+  - @tslock/core@2.3.1
+  - @tslock/middleware-core@2.3.1
+
 ## 2.3.0
 
 ### Patch Changes

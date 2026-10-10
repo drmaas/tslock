@@ -1,6 +1,6 @@
 {
   "name": "@tslock/cloudflare-kv",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Advisory Cloudflare Workers KV lock provider for TSLock (eventually consistent, not a Durable Objects substitute)",
   "license": "Apache-2.0",
   "type": "module",

@@ -1,5 +1,13 @@
 # @tslock/neo4j
 
+## 2.3.1
+
+### Patch Changes
+
+- [#107](https://github.com/drmaas/tslock/pull/107) [`22aebcf`](https://github.com/drmaas/tslock/commit/22aebcfbc4f127911711d281ed0feb12cc3c8ecc) Thanks [@drmaas](https://github.com/drmaas)! - Ignore unlock when another instance owns the lock, so a stale holder cannot release it. On S3, the lock record is also written as the object body so the ETag changes when `lockedBy` or `lockUntil` changes and a stale unlock cannot overwrite a newer owner.
+- Updated dependencies []:
+  - @tslock/core@2.3.1
+
 ## 2.3.0
 
 ### Patch Changes
