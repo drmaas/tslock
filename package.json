@@ -18,23 +18,26 @@
     "test": "pnpm -r test",
     "test:integration": "pnpm -r test:integration",
     "check:packed-peers": "node scripts/check-packed-peers.mjs",
-    "validate:lockfile": "node --test scripts/validate-lockfile.test.mjs scripts/create-signed-commit.test.mjs && node scripts/validate-lockfile.mjs",
+    "check:exports": "node scripts/check-exports.mjs",
+    "validate:lockfile": "node --test scripts/validate-lockfile.test.mjs scripts/create-signed-commit.test.mjs scripts/check-exports.test.mjs && node scripts/validate-lockfile.mjs",
     "bench": "pnpm build && node benchmarks/lock-overhead.mjs",
     "build": "pnpm -r build",
     "version-packages": "changeset version",
-    "release": "pnpm check && pnpm build && pnpm test && pnpm check:packed-peers && npx changeset publish",
+    "release": "pnpm check && pnpm build && pnpm check:exports && pnpm test && pnpm check:packed-peers && npx changeset publish",
     "prepare": "husky"
   },
   "engines": {
     "node": ">=26"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.5.14",
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.2",
     "@types/node": "^26.6.3",
     "@typescript/typescript6": "^6.0.2",
     "husky": "^9.1.7",
+    "publint": "^0.3.25",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
