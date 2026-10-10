@@ -53,6 +53,7 @@ jobs:
         run: |
           pnpm check
           pnpm build
+          pnpm check:exports
           pnpm typecheck
           pnpm test
           pnpm check:packed-peers
@@ -214,6 +215,7 @@ jobs:
         run: |
           pnpm check
           pnpm build
+          pnpm check:exports
           pnpm typecheck
           pnpm test
           pnpm check:packed-peers
