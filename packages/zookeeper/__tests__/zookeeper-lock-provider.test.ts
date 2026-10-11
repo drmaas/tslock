@@ -135,24 +135,33 @@ describe('ZooKeeperLockProvider', () => {
     expect(client.set).toHaveBeenCalledWith('/shedlock-test/test', Buffer.from(expectedIso), 5);
   });
 
-  it('unlock() sets unlockTime with version -1', async () => {
+  it('unlock() sets unlockTime with the version from the get of this lock body', async () => {
     ClockProvider.setClock(() => BASE_NOW);
+    const ownIso = new Date(BASE_NOW + 60_000).toISOString();
     const client = makeClient({
-      get: vi.fn().mockResolvedValue([makeStat(5), pastIso()]),
-      set: vi.fn().mockResolvedValue(makeStat(6)),
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(6), Buffer.from(ownIso)]),
+      set: vi.fn().mockResolvedValue(makeStat(7)),
     });
     const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
     const lock = (await provider.lock(config('test', 60_000, 0)))!;
     ClockProvider.setClock(() => BASE_NOW + 10_000);
     await lock.unlock();
     const expectedIso = new Date(BASE_NOW + 10_000).toISOString();
-    expect(client.set).toHaveBeenLastCalledWith('/shedlock-test/test', Buffer.from(expectedIso), -1);
+    expect(client.set).toHaveBeenLastCalledWith('/shedlock-test/test', Buffer.from(expectedIso), 6);
+    expect(client.set).toHaveBeenCalledTimes(2);
   });
 
   it('unlock() uses lockAtLeastFor when computing unlockTime', async () => {
     ClockProvider.setClock(() => BASE_NOW);
+    const ownIso = new Date(BASE_NOW + 60_000).toISOString();
     const client = makeClient({
-      get: vi.fn().mockResolvedValue([makeStat(5), pastIso()]),
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(8), ownIso]),
       set: vi.fn().mockResolvedValue(makeStat(6)),
     });
     const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
@@ -160,7 +169,110 @@ describe('ZooKeeperLockProvider', () => {
     ClockProvider.setClock(() => BASE_NOW + 2_000);
     await lock.unlock();
     const expectedIso = new Date(BASE_NOW + 10_000).toISOString();
-    expect(client.set).toHaveBeenLastCalledWith('/shedlock-test/test', Buffer.from(expectedIso), -1);
+    expect(client.set).toHaveBeenLastCalledWith('/shedlock-test/test', Buffer.from(expectedIso), 8);
+  });
+
+  it('unlock() does not set when a newer holder replaced this lock body', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const newerIso = new Date(BASE_NOW + 180_000).toISOString();
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(9), newerIso]),
+      set: vi.fn().mockResolvedValue(makeStat(6)),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config('test', 60_000, 0)))!;
+    expect(client.set).toHaveBeenCalledTimes(1);
+    ClockProvider.setClock(() => BASE_NOW + 70_000);
+    await lock.unlock();
+    expect(client.set).toHaveBeenCalledTimes(1);
+    expect(client.get).toHaveBeenNthCalledWith(2, '/shedlock-test/test', false);
+  });
+
+  it('unlock() resolves when the znode is missing', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockRejectedValueOnce(Object.assign(new Error('No node'), { code: -101 })),
+      set: vi.fn().mockResolvedValue(makeStat(6)),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(client.set).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlock() resolves when set hits NoNode', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const ownIso = new Date(BASE_NOW + 60_000).toISOString();
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(6), ownIso]),
+      set: vi
+        .fn()
+        .mockResolvedValueOnce(makeStat(6))
+        .mockRejectedValueOnce(Object.assign(new Error('No node'), { code: -101 })),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+  });
+
+  it('unlock() resolves when set hits BadVersion', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const ownIso = new Date(BASE_NOW + 60_000).toISOString();
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(6), ownIso]),
+      set: vi
+        .fn()
+        .mockResolvedValueOnce(makeStat(6))
+        .mockRejectedValueOnce(Object.assign(new Error('Bad version'), { code: -103 })),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+  });
+
+  it('unlock() rejects connection loss while reading the znode', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockRejectedValueOnce(Object.assign(new Error('Connection loss'), { code: -4 })),
+      set: vi.fn().mockResolvedValue(makeStat(6)),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).rejects.toThrow('Connection loss');
+    expect(client.set).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlock() rejects connection loss while writing unlockTime', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const ownIso = new Date(BASE_NOW + 60_000).toISOString();
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(6), ownIso]),
+      set: vi
+        .fn()
+        .mockResolvedValueOnce(makeStat(6))
+        .mockRejectedValueOnce(Object.assign(new Error('Connection loss'), { code: -4 })),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).rejects.toThrow('Connection loss');
   });
 
   it('extend() throws LockException', async () => {
