@@ -9,22 +9,8 @@ import type { KV } from 'nats';
 import { connect, StorageType } from 'nats';
 import { bytesToLong, longToBytes } from './long-utils.js';
 import type { NatsLockProviderOptions } from './nats-configuration.js';
+import { isNatsConflictError } from './nats-errors.js';
 import { NatsLock } from './nats-lock.js';
-
-function isNatsConflictError(e: unknown): boolean {
-  if (e && typeof e === 'object') {
-    const err = e as {
-      code?: number | string;
-      message?: string;
-      api_error?: { err_code?: number };
-    };
-    if (err.code === 10071 || err.api_error?.err_code === 10071) return true;
-    if (err.message?.includes('stream name already in use') || err.message?.includes('wrong last sequence')) {
-      return true;
-    }
-  }
-  return false;
-}
 
 function isDeletedEntry(entry: Awaited<ReturnType<KV['get']>>): boolean {
   return entry !== null && entry.operation !== undefined && entry.operation !== 'PUT';
