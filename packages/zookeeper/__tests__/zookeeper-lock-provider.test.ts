@@ -1,5 +1,6 @@
 import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
+import { isBadVersionException, isNoNodeException } from '../src/zookeeper-errors.js';
 import { ZooKeeperLockProvider } from '../src/zookeeper-lock-provider.js';
 import type { ZooKeeperClient } from '../src/zookeeper-types.js';
 
@@ -112,6 +113,28 @@ describe('ZooKeeperLockProvider', () => {
     const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
     const lock = await provider.lock(config());
     expect(lock).toBeUndefined();
+  });
+
+  it('lock() returns undefined when set rejects with message-form BadVersion', async () => {
+    const client = makeClient({
+      get: vi.fn().mockResolvedValue([makeStat(5), pastIso()]),
+      set: vi.fn().mockRejectedValue(new Error('-103 bad version')),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = await provider.lock(config());
+    expect(lock).toBeUndefined();
+    expect(client.create).not.toHaveBeenCalled();
+  });
+
+  it('lock() creates the znode when get rejects with message-form NoNode', async () => {
+    const client = makeClient({
+      get: vi.fn().mockRejectedValue(new Error('-101 no node')),
+      create: vi.fn().mockResolvedValue('/shedlock-test/test'),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = await provider.lock(config());
+    expect(lock).toBeDefined();
+    expect(client.create).toHaveBeenCalledWith('/shedlock-test/test', expect.any(Buffer), 0);
   });
 
   it('lock() propagates non-recoverable errors', async () => {
@@ -257,6 +280,100 @@ describe('ZooKeeperLockProvider', () => {
     expect(client.set).toHaveBeenCalledTimes(1);
   });
 
+  it('unlock() resolves when get rejects with message-form NoNode', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockRejectedValueOnce(new Error('-101 no node')),
+      set: vi.fn().mockResolvedValue(makeStat(6)),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(client.set).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlock() resolves when get rejects with message-form BadVersion', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockRejectedValueOnce(new Error('-103 bad version')),
+      set: vi.fn().mockResolvedValue(makeStat(6)),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(client.set).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlock() resolves when set rejects with message-form NoNode and does not write again', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const ownIso = new Date(BASE_NOW + 60_000).toISOString();
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(6), ownIso]),
+      set: vi.fn().mockResolvedValueOnce(makeStat(6)).mockRejectedValueOnce(new Error('-101 no node')),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(client.set).toHaveBeenCalledTimes(2);
+    await expect(client.set.mock.results[1]?.value).rejects.toThrow('-101 no node');
+  });
+
+  it('unlock() resolves when set rejects with message-form BadVersion and does not write again', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const ownIso = new Date(BASE_NOW + 60_000).toISOString();
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(6), ownIso]),
+      set: vi.fn().mockResolvedValueOnce(makeStat(6)).mockRejectedValueOnce(new Error('-103 bad version')),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(client.set).toHaveBeenCalledTimes(2);
+    await expect(client.set.mock.results[1]?.value).rejects.toThrow('-103 bad version');
+  });
+
+  it('unlock() rejects message-form connection loss while reading the znode', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockRejectedValueOnce(new Error('-4 connection loss')),
+      set: vi.fn().mockResolvedValue(makeStat(6)),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).rejects.toThrow('-4 connection loss');
+    expect(client.set).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlock() rejects message-form connection loss while writing unlockTime', async () => {
+    ClockProvider.setClock(() => BASE_NOW);
+    const ownIso = new Date(BASE_NOW + 60_000).toISOString();
+    const client = makeClient({
+      get: vi
+        .fn()
+        .mockResolvedValueOnce([makeStat(5), pastIso()])
+        .mockResolvedValueOnce([makeStat(6), ownIso]),
+      set: vi.fn().mockResolvedValueOnce(makeStat(6)).mockRejectedValueOnce(new Error('-4 connection loss')),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).rejects.toThrow('-4 connection loss');
+  });
+
   it('unlock() rejects connection loss while writing unlockTime', async () => {
     ClockProvider.setClock(() => BASE_NOW);
     const ownIso = new Date(BASE_NOW + 60_000).toISOString();
@@ -325,5 +442,32 @@ describe('ZooKeeperLockProvider', () => {
     const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
     const lock = await provider.lock(config());
     expect(lock).toBeDefined();
+  });
+});
+
+describe('ZooKeeper result-code matchers', () => {
+  const syncNoNode = 'fn: "a_get" args: "/shedlock/test,false" result: "ZNONODE -101"';
+  const syncBadVersion = 'fn: "a_set" args: "/shedlock/test,<buffer>,6" result: "ZBADVERSION -103"';
+
+  it('matches numeric codes and the promisified message form', () => {
+    expect(isNoNodeException(Object.assign(new Error('No node'), { code: -101 }))).toBe(true);
+    expect(isNoNodeException(new Error('-101 no node'))).toBe(true);
+    expect(isBadVersionException(Object.assign(new Error('Bad version'), { code: -103 }))).toBe(true);
+    expect(isBadVersionException(new Error('-103 bad version'))).toBe(true);
+  });
+
+  it('does not match other result codes or the synchronous fn result form', () => {
+    expect(isNoNodeException(new Error('-103 bad version'))).toBe(false);
+    expect(isBadVersionException(new Error('-101 no node'))).toBe(false);
+    expect(isNoNodeException(new Error('-4 connection loss'))).toBe(false);
+    expect(isBadVersionException(new Error('-4 connection loss'))).toBe(false);
+    expect(isNoNodeException(new Error('-1010 no node'))).toBe(false);
+    expect(isBadVersionException(new Error('-1030 bad version'))).toBe(false);
+    expect(isNoNodeException(new Error(syncNoNode))).toBe(false);
+    expect(isBadVersionException(new Error(syncBadVersion))).toBe(false);
+    expect(isNoNodeException(new Error('No node'))).toBe(false);
+    expect(isBadVersionException({ code: -4 })).toBe(false);
+    expect(isNoNodeException(null)).toBe(false);
+    expect(isBadVersionException(undefined)).toBe(false);
   });
 });
