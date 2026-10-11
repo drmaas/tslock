@@ -48,9 +48,18 @@ export class ZooKeeperAccessor {
   }
 
   async unlock(config: LockConfiguration): Promise<void> {
+    const expected = Utils.toIsoString(lockAtMostUntil(config));
     const isoUnlock = Utils.toIsoString(unlockTime(config));
     const nodePath = `${this.basePath}/${config.name}`;
-    await this.client.set(nodePath, Buffer.from(isoUnlock), -1);
+    try {
+      const [stat, data] = await this.client.get(nodePath, false);
+      const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : String(data);
+      if (dataStr !== expected) return;
+      await this.client.set(nodePath, Buffer.from(isoUnlock), stat.version);
+    } catch (e) {
+      if (isNoNodeException(e) || isBadVersionException(e)) return;
+      throw e;
+    }
   }
 
   private async ensureBasePath(): Promise<void> {
