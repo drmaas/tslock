@@ -165,14 +165,25 @@ describe('NatsLockProvider', () => {
       expect(kv.update).not.toHaveBeenCalled();
     });
 
-    it('deletes key when lockAtLeastFor is 0', async () => {
+    it('deletes key at the observed revision when lockAtLeastFor is 0', async () => {
       ClockProvider.setClock(() => 1_000_000);
       const config = createLockConfig('test', 60_000, 0);
       const lock = new NatsLock(kv, config);
-      vi.mocked(kv.get).mockResolvedValueOnce(entry(1_060_000));
+      vi.mocked(kv.get).mockResolvedValueOnce(entry(1_060_000, 7));
 
       await lock.unlock();
-      expect(kv.delete).toHaveBeenCalledWith('test');
+      expect(kv.delete).toHaveBeenCalledWith('test', { previousSeq: 7 });
+      expect(kv.update).not.toHaveBeenCalled();
+    });
+
+    it('does not delete or update when stored lockUntil is smaller than lockAtMostUntil', async () => {
+      ClockProvider.setClock(() => 1_000_000);
+      const config = createLockConfig('test', 60_000, 0);
+      const lock = new NatsLock(kv, config);
+      vi.mocked(kv.get).mockResolvedValueOnce(entry(1_059_999, 7));
+
+      await lock.unlock();
+      expect(kv.delete).not.toHaveBeenCalled();
       expect(kv.update).not.toHaveBeenCalled();
     });
 
@@ -185,6 +196,47 @@ describe('NatsLockProvider', () => {
       await lock.unlock();
       expect(kv.update).toHaveBeenCalledWith('test', longToBytes(1_005_000), 1);
       expect(kv.delete).not.toHaveBeenCalled();
+    });
+
+    it('does not update when lockAtLeastFor is still in the future and the stored deadline does not match', async () => {
+      ClockProvider.setClock(() => 1_000_000);
+      const config = createLockConfig('test', 60_000, 5_000);
+      const lock = new NatsLock(kv, config);
+      vi.mocked(kv.get).mockResolvedValueOnce(entry(1_050_000, 4));
+
+      await lock.unlock();
+      expect(kv.update).not.toHaveBeenCalled();
+      expect(kv.delete).not.toHaveBeenCalled();
+    });
+
+    it('resolves when delete loses the revision race', async () => {
+      ClockProvider.setClock(() => 1_000_000);
+      const config = createLockConfig('test', 60_000, 0);
+      const lock = new NatsLock(kv, config);
+      vi.mocked(kv.get).mockResolvedValueOnce(entry(1_060_000, 7));
+      vi.mocked(kv.delete).mockRejectedValueOnce({ api_error: { err_code: 10071 } });
+
+      await expect(lock.unlock()).resolves.toBeUndefined();
+    });
+
+    it('resolves when the lockAtLeastFor update loses the revision race', async () => {
+      ClockProvider.setClock(() => 1_000_000);
+      const config = createLockConfig('test', 60_000, 5_000);
+      const lock = new NatsLock(kv, config);
+      vi.mocked(kv.get).mockResolvedValueOnce(entry(1_060_000, 3));
+      vi.mocked(kv.update).mockRejectedValueOnce({ message: 'wrong last sequence: 3' });
+
+      await expect(lock.unlock()).resolves.toBeUndefined();
+    });
+
+    it('propagates non-conflict errors from delete', async () => {
+      ClockProvider.setClock(() => 1_000_000);
+      const config = createLockConfig('test', 60_000, 0);
+      const lock = new NatsLock(kv, config);
+      vi.mocked(kv.get).mockResolvedValueOnce(entry(1_060_000, 7));
+      vi.mocked(kv.delete).mockRejectedValueOnce(new Error('network error'));
+
+      await expect(lock.unlock()).rejects.toThrow('network error');
     });
   });
 

@@ -7,6 +7,7 @@ import {
 } from '@tslock/core';
 import type { KV } from 'nats';
 import { bytesToLong, longToBytes } from './long-utils.js';
+import { isNatsConflictError } from './nats-errors.js';
 
 export class NatsLock extends AbstractSimpleLock {
   constructor(
@@ -21,13 +22,18 @@ export class NatsLock extends AbstractSimpleLock {
     if (entry === null || (entry.operation !== undefined && entry.operation !== 'PUT')) return;
 
     const lockUntil = bytesToLong(entry.value);
-    if (lockUntil > lockAtMostUntil(this.config)) return;
+    if (lockUntil !== lockAtMostUntil(this.config)) return;
 
     const now = ClockProvider.now();
-    if (lockAtLeastUntil(this.config) > now) {
-      await this.kv.update(this.config.name, longToBytes(lockAtLeastUntil(this.config)), entry.revision);
-    } else {
-      await this.kv.delete(this.config.name);
+    try {
+      if (lockAtLeastUntil(this.config) > now) {
+        await this.kv.update(this.config.name, longToBytes(lockAtLeastUntil(this.config)), entry.revision);
+      } else {
+        await this.kv.delete(this.config.name, { previousSeq: entry.revision });
+      }
+    } catch (e) {
+      if (isNatsConflictError(e)) return;
+      throw e;
     }
   }
 }
