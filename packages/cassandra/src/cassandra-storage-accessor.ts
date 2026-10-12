@@ -2,6 +2,7 @@ import {
   AbstractStorageAccessor,
   ClockProvider,
   type LockConfiguration,
+  LockException,
   lockAtMostUntil,
   unlockTime,
 } from '@tslock/core';
@@ -38,7 +39,10 @@ export class CassandraStorageAccessor extends AbstractStorageAccessor {
       config.name,
       now,
     ];
-    return await this.executeLwt(cql, params);
+    const row = await this.executeRow(cql, params);
+    if (row?.['[applied]'] === true) return true;
+    if (readLockUntil(row, this.opts.columnNames.lockUntil) != null) return false;
+    throw new LockException(`Lock record not found: ${config.name}`);
   }
 
   async unlock(config: LockConfiguration): Promise<void> {
@@ -64,12 +68,42 @@ export class CassandraStorageAccessor extends AbstractStorageAccessor {
   }
 
   private async executeLwt(cql: string, params: (string | Date)[]): Promise<boolean> {
+    const row = await this.executeRow(cql, params);
+    return row?.['[applied]'] === true;
+  }
+
+  private async executeRow(cql: string, params: (string | Date)[]): Promise<cassandra.types.Row | undefined> {
     const result = await this.client.execute(cql, params, {
       prepare: true,
       consistency: this.opts.consistencyLevel,
       serialConsistency: this.opts.serialConsistencyLevel,
     });
-    const row = result.rows[0];
-    return row?.['[applied]'] === true;
+    return result.rows[0];
   }
+}
+
+type LockRow = {
+  readonly get?: (columnName: string | number) => unknown;
+  readonly [column: string]: unknown;
+};
+
+function readLockUntil(row: LockRow | undefined, column: string): unknown {
+  if (row == null) return undefined;
+  const folded = column.toLowerCase();
+  const names = folded === column ? [column] : [column, folded];
+  for (const name of names) {
+    const value = cell(row, name);
+    if (value !== undefined) return value;
+  }
+  for (const key of Object.keys(row)) {
+    if (key.toLowerCase() !== folded) continue;
+    const value = cell(row, key);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
+function cell(row: LockRow, name: string): unknown {
+  if (typeof row.get === 'function') return row.get(name);
+  return row[name];
 }
