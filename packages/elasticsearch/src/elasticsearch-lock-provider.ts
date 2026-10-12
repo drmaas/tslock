@@ -1,6 +1,7 @@
 import type { Client } from '@elastic/elasticsearch';
 import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
-import { ElasticsearchAccessor } from './elasticsearch-accessor.js';
+import { SearchLockAccessor } from '@tslock/search-core';
+import { ElasticsearchUpdateClient } from './elasticsearch-accessor.js';
 import { type ElasticsearchFieldNames, FieldNames } from './field-names.js';
 
 export interface ElasticsearchLockProviderOptions {
@@ -9,12 +10,12 @@ export interface ElasticsearchLockProviderOptions {
 }
 
 export class ElasticsearchLockProvider implements ExtensibleLockProvider {
-  private readonly accessor: ElasticsearchAccessor;
+  private readonly accessor: SearchLockAccessor;
 
   constructor(client: Client, options?: ElasticsearchLockProviderOptions) {
     const index = options?.index ?? 'shedlock';
     const fieldNames = options?.fieldNames ?? FieldNames.DEFAULT;
-    this.accessor = new ElasticsearchAccessor(client, index, fieldNames);
+    this.accessor = new SearchLockAccessor(new ElasticsearchUpdateClient(client), index, fieldNames);
   }
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
