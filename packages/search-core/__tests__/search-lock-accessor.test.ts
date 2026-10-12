@@ -4,6 +4,7 @@ import {
   EXTEND_SCRIPT,
   FieldNames,
   LOCK_SCRIPT,
+  type SearchFieldNames,
   SearchLockAccessor,
   type SearchUpdateClient,
   type SearchUpdateRequest,
@@ -19,7 +20,7 @@ function config(name = 'test', most = 60_000, least = 0) {
   return createLockConfig(name, most, least);
 }
 
-function accessor(update: SearchUpdateClient['update'], fieldNames = FieldNames.DEFAULT) {
+function accessor(update: SearchUpdateClient['update'], fieldNames: SearchFieldNames = FieldNames.DEFAULT) {
   return new SearchLockAccessor(client(update), 'shedlock-test', fieldNames);
 }
 
