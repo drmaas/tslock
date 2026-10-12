@@ -1,5 +1,5 @@
-import { ClockProvider, createLockConfig } from '@tslock/core';
-import type cassandra from 'cassandra-driver';
+import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import cassandra from 'cassandra-driver';
 import { describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { ResolvedCassandraOptions } from '../../src/cassandra-cql.js';
 import { CassandraStorageAccessor } from '../../src/cassandra-storage-accessor.js';
@@ -17,6 +17,17 @@ function makeClient(): cassandra.Client {
   return {
     execute: vi.fn(),
   } as unknown as cassandra.Client;
+}
+
+function driverRow(cells: Record<string, unknown>): cassandra.types.Row {
+  const RowCtor = (
+    cassandra.types as unknown as {
+      Row: new (columns: { name: string }[]) => cassandra.types.Row;
+    }
+  ).Row;
+  const row = new RowCtor(Object.keys(cells).map((name) => ({ name })));
+  for (const [name, value] of Object.entries(cells)) row[name] = value;
+  return row;
 }
 
 function config(name = 'test', most = 60_000, least = 0) {
@@ -66,12 +77,66 @@ describe('CassandraStorageAccessor', () => {
     );
   });
 
-  it('updateRecord returns false when [applied] = false', async () => {
+  it('updateRecord returns false when [applied] = false and lock_until is set', async () => {
     const client = makeClient();
-    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': false }] });
+    (client.execute as unknown as MockInstance).mockResolvedValue({
+      rows: [{ '[applied]': false, lock_until: new Date(1_000_000) }],
+    });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
     const result = await accessor.updateRecord(config());
     expect(result).toBe(false);
+  });
+
+  it('updateRecord throws LockException when [applied] = false and lock_until is null', async () => {
+    const client = makeClient();
+    (client.execute as unknown as MockInstance).mockResolvedValue({
+      rows: [{ '[applied]': false, lock_until: null }],
+    });
+    const accessor = new CassandraStorageAccessor(client, defaultOpts);
+    const rejection = accessor.updateRecord(config('shedlock-job'));
+    await expect(rejection).rejects.toBeInstanceOf(LockException);
+    await expect(rejection).rejects.toThrow('Lock record not found: shedlock-job');
+  });
+
+  it('updateRecord throws LockException when the lock_until column is omitted', async () => {
+    const client = makeClient();
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': false }] });
+    const accessor = new CassandraStorageAccessor(client, defaultOpts);
+    const rejection = accessor.updateRecord(config('shedlock-job'));
+    await expect(rejection).rejects.toBeInstanceOf(LockException);
+    await expect(rejection).rejects.toThrow('Lock record not found: shedlock-job');
+  });
+
+  it('updateRecord throws LockException when the LWT result has no row', async () => {
+    const client = makeClient();
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [] });
+    const accessor = new CassandraStorageAccessor(client, defaultOpts);
+    await expect(accessor.updateRecord(config('shedlock-job'))).rejects.toThrow('Lock record not found: shedlock-job');
+  });
+
+  it('updateRecord reads a mixed-case lockUntil column the way the driver folds unquoted names', async () => {
+    const client = makeClient();
+    const heldUntil = new Date(1_000_000);
+    const opts: ResolvedCassandraOptions = {
+      ...defaultOpts,
+      columnNames: { ...defaultOpts.columnNames, lockUntil: 'Lock_Until' },
+    };
+    const row = driverRow({ '[applied]': false, lock_until: heldUntil });
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [row] });
+    const accessor = new CassandraStorageAccessor(client, opts);
+    await expect(accessor.updateRecord(config())).resolves.toBe(false);
+
+    row.lock_until = null;
+    const rejection = accessor.updateRecord(config('mixed-case'));
+    await expect(rejection).rejects.toBeInstanceOf(LockException);
+    await expect(rejection).rejects.toThrow('Lock record not found: mixed-case');
+  });
+
+  it('updateRecord propagates execute errors', async () => {
+    const client = makeClient();
+    (client.execute as unknown as MockInstance).mockRejectedValue(new Error('connection failed'));
+    const accessor = new CassandraStorageAccessor(client, defaultOpts);
+    await expect(accessor.updateRecord(config())).rejects.toThrow('connection failed');
   });
 
   it('unlock does not throw when [applied] = false', async () => {
