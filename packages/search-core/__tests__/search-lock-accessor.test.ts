@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, Utils } from '@tslock/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   EXTEND_SCRIPT,
@@ -31,6 +31,7 @@ function sent(update: ReturnType<typeof vi.fn>, call = 0): SearchUpdateRequest {
 describe('SearchLockAccessor', () => {
   afterEach(() => {
     ClockProvider.resetClock();
+    vi.restoreAllMocks();
   });
 
   it('lock() returns lock when update returns updated', async () => {
@@ -147,11 +148,37 @@ describe('SearchLockAccessor', () => {
   });
 
   it('unlock() works', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
     const update = vi.fn().mockResolvedValue({ result: 'updated' });
-    const lock = (await accessor(update).lock(config()))!;
+    const lock = (await accessor(update).lock(config('test', 60_000, 5_000)))!;
     await lock.unlock();
-    expect(sent(update, 1).script.source).toBe(UNLOCK_SCRIPT);
-    expect(sent(update, 1).upsert).toBeUndefined();
+    const request = sent(update, 1);
+    expect(request.script.source).toBe(UNLOCK_SCRIPT);
+    expect(request.script.params.lockedBy).toBe('this-host');
+    expect(request.script.params.lockedByField).toBe('lockedBy');
+    expect(request.script.params.unlockTime).toBe('1970-01-01T00:16:45.000Z');
+    expect(request.upsert).toBeUndefined();
+  });
+
+  it('unlock() sends this host so a different stored owner is left unchanged', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const update = vi.fn().mockResolvedValueOnce({ result: 'updated' }).mockResolvedValueOnce({ result: 'noop' });
+    const lock = (await accessor(update).lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    const request = sent(update, 1);
+    expect(request.script.source).toContain('ctx._source[params.lockedByField] == params.lockedBy');
+    expect(request.script.source).toContain("ctx.op = 'none'");
+    expect(request.script.params.lockedBy).toBe('this-host');
+    expect(request.script.params.lockedByField).toBe('lockedBy');
+  });
+
+  it('unlock() passes the configured lockedBy field name', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const update = vi.fn().mockResolvedValue({ result: 'updated' });
+    const lock = (await accessor(update, FieldNames.SNAKE_CASE).lock(config()))!;
+    await lock.unlock();
+    expect(sent(update, 1).script.params.lockedByField).toBe('locked_by');
+    expect(sent(update, 1).script.params.lockedBy).toBe('this-host');
   });
 
   it('unlock() swallows 404 errors', async () => {

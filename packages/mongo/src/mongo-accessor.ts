@@ -57,7 +57,7 @@ export class MongoAccessor {
 
   async unlock(config: LockConfiguration): Promise<void> {
     await this.collection.findOneAndUpdate(
-      { _id: config.name } as Filter<MongoLockDocument>,
+      { _id: config.name, lockedBy: Utils.getHostname() } as Filter<MongoLockDocument>,
       { $set: { lockUntil: new Date(unlockTime(config)) } } as unknown as Document,
     );
   }

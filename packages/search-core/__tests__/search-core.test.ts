@@ -14,8 +14,10 @@ describe('scripts', () => {
     expect(LOCK_SCRIPT).toContain("ctx.op = 'none'");
   });
 
-  it('UNLOCK_SCRIPT sets lockUntil to unlockTime', () => {
-    expect(UNLOCK_SCRIPT).toBe('ctx._source[params.lockUntilField] = params.unlockTime');
+  it('UNLOCK_SCRIPT sets lockUntil only when lockedBy matches', () => {
+    expect(UNLOCK_SCRIPT).toContain('if (ctx._source[params.lockedByField] == params.lockedBy) {');
+    expect(UNLOCK_SCRIPT).toContain('ctx._source[params.lockUntilField] = params.unlockTime');
+    expect(UNLOCK_SCRIPT).toContain("ctx.op = 'none'");
   });
 
   it('EXTEND_SCRIPT requires lockedBy and active lockUntil', () => {

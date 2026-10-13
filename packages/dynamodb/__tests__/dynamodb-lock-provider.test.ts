@@ -1,6 +1,6 @@
 import { ConditionalCheckFailedException, type DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { ClockProvider, createLockConfig } from '@tslock/core';
-import { describe, expect, it, vi } from 'vitest';
+import { ClockProvider, createLockConfig, Utils } from '@tslock/core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DynamoDBLockProvider } from '../src/dynamodb-lock-provider.js';
 
 function makeClient(overrides: Record<string, unknown> = {}): DynamoDBClient {
@@ -16,6 +16,10 @@ function config(name = 'test', most = 60_000, least = 0) {
 }
 
 describe('DynamoDBLockProvider', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('lock() returns a lock on success', async () => {
     const client = makeClient();
     const provider = new DynamoDBLockProvider({ tableName: 'locks', client });
@@ -66,18 +70,39 @@ describe('DynamoDBLockProvider', () => {
     expect(cmd.input.Key.sk.S).toBe('global');
   });
 
-  it('unlock() aliases the partition key in its condition expression', async () => {
+  it('unlock() sets unlockTime only when lockedBy matches this host', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
     const send = vi.fn().mockResolvedValue({});
     const client = makeClient({ send });
     const provider = new DynamoDBLockProvider({ tableName: 'locks', client });
-    const lock = (await provider.lock(config()))!;
+    const lock = (await provider.lock(config('report-job', 60_000, 5_000)))!;
 
     send.mockClear();
     await lock.unlock();
 
     const cmd = send.mock.calls[0]![0];
-    expect(cmd.input.ConditionExpression).toBe('attribute_exists(#partitionKey)');
-    expect(cmd.input.ExpressionAttributeNames).toEqual({ '#partitionKey': '_id' });
+    expect(cmd.input.ConditionExpression).toBe('lockedBy = :lockedBy');
+    expect(cmd.input.ExpressionAttributeValues[':lockedBy']).toEqual({ S: 'this-host' });
+    expect(cmd.input.ExpressionAttributeValues[':unlockTime']).toEqual({ S: '1970-01-01T00:16:45.000Z' });
+    expect(cmd.input.UpdateExpression).toBe('SET lockUntil = :unlockTime');
+    expect(cmd.input.Key._id.S).toBe('report-job');
+    expect(cmd.input.ExpressionAttributeNames).toBeUndefined();
+  });
+
+  it('unlock() resolves without a write when a different host holds the item', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({})
+      .mockRejectedValueOnce(new ConditionalCheckFailedException({ message: 'cond fail', $metadata: {} }));
+    const client = makeClient({ send });
+    const provider = new DynamoDBLockProvider({ tableName: 'locks', client });
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(send).toHaveBeenCalledTimes(2);
+    const cmd = send.mock.calls[1]![0];
+    expect(cmd.input.ConditionExpression).toBe('lockedBy = :lockedBy');
+    expect(cmd.input.ExpressionAttributeValues[':lockedBy']).toEqual({ S: 'this-host' });
   });
 
   it('unlock() works', async () => {

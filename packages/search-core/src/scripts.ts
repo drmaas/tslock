@@ -8,7 +8,13 @@ if (ctx._source[params.lockUntilField] <= params.now) {
 }
 `;
 
-export const UNLOCK_SCRIPT = 'ctx._source[params.lockUntilField] = params.unlockTime';
+export const UNLOCK_SCRIPT = `
+if (ctx._source[params.lockedByField] == params.lockedBy) {
+  ctx._source[params.lockUntilField] = params.unlockTime;
+} else {
+  ctx.op = 'none';
+}
+`;
 
 export const EXTEND_SCRIPT = `
 if (ctx._source[params.lockedByField] == params.lockedBy && ctx._source[params.lockUntilField] > params.now) {

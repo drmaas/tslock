@@ -1,7 +1,7 @@
-import { ClockProvider, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, Utils } from '@tslock/core';
 import type { Collection, Document } from 'mongodb';
 import { MongoServerError } from 'mongodb';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MongoLockDocument } from '../src/mongo-lock-document.js';
 import { MongoLockProvider } from '../src/mongo-lock-provider.js';
 
@@ -20,6 +20,10 @@ function config(name = 'test', most = 60_000, least = 0) {
 }
 
 describe('MongoLockProvider', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('lock() returns lock when findOneAndUpdate returns a doc', async () => {
     const col = makeCol();
     const provider = new MongoLockProvider(col);
@@ -65,6 +69,42 @@ describe('MongoLockProvider', () => {
     const provider = new MongoLockProvider(col);
     const lock = (await provider.lock(config()))!;
     await lock.unlock();
+  });
+
+  it('unlock() sets unlockTime when lockedBy matches this host', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const findOneAndUpdate = vi.fn().mockResolvedValue({
+      _id: 'test',
+      lockUntil: new Date(),
+      lockedAt: new Date(),
+      lockedBy: 'this-host',
+    });
+    const col = makeCol({ findOneAndUpdate });
+    const provider = new MongoLockProvider(col);
+    const lock = (await provider.lock(config('test', 60_000, 5_000)))!;
+    await lock.unlock();
+    const [filter, update] = findOneAndUpdate.mock.calls[1]!;
+    expect(filter).toEqual({ _id: 'test', lockedBy: 'this-host' });
+    expect(update.$set.lockUntil).toEqual(new Date(1_005_000));
+  });
+
+  it('unlock() resolves without matching a document locked by a different host', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const findOneAndUpdate = vi
+      .fn()
+      .mockResolvedValueOnce({
+        _id: 'test',
+        lockUntil: new Date(),
+        lockedAt: new Date(),
+        lockedBy: 'this-host',
+      })
+      .mockResolvedValueOnce(null);
+    const col = makeCol({ findOneAndUpdate });
+    const provider = new MongoLockProvider(col);
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(findOneAndUpdate).toHaveBeenCalledTimes(2);
+    expect(findOneAndUpdate.mock.calls[1]![0]).toEqual({ _id: 'test', lockedBy: 'this-host' });
   });
 
   it('extend() returns new lock on success', async () => {
