@@ -1,6 +1,7 @@
 import {
   ClockProvider,
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   LockException,
   lockAtMostUntil,
@@ -41,6 +42,8 @@ function newToken(): string {
  * For mutual exclusion use `@tslock/cloudflare-do`.
  */
 export class CloudflareKvLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly config: CloudflareKvConfiguration;
 
   constructor(options: CloudflareKvLockProviderOptions) {

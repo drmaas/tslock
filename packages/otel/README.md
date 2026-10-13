@@ -57,7 +57,7 @@ const executor = new DefaultLockingTaskExecutor(provider, otel.listener);
 
 `lockAtMostFor` must be at least 30 seconds for keep-alive. A renewal that returns no lock, or whose single retry throws, increments `tslock.lock.keepalive.failure` and also records the failed extend.
 
-`instrument` returns a `LockProvider`. Provider-specific methods stay on the original instance. Calling `instrument` again with that wrapper returns the same object.
+`instrument` returns an `ExtensibleLockProvider` when its input is extensible, and a `LockProvider` otherwise. Provider-specific methods stay on the original instance. Calling `instrument` again with that wrapper returns the same object.
 
 ## Metrics
 

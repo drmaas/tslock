@@ -4,7 +4,7 @@ import { KeepAliveLockProvider } from '../src/keep-alive-lock-provider.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import { LockException } from '../src/lock-exception.js';
 import { createLockHealthMonitor } from '../src/lock-health.js';
-import type { LockProvider } from '../src/lock-provider.js';
+import { type ExtensibleLockProvider, extensibleLockProvider, type LockProvider } from '../src/lock-provider.js';
 import type { Disposable, Scheduler } from '../src/scheduler.js';
 import type { SimpleLock } from '../src/simple-lock.js';
 import { TrackingLockProviderWrapper } from '../src/tracking-lock-provider.js';
@@ -111,7 +111,10 @@ describe('createLockHealthMonitor', () => {
     const storageLock = makeLock();
     const renewed = makeLock();
     (storageLock.extend as ReturnType<typeof vi.fn>).mockResolvedValue(renewed);
-    const storage: LockProvider = { lock: vi.fn().mockResolvedValue(storageLock) };
+    const storage: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
+      lock: vi.fn().mockResolvedValue(storageLock),
+    };
     const tracking = new TrackingLockProviderWrapper(storage);
     const keepAlive = new KeepAliveLockProvider(tracking, scheduler);
     const health = createLockHealthMonitor({ tracking });
@@ -140,7 +143,10 @@ describe('createLockHealthMonitor', () => {
     const storageLock = makeLock();
     const renewed = makeLock();
     (storageLock.extend as ReturnType<typeof vi.fn>).mockResolvedValue(renewed);
-    const storage: LockProvider = { lock: vi.fn().mockResolvedValue(storageLock) };
+    const storage: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
+      lock: vi.fn().mockResolvedValue(storageLock),
+    };
     const keepAlive = new KeepAliveLockProvider(storage, scheduler);
     const tracking = new TrackingLockProviderWrapper(keepAlive);
     const health = createLockHealthMonitor({ tracking });

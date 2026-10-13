@@ -1,6 +1,7 @@
 import {
   ClockProvider,
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   lockAtMostUntil,
   type SimpleLock,
@@ -8,6 +9,8 @@ import {
 import { InMemoryLock } from './in-memory-lock.js';
 
 export class InMemoryLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   readonly locks = new Map<string, number>();
 
   isLocked(name: string): boolean {

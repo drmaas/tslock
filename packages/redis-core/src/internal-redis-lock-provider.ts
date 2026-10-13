@@ -3,6 +3,7 @@ import {
   AbstractSimpleLock,
   ClockProvider,
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   lockAtLeastUntil,
   lockAtMostUntil,
@@ -77,6 +78,7 @@ class RedisLock extends AbstractSimpleLock {
 export class InternalRedisLockProvider implements ExtensibleLockProvider {
   static readonly DEFAULT_KEY_PREFIX = DEFAULT_KEY_PREFIX;
   static readonly ENV_DEFAULT = ENV_DEFAULT;
+  readonly [extensibleLockProvider]: true = true;
 
   private readonly keyPrefix: string;
   private readonly safeUpdate: boolean;

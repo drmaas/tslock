@@ -56,7 +56,7 @@ await executor.executeWithLock(
 
 ### Auto-renewing long tasks
 
-`KeepAliveLockProvider` wraps an extensible provider and renews the lock on a timer so long-running tasks don't hit their deadline:
+`KeepAliveLockProvider` wraps an extensible provider and renews the lock on a timer so long-running tasks don't hit their deadline. A plain `LockProvider` is rejected by the type checker. A cast that omits the `extensibleLockProvider` brand throws `LockException` at construction:
 
 ```typescript
 import { KeepAliveLockProvider } from '@tslock/core';
@@ -147,7 +147,7 @@ const executor = new DefaultLockingTaskExecutor(provider, listener);
 
 | Export | Description |
 |---|---|
-| `LockProvider`, `ExtensibleLockProvider` | The lock acquisition interfaces. |
+| `LockProvider`, `ExtensibleLockProvider`, `extensibleLockProvider` | Lock acquisition. `ExtensibleLockProvider` carries the `extensibleLockProvider` symbol, so it is distinct from `LockProvider`. Custom providers that support `extend` set `readonly [extensibleLockProvider]: true`. |
 | `SimpleLock`, `AbstractSimpleLock` | The lock handle (`unlock`, `extend`). |
 | `LockConfiguration`, `createLockConfig` | Immutable config + builder helper. |
 | `DefaultLockingTaskExecutor`, `TaskResult` | Wraps a task in acquire/release. |

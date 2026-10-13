@@ -1,5 +1,12 @@
 import { type Attributes, type Meter, metrics, ValueType } from '@opentelemetry/api';
-import type { LockConfiguration, LockingTaskExecutorListener, LockProvider, SimpleLock } from '@tslock/core';
+import {
+  type ExtensibleLockProvider,
+  extensibleLockProvider,
+  type LockConfiguration,
+  type LockingTaskExecutorListener,
+  type LockProvider,
+  type SimpleLock,
+} from '@tslock/core';
 
 export const TSLOCK_METRIC_NAMES = Object.freeze({
   lockAttempt: 'tslock.lock.attempt',
@@ -36,7 +43,9 @@ export interface OpenTelemetryLockMetricsOptions {
 export interface OpenTelemetryLockMetrics {
   readonly listener: LockingTaskExecutorListener;
   onKeepAliveFailure(config: LockConfiguration, error: unknown): void;
-  instrument(provider: LockProvider): LockProvider;
+  instrument<T extends LockProvider>(
+    provider: T,
+  ): T extends ExtensibleLockProvider ? ExtensibleLockProvider : LockProvider;
 }
 
 function record(emit: () => void): void {
@@ -212,8 +221,13 @@ export function createOpenTelemetryLockMetrics(
     });
   };
 
-  const instrument = (provider: LockProvider): LockProvider => {
-    if (Object.hasOwn(provider, INSTRUMENTED)) return provider;
+  const instrument = <T extends LockProvider>(
+    provider: T,
+  ): T extends ExtensibleLockProvider ? ExtensibleLockProvider : LockProvider => {
+    if (Object.hasOwn(provider, INSTRUMENTED)) {
+      return provider as unknown as T extends ExtensibleLockProvider ? ExtensibleLockProvider : LockProvider;
+    }
+    const extensible = (provider as { readonly [extensibleLockProvider]?: unknown })[extensibleLockProvider] === true;
     const wrapped: LockProvider = {
       async lock(config) {
         const lock = await provider.lock(config);
@@ -221,8 +235,11 @@ export function createOpenTelemetryLockMetrics(
         return new ObservedSimpleLock(lock, config, instruments);
       },
     };
+    if (extensible) {
+      Object.defineProperty(wrapped, extensibleLockProvider, { value: true });
+    }
     Object.defineProperty(wrapped, INSTRUMENTED, { value: true });
-    return wrapped;
+    return wrapped as T extends ExtensibleLockProvider ? ExtensibleLockProvider : LockProvider;
   };
 
   return Object.freeze({ listener, onKeepAliveFailure, instrument });

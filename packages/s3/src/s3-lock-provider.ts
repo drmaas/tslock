@@ -1,6 +1,7 @@
 import type { S3Client } from '@aws-sdk/client-s3';
 import {
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   type SimpleLock,
   StorageBasedLockProvider,
@@ -9,6 +10,8 @@ import type { S3ProviderConfig } from './s3-provider-config.js';
 import { S3StorageAccessor } from './s3-storage-accessor.js';
 
 export class S3LockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly delegate: StorageBasedLockProvider;
 
   constructor(s3: S3Client, config: S3ProviderConfig) {

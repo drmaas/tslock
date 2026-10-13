@@ -1,4 +1,10 @@
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import {
+  ClockProvider,
+  createLockConfig,
+  type ExtensibleLockProvider,
+  KeepAliveLockProvider,
+  LockException,
+} from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import { isBadVersionException, isNoNodeException } from '../src/zookeeper-errors.js';
 import { ZooKeeperLockProvider } from '../src/zookeeper-lock-provider.js';
@@ -469,5 +475,17 @@ describe('ZooKeeper result-code matchers', () => {
     expect(isBadVersionException({ code: -4 })).toBe(false);
     expect(isNoNodeException(null)).toBe(false);
     expect(isBadVersionException(undefined)).toBe(false);
+  });
+});
+
+describe('ZooKeeperLockProvider extensibility', () => {
+  it('is not assignable to KeepAliveLockProvider', () => {
+    const provider = new ZooKeeperLockProvider(makeClient() as unknown as ZooKeeperClient);
+    const check = () => {
+      // @ts-expect-error ZooKeeperLockProvider does not support extend
+      new KeepAliveLockProvider(provider);
+    };
+    expect(check).toEqual(expect.any(Function));
+    expect(() => new KeepAliveLockProvider(provider as unknown as ExtensibleLockProvider)).toThrow(LockException);
   });
 });

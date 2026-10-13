@@ -1,5 +1,6 @@
 import {
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   LockException,
   type SimpleLock,
@@ -15,6 +16,8 @@ export interface CloudflareDoLockProviderOptions {
 }
 
 export class CloudflareDoLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly fetcher: CloudflareDoFetcher;
 
   constructor(options: CloudflareDoLockProviderOptions) {

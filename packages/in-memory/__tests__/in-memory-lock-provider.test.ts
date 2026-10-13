@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, createLockConfig, KeepAliveLockProvider, LockException } from '@tslock/core';
 import { describe, expect, it } from 'vitest';
 import { InMemoryLockProvider } from '../src/in-memory-lock-provider.js';
 
@@ -54,6 +54,11 @@ describe('InMemoryLockProvider', () => {
     ClockProvider.setClock(() => 1_005_000);
     const extended = await lock.extend(10_000, 0);
     expect(extended).toBeUndefined();
+  });
+
+  it('is assignable to KeepAliveLockProvider', () => {
+    const provider = new InMemoryLockProvider();
+    expect(new KeepAliveLockProvider(provider)).toBeInstanceOf(KeepAliveLockProvider);
   });
 
   it('isLocked returns false after lock expires', () => {

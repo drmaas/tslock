@@ -1,5 +1,10 @@
 import type { Client } from '@elastic/elasticsearch';
-import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
+import {
+  type ExtensibleLockProvider,
+  extensibleLockProvider,
+  type LockConfiguration,
+  type SimpleLock,
+} from '@tslock/core';
 import { SearchLockAccessor } from '@tslock/search-core';
 import { ElasticsearchUpdateClient } from './elasticsearch-accessor.js';
 import { type ElasticsearchFieldNames, FieldNames } from './field-names.js';
@@ -10,6 +15,8 @@ export interface ElasticsearchLockProviderOptions {
 }
 
 export class ElasticsearchLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly accessor: SearchLockAccessor;
 
   constructor(client: Client, options?: ElasticsearchLockProviderOptions) {

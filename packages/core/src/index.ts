@@ -27,7 +27,7 @@ export type {
   LockHealthSnapshot,
 } from './lock-health.js';
 export { createLockHealthMonitor } from './lock-health.js';
-export type { ExtensibleLockProvider, LockProvider } from './lock-provider.js';
+export { type ExtensibleLockProvider, extensibleLockProvider, type LockProvider } from './lock-provider.js';
 export {
   DefaultLockingTaskExecutor,
   type LockingTaskExecutor,

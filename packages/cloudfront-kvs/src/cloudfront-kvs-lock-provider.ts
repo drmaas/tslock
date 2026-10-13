@@ -7,6 +7,7 @@ import {
 import {
   ClockProvider,
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   LockException,
   lockAtMostUntil,
@@ -30,6 +31,8 @@ import {
 } from './lock-record.js';
 
 export class CloudFrontKvsLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly config: CloudFrontKvsConfiguration;
   private readonly client: CloudFrontKeyValueStoreClient;
 

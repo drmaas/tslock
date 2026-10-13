@@ -1,4 +1,9 @@
-import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
+import {
+  type ExtensibleLockProvider,
+  extensibleLockProvider,
+  type LockConfiguration,
+  type SimpleLock,
+} from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collections';
 import type { Database } from 'arangojs/databases';
 import { ArangoDbAccessor } from './arangodb-accessor.js';
@@ -11,6 +16,8 @@ export interface ArangoDbLockProviderOptions {
 }
 
 export class ArangoDbLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly accessor: ArangoDbAccessor;
 
   constructor(collection: ArangoCollection<ArangoDbLockDocument>, database: Database) {

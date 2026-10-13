@@ -1,5 +1,6 @@
 import {
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   type SimpleLock,
   StorageBasedLockProvider,
@@ -67,6 +68,8 @@ function resolveOptions(options: CassandraLockProviderOptions): ResolvedCassandr
 }
 
 export class CassandraLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly delegate: StorageBasedLockProvider;
 
   constructor(client: cassandra.Client, options: CassandraLockProviderOptions) {
