@@ -1,4 +1,4 @@
-import type { FileMetadata, SaveOptions, Storage } from '@google-cloud/storage';
+import type { FileMetadata, Storage } from '@google-cloud/storage';
 import {
   AbstractStorageAccessor,
   ClockProvider,
@@ -73,10 +73,10 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     if (exists) return false;
     try {
       await file.save('', {
-        metadata: this.buildMetadata(config),
+        metadata: { metadata: this.buildMetadata(config) },
         gzip: false,
         preconditionOpts: { ifGenerationMatch: 0 },
-      } as SaveOptions);
+      });
       return true;
     } catch (e) {
       if (isPreconditionFailed(e)) return false;
@@ -92,10 +92,10 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     const file = this.file(config.name);
     try {
       await file.save('', {
-        metadata: this.buildMetadata(config),
+        metadata: { metadata: this.buildMetadata(config) },
         gzip: false,
         preconditionOpts: { ifGenerationMatch: current.generation },
-      } as SaveOptions);
+      });
       return true;
     } catch (e) {
       if (isPreconditionFailed(e)) return false;
@@ -111,12 +111,14 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     try {
       await file.setMetadata(
         {
-          lockUntil: Utils.toIsoString(unlockTime(config)),
-          lockedAt: current.metadata.lockedAt ?? Utils.toIsoString(config.createdAt),
-          lockedBy: current.metadata.lockedBy ?? this.getHostname(),
-          lockName: current.metadata.lockName ?? config.name,
-        } as FileMetadata,
-        { preconditionOpts: { ifGenerationMatch: current.generation } },
+          metadata: {
+            lockUntil: Utils.toIsoString(unlockTime(config)),
+            lockedAt: current.metadata.lockedAt ?? Utils.toIsoString(config.createdAt),
+            lockedBy: current.metadata.lockedBy ?? this.getHostname(),
+            lockName: current.metadata.lockName ?? config.name,
+          },
+        },
+        { ifGenerationMatch: current.generation },
       );
     } catch (e) {
       if (isPreconditionFailed(e)) return;
@@ -135,12 +137,14 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     try {
       await file.setMetadata(
         {
-          lockUntil: Utils.toIsoString(lockAtMostUntil(config)),
-          lockedAt: current.metadata.lockedAt,
-          lockedBy: current.metadata.lockedBy,
-          lockName: current.metadata.lockName,
+          metadata: {
+            lockUntil: Utils.toIsoString(lockAtMostUntil(config)),
+            lockedAt: current.metadata.lockedAt,
+            lockedBy: current.metadata.lockedBy,
+            lockName: current.metadata.lockName,
+          },
         } as FileMetadata,
-        { preconditionOpts: { ifGenerationMatch: current.generation } },
+        { ifGenerationMatch: current.generation },
       );
       return true;
     } catch (e) {

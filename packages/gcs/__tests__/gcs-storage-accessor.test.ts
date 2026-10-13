@@ -57,10 +57,10 @@ describe('GcsStorageAccessor', () => {
       const saveOptions = mockFile.save.mock.calls[0]![1];
       expect(saveOptions.preconditionOpts.ifGenerationMatch).toBe(0);
       expect(saveOptions.gzip).toBe(false);
-      expect(saveOptions.metadata.lockUntil).toBeTruthy();
-      expect(saveOptions.metadata.lockedAt).toBeTruthy();
-      expect(saveOptions.metadata.lockedBy).toBe('test-host');
-      expect(saveOptions.metadata.lockName).toBe('test-lock');
+      expect(saveOptions.metadata.metadata.lockUntil).toBeTruthy();
+      expect(saveOptions.metadata.metadata.lockedAt).toBeTruthy();
+      expect(saveOptions.metadata.metadata.lockedBy).toBe('test-host');
+      expect(saveOptions.metadata.metadata.lockName).toBe('test-lock');
     });
 
     it('object exists: exists=true → returns false (no save)', async () => {
@@ -166,8 +166,8 @@ describe('GcsStorageAccessor', () => {
 
       expect(mockFile.setMetadata).toHaveBeenCalledTimes(1);
       const [meta, options] = mockFile.setMetadata.mock.calls[0]!;
-      expect(options.preconditionOpts.ifGenerationMatch).toBe(1);
-      expect(meta.lockUntil).toBeTruthy();
+      expect(options.ifGenerationMatch).toBe(1);
+      expect(meta.metadata.lockUntil).toBeTruthy();
     });
 
     it('missing record: getMetadata throws 404 → no-op resolves', async () => {
@@ -236,9 +236,9 @@ describe('GcsStorageAccessor', () => {
       expect(result).toBe(true);
       expect(mockFile.setMetadata).toHaveBeenCalledTimes(1);
       const [meta, options] = mockFile.setMetadata.mock.calls[0]!;
-      expect(options.preconditionOpts.ifGenerationMatch).toBe(2);
-      expect(meta.lockedAt).toBe('1970-01-01T00:00:00.000Z');
-      expect(meta.lockedBy).toBe('test-host');
+      expect(options.ifGenerationMatch).toBe(2);
+      expect(meta.metadata.lockedAt).toBe('1970-01-01T00:00:00.000Z');
+      expect(meta.metadata.lockedBy).toBe('test-host');
     });
 
     it('wrong owner: lockedBy mismatch → returns false (no setMetadata)', async () => {
