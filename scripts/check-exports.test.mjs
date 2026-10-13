@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { packageExportProblems, workspacePackageExportProblems } from './check-exports.mjs';
+import { fileURLToPath } from 'node:url';
+import { packageExportProblems, scannedWorkspacePackages, workspacePackageExportProblems } from './check-exports.mjs';
 
 const validPackage = {
   name: '@tslock/example',
@@ -77,5 +80,22 @@ describe('package exports', () => {
 
   it('accepts every workspace package', () => {
     assert.deepEqual(workspacePackageExportProblems(), []);
+  });
+
+  it('scans every publishable lockstep package', () => {
+    const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
+    const changeset = JSON.parse(readFileSync(join(root, '.changeset/config.json'), 'utf8'));
+    assert.deepEqual(changeset.fixed, [['@tslock/*']]);
+    assert.deepEqual(changeset.ignore, []);
+
+    const onDisk = readdirSync(join(root, 'packages'))
+      .filter((name) => existsSync(join(root, 'packages', name, 'package.json')))
+      .sort();
+    const scanned = scannedWorkspacePackages();
+    assert.deepEqual(scanned.map((pkg) => pkg.directory.split('/').at(-1)).sort(), onDisk);
+    for (const { packageJson } of scanned) {
+      assert.equal(packageJson.private, undefined);
+      assert.match(packageJson.name, /^@tslock\//);
+    }
   });
 });

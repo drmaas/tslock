@@ -1,4 +1,4 @@
-export const DEFAULT_PATH = '/shedlock';
+const DEFAULT_PATH = '/shedlock';
 
 export interface ZooKeeperLockProviderOptions {
   basePath?: string;

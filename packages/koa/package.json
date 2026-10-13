@@ -42,9 +42,7 @@
     }
   },
   "devDependencies": {
-    "@tslock/core": "workspace:*",
     "@tslock/in-memory": "workspace:*",
-    "@tslock/middleware-core": "workspace:*",
     "@types/koa": "^3.0.3",
     "koa": "^3.2.1",
     "tsup": "^8.0.0",

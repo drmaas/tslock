@@ -119,6 +119,7 @@ pnpm -r test           # vitest run (unit tests)
 pnpm test:integration  # in-memory, MongoDB, and PostgreSQL; Redis is opt-in
 pnpm -r build          # tsup build across all packages
 pnpm check:packed-peers # verify packed peer dependency ranges
+pnpm knip              # unused files, exports, and dependencies
 ```
 
 Integration tests (MongoDB/PostgreSQL require Docker; Redis requires a running Redis service):
@@ -128,7 +129,7 @@ pnpm test:integration
 TSLOCK_REDIS_INTEGRATION=1 REDIS_URL=redis://127.0.0.1:6379 pnpm test:integration
 ```
 
-CI runs a `lockfile` job first, then `pnpm check && pnpm typecheck && pnpm test && pnpm build` plus a non-blocking `pnpm audit --prod`, and the integration job. `verify` and `integration` wait for `lockfile`, including on Dependabot pull requests (they target `main`).
+CI runs a `lockfile` job first, then `pnpm check`, `pnpm knip`, `pnpm build`, `pnpm check:exports`, `pnpm typecheck`, and `pnpm test`, plus a non-blocking `pnpm audit --prod`, and the integration job. `verify` and `integration` wait for `lockfile`, including on Dependabot pull requests (they target `main`).
 
 ## Coding conventions
 

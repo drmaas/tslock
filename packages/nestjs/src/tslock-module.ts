@@ -42,7 +42,7 @@ export interface TslockModuleOptions {
   registerInterceptor?: boolean;
 }
 
-export interface ResolvedTslockModuleOptions {
+interface ResolvedTslockModuleOptions {
   readonly lockProvider: LockProvider;
   readonly listener?: LockingTaskExecutorListener;
   readonly defaultLockAtMostFor: number;
@@ -85,7 +85,7 @@ export class TslockModule {
 
 Module({})(TslockModule);
 
-export function resolveTslockModuleOptions(input: TslockModuleOptions): ResolvedTslockModuleOptions {
+function resolveTslockModuleOptions(input: TslockModuleOptions): ResolvedTslockModuleOptions {
   if (input === null || typeof input !== 'object' || typeof input.lockProvider?.lock !== 'function') {
     throw new LockException('TslockModule lockProvider is required');
   }

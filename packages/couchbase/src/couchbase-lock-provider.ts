@@ -38,7 +38,7 @@ export interface ResolvedOptions {
   lockedByValue: string;
 }
 
-export function resolveOptions(options?: CouchbaseLockProviderOptions): ResolvedOptions {
+function resolveOptions(options?: CouchbaseLockProviderOptions): ResolvedOptions {
   const documentIdPrefix = options?.documentIdPrefix ?? DEFAULT_DOCUMENT_ID_PREFIX;
   const c = options?.columnNames ?? {};
   return {

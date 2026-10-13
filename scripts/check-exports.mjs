@@ -55,11 +55,17 @@ export function packageExportProblems(packageJson) {
 
 export function workspacePackageExportProblems() {
   const problems = [];
-  for (const directory of workspacePackageDirectories()) {
-    const packageJson = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'));
+  for (const { packageJson } of scannedWorkspacePackages()) {
     problems.push(...packageExportProblems(packageJson));
   }
   return problems;
+}
+
+export function scannedWorkspacePackages() {
+  return workspacePackageDirectories().map((directory) => {
+    const packageJson = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'));
+    return { directory, packageJson };
+  });
 }
 
 function workspacePackageDirectories() {
