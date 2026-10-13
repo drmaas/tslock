@@ -32,7 +32,6 @@
     "@tslock/core": "workspace:*"
   },
   "devDependencies": {
-    "@tslock/core": "workspace:*",
     "@tslock/in-memory": "workspace:*",
     "tsup": "^8.0.0",
     "typescript": "^7.0.2",

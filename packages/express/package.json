@@ -42,9 +42,7 @@
     }
   },
   "devDependencies": {
-    "@tslock/core": "workspace:*",
     "@tslock/in-memory": "workspace:*",
-    "@tslock/middleware-core": "workspace:*",
     "@types/express": "^5.0.0",
     "express": "^4.21.0 || ^5.0.0",
     "tsup": "^8.0.0",

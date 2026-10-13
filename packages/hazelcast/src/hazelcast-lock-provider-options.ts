@@ -3,8 +3,8 @@ export interface HazelcastLockProviderOptions {
   lockLeaseTimeMs?: number;
 }
 
-export const DEFAULT_LOCK_STORE_KEY = 'shedlock_storage';
-export const DEFAULT_LOCK_LEASE_TIME = 30_000;
+const DEFAULT_LOCK_STORE_KEY = 'shedlock_storage';
+const DEFAULT_LOCK_LEASE_TIME = 30_000;
 
 export interface ResolvedHazelcastOptions {
   lockStoreKey: string;

@@ -43,6 +43,7 @@ jobs:
       - run: pnpm audit --prod
         continue-on-error: true
       - run: pnpm check
+      - run: pnpm knip
       - run: pnpm build
       - run: pnpm check:exports
       - run: pnpm typecheck

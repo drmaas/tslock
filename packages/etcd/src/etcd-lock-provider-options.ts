@@ -1,5 +1,4 @@
-export const DEFAULT_ENV = 'default';
-export const MILLIS_IN_SECOND = 1000;
+const DEFAULT_ENV = 'default';
 
 export interface EtcdLockProviderOptions {
   env?: string;

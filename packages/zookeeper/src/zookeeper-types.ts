@@ -1,4 +1,4 @@
-export interface Stat {
+interface Stat {
   version: number;
 }
 
