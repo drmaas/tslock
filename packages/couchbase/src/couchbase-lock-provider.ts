@@ -1,5 +1,6 @@
 import {
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   type SimpleLock,
   StorageBasedLockProvider,
@@ -52,6 +53,8 @@ function resolveOptions(options?: CouchbaseLockProviderOptions): ResolvedOptions
 }
 
 export class CouchbaseLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly delegate: StorageBasedLockProvider;
 
   constructor(collection: Collection, options?: CouchbaseLockProviderOptions) {

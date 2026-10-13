@@ -1,5 +1,10 @@
 import type { Client } from '@opensearch-project/opensearch';
-import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
+import {
+  type ExtensibleLockProvider,
+  extensibleLockProvider,
+  type LockConfiguration,
+  type SimpleLock,
+} from '@tslock/core';
 import { SearchLockAccessor } from '@tslock/search-core';
 import { FieldNames, type OpenSearchFieldNames } from './field-names.js';
 import { OpenSearchUpdateClient } from './opensearch-accessor.js';
@@ -10,6 +15,8 @@ export interface OpenSearchLockProviderOptions {
 }
 
 export class OpenSearchLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly accessor: SearchLockAccessor;
 
   constructor(client: Client, options?: OpenSearchLockProviderOptions) {

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KeepAliveLockProvider } from '../src/keep-alive-lock-provider.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import { LockException } from '../src/lock-exception.js';
-import type { ExtensibleLockProvider } from '../src/lock-provider.js';
+import { type ExtensibleLockProvider, extensibleLockProvider } from '../src/lock-provider.js';
 import type { Disposable, Scheduler } from '../src/scheduler.js';
 import type { SimpleLock } from '../src/simple-lock.js';
 
@@ -36,6 +36,7 @@ function makeProvider(opts: { lockReturn?: 'lock' | 'undefined'; extendReturn?: 
     extendMock.mockResolvedValue(newLock);
   }
   const provider: ExtensibleLockProvider = {
+    [extensibleLockProvider]: true,
     lock: vi.fn().mockImplementation(() => {
       if (opts.lockReturn === 'undefined') return Promise.resolve(undefined);
       return Promise.resolve(initialLock);

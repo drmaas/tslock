@@ -1,4 +1,9 @@
-import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
+import {
+  type ExtensibleLockProvider,
+  extensibleLockProvider,
+  type LockConfiguration,
+  type SimpleLock,
+} from '@tslock/core';
 import type { Collection, Db } from 'mongodb';
 import { MongoAccessor } from './mongo-accessor.js';
 import type { MongoLockDocument } from './mongo-lock-document.js';
@@ -12,6 +17,8 @@ export interface MongoLockProviderOptions {
 }
 
 export class MongoLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly accessor: MongoAccessor;
 
   constructor(collection: Collection<MongoLockDocument>) {

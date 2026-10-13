@@ -1,9 +1,16 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import type { ExtensibleLockProvider, LockConfiguration, SimpleLock } from '@tslock/core';
+import {
+  type ExtensibleLockProvider,
+  extensibleLockProvider,
+  type LockConfiguration,
+  type SimpleLock,
+} from '@tslock/core';
 import { DynamoDBAccessor } from './dynamodb-accessor.js';
 import { type DynamoDBLockProviderOptions, validateOptions } from './dynamodb-lock-provider-options.js';
 
 export class DynamoDBLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly accessor: DynamoDBAccessor;
 
   constructor(options: DynamoDBLockProviderOptions) {

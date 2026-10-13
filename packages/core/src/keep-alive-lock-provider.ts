@@ -2,7 +2,7 @@ import { ClockProvider } from './clock-provider.js';
 import type { LockConfiguration } from './lock-configuration.js';
 import { lockAtMostUntil } from './lock-configuration.js';
 import { LockException } from './lock-exception.js';
-import type { ExtensibleLockProvider } from './lock-provider.js';
+import { type ExtensibleLockProvider, extensibleLockProvider } from './lock-provider.js';
 import type { Scheduler } from './scheduler.js';
 import { DefaultScheduler } from './scheduler.js';
 import { AbstractSimpleLock, type SimpleLock } from './simple-lock.js';
@@ -73,12 +73,17 @@ class KeepAliveLock extends AbstractSimpleLock {
 
 export class KeepAliveLockProvider implements ExtensibleLockProvider {
   static readonly MIN_LOCK_AT_MOST_FOR = MIN_LOCK_AT_MOST_FOR;
+  readonly [extensibleLockProvider]: true = true;
 
   constructor(
     private readonly provider: ExtensibleLockProvider,
     private readonly scheduler: Scheduler = new DefaultScheduler(),
     private readonly onKeepAliveFailure?: (config: LockConfiguration, error: unknown) => void,
-  ) {}
+  ) {
+    if ((provider as { readonly [extensibleLockProvider]?: unknown })[extensibleLockProvider] !== true) {
+      throw new LockException('KeepAliveLockProvider requires an ExtensibleLockProvider');
+    }
+  }
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     if (config.lockAtMostFor < KeepAliveLockProvider.MIN_LOCK_AT_MOST_FOR) {

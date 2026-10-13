@@ -1,6 +1,6 @@
 import { ClockProvider } from './clock-provider.js';
 import type { LockConfiguration } from './lock-configuration.js';
-import type { LockProvider } from './lock-provider.js';
+import { type ExtensibleLockProvider, extensibleLockProvider, type LockProvider } from './lock-provider.js';
 import type { SimpleLock } from './simple-lock.js';
 
 export interface ActiveLockRecord {
@@ -48,11 +48,17 @@ class TrackingSimpleLock implements SimpleLock {
   }
 }
 
-export class TrackingLockProviderWrapper implements LockProvider {
+export class TrackingLockProviderWrapper<T extends LockProvider = LockProvider> implements LockProvider {
+  readonly [extensibleLockProvider]: T extends ExtensibleLockProvider ? true : false;
+
   private readonly activeLocks = new Set<SimpleLock>();
   private readonly records = new Map<SimpleLock, ActiveLockRecord>();
 
-  constructor(private readonly delegate: LockProvider) {}
+  constructor(private readonly delegate: T) {
+    this[extensibleLockProvider] = ((delegate as { readonly [extensibleLockProvider]?: unknown })[
+      extensibleLockProvider
+    ] === true) as this[typeof extensibleLockProvider];
+  }
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const lock = await this.delegate.lock(config);

@@ -1,5 +1,6 @@
 import {
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   type LockConfiguration,
   LockException,
   type SimpleLock,
@@ -55,6 +56,8 @@ export function resolveOptions(options?: Neo4jLockProviderOptions): ResolvedOpti
 }
 
 export class Neo4jLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly delegate: StorageBasedLockProvider;
 
   constructor(driver: import('neo4j-driver').Driver, options?: Neo4jLockProviderOptions) {

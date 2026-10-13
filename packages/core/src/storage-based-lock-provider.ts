@@ -1,5 +1,5 @@
 import type { LockConfiguration } from './lock-configuration.js';
-import type { ExtensibleLockProvider } from './lock-provider.js';
+import { type ExtensibleLockProvider, extensibleLockProvider } from './lock-provider.js';
 import { AbstractSimpleLock, type SimpleLock } from './simple-lock.js';
 import { Utils } from './utils.js';
 
@@ -56,6 +56,8 @@ class StorageLock extends AbstractSimpleLock {
 }
 
 export class StorageBasedLockProvider implements ExtensibleLockProvider {
+  readonly [extensibleLockProvider]: true = true;
+
   private readonly registry = new LockRecordRegistry();
 
   constructor(private readonly accessor: StorageAccessor) {}

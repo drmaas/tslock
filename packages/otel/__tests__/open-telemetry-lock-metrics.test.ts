@@ -4,8 +4,11 @@ import {
   createLockConfig,
   DefaultLockingTaskExecutor,
   type ExtensibleLockProvider,
+  extensibleLockProvider,
   KeepAliveLockProvider,
+  LockException,
   LockExtender,
+  type LockProvider,
   type Scheduler,
 } from '@tslock/core';
 import { InMemoryLockProvider } from '@tslock/in-memory';
@@ -155,6 +158,7 @@ describe('createOpenTelemetryLockMetrics', () => {
   it('records extend returning undefined as NotExtended and rethrows extend errors', async () => {
     const { reader, metrics } = setup();
     const missing: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
       async lock() {
         return {
           unlock: async () => {},
@@ -182,6 +186,7 @@ describe('createOpenTelemetryLockMetrics', () => {
     const boom = new Error('extend-boom');
     boom.name = 'ExtendBoom';
     const throwing: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
       async lock() {
         return {
           unlock: async () => {},
@@ -214,6 +219,7 @@ describe('createOpenTelemetryLockMetrics', () => {
     const failure = new Error('unlock-boom');
     failure.name = 'UnlockBoom';
     const provider: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
       async lock() {
         return {
           unlock: async () => {
@@ -244,6 +250,7 @@ describe('createOpenTelemetryLockMetrics', () => {
     const renewed = { unlock: vi.fn(), extend: vi.fn().mockResolvedValue(undefined) };
     const extend = vi.fn().mockResolvedValue(renewed);
     const storage: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
       async lock() {
         return { unlock: vi.fn(), extend };
       },
@@ -339,6 +346,32 @@ describe('createOpenTelemetryLockMetrics', () => {
     const lock = await provider.lock(createLockConfig('safe', 1_000));
     await expect(lock?.unlock()).resolves.toBeUndefined();
     expect(unlock).toHaveBeenCalledOnce();
+  });
+
+  it('preserves extensibility through instrument', () => {
+    const { metrics } = setup();
+    const extensible: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
+      async lock() {
+        return undefined;
+      },
+    };
+    const wrapped = metrics.instrument(extensible);
+    expect(new KeepAliveLockProvider(wrapped)).toBeInstanceOf(KeepAliveLockProvider);
+    expect(new KeepAliveLockProvider(metrics.instrument(wrapped))).toBeInstanceOf(KeepAliveLockProvider);
+
+    const plain: LockProvider = {
+      async lock() {
+        return undefined;
+      },
+    };
+    const instrumentedPlain = metrics.instrument(plain);
+    const rejectPlain = () => {
+      // @ts-expect-error instrument(LockProvider) is not an ExtensibleLockProvider
+      new KeepAliveLockProvider(instrumentedPlain);
+    };
+    expect(rejectPlain).toEqual(expect.any(Function));
+    expect(() => new KeepAliveLockProvider(instrumentedPlain as ExtensibleLockProvider)).toThrow(LockException);
   });
 
   it('returns the same provider when instrument is called twice', async () => {

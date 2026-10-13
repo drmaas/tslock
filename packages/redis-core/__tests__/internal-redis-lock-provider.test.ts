@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, KeepAliveLockProvider } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import {
   DEL_IF_EQUALS_SCRIPT,
@@ -150,6 +150,11 @@ describe('InternalRedisLockProvider', () => {
     } finally {
       ClockProvider.resetClock();
     }
+  });
+
+  it('is assignable to KeepAliveLockProvider', () => {
+    const provider = new InternalRedisLockProvider(makeRedis());
+    expect(new KeepAliveLockProvider(provider)).toBeInstanceOf(KeepAliveLockProvider);
   });
 
   it('unlock() with lockAtLeastFor = 0 still deletes', async () => {
