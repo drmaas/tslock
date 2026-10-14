@@ -13,6 +13,7 @@ import type { GcsProviderConfig } from './gcs-provider-config.js';
 
 type GetResult = {
   generation: number;
+  metageneration: number;
   metadata: Record<string, string>;
 } | null;
 
@@ -42,6 +43,7 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
       const [metadata] = await file.getMetadata();
       return {
         generation: Number(metadata.generation ?? 0),
+        metageneration: Number(metadata.metageneration ?? 0),
         metadata: (metadata.metadata ?? {}) as Record<string, string>,
       };
     } catch (e) {
@@ -94,7 +96,10 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
       await file.save('', {
         metadata: { metadata: this.buildMetadata(config) },
         gzip: false,
-        preconditionOpts: { ifGenerationMatch: current.generation },
+        preconditionOpts: {
+          ifGenerationMatch: current.generation,
+          ifMetagenerationMatch: current.metageneration,
+        },
       });
       return true;
     } catch (e) {
@@ -118,7 +123,7 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
             lockName: current.metadata.lockName ?? config.name,
           },
         },
-        { ifGenerationMatch: current.generation },
+        { ifGenerationMatch: current.generation, ifMetagenerationMatch: current.metageneration },
       );
     } catch (e) {
       if (isPreconditionFailed(e)) return;
@@ -144,7 +149,7 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
             lockName: current.metadata.lockName,
           },
         } as FileMetadata,
-        { ifGenerationMatch: current.generation },
+        { ifGenerationMatch: current.generation, ifMetagenerationMatch: current.metageneration },
       );
       return true;
     } catch (e) {

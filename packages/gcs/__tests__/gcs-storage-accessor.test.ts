@@ -100,7 +100,7 @@ describe('GcsStorageAccessor', () => {
 
     it('happy path: getMetadata returns expired record → save with generationMatch → true', async () => {
       mockFile.getMetadata.mockResolvedValue([
-        { generation: '1', metadata: { lockUntil: '1970-01-01T00:00:01.000Z' } },
+        { generation: '1', metageneration: '3', metadata: { lockUntil: '1970-01-01T00:00:01.000Z' } },
       ]);
       mockFile.save.mockResolvedValue(undefined);
 
@@ -110,6 +110,7 @@ describe('GcsStorageAccessor', () => {
       expect(mockFile.save).toHaveBeenCalledTimes(1);
       const saveOptions = mockFile.save.mock.calls[0]![1];
       expect(saveOptions.preconditionOpts.ifGenerationMatch).toBe(1);
+      expect(saveOptions.preconditionOpts.ifMetagenerationMatch).toBe(3);
     });
 
     it('still locked: lockUntil in future → returns false (no save)', async () => {
@@ -152,6 +153,7 @@ describe('GcsStorageAccessor', () => {
       mockFile.getMetadata.mockResolvedValue([
         {
           generation: '1',
+          metageneration: '4',
           metadata: {
             lockUntil: '1970-01-01T00:00:10.000Z',
             lockedAt: '1970-01-01T00:00:00.000Z',
@@ -167,6 +169,7 @@ describe('GcsStorageAccessor', () => {
       expect(mockFile.setMetadata).toHaveBeenCalledTimes(1);
       const [meta, options] = mockFile.setMetadata.mock.calls[0]!;
       expect(options.ifGenerationMatch).toBe(1);
+      expect(options.ifMetagenerationMatch).toBe(4);
       expect(meta.metadata.lockUntil).toBeTruthy();
     });
 
@@ -221,6 +224,7 @@ describe('GcsStorageAccessor', () => {
       mockFile.getMetadata.mockResolvedValue([
         {
           generation: '2',
+          metageneration: '5',
           metadata: {
             lockUntil: '1970-01-01T00:00:10.000Z',
             lockedBy: 'test-host',
@@ -237,6 +241,7 @@ describe('GcsStorageAccessor', () => {
       expect(mockFile.setMetadata).toHaveBeenCalledTimes(1);
       const [meta, options] = mockFile.setMetadata.mock.calls[0]!;
       expect(options.ifGenerationMatch).toBe(2);
+      expect(options.ifMetagenerationMatch).toBe(5);
       expect(meta.metadata.lockedAt).toBe('1970-01-01T00:00:00.000Z');
       expect(meta.metadata.lockedBy).toBe('test-host');
     });
