@@ -59,16 +59,22 @@ export class EtcdAccessor {
     const leaseId = await lease.grant();
     const newLease = this.client.lease(newTtlSeconds, { autoKeepAlive: false });
 
+    let result: { succeeded: boolean };
     try {
-      const result = await this.client
+      result = await this.client
         .if(key, 'Lease', '==', leaseId)
         .then(this.client.put(key).value(value).lease(newLease.grant()))
         .commit();
-      if (!result.succeeded) {
+    } catch (error) {
+      try {
         await newLease.revoke();
-      }
-    } finally {
-      await lease.revoke();
+      } catch {}
+      throw error;
     }
+
+    if (!result.succeeded) {
+      await newLease.revoke();
+    }
+    await lease.revoke();
   }
 }

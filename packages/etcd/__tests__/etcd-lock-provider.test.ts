@@ -264,6 +264,41 @@ describe('EtcdLockProvider', () => {
       expect(newLease.revoke).toHaveBeenCalled();
       ClockProvider.resetClock();
     });
+
+    it('leaves the original lease in place when the re-put commit rejects', async () => {
+      const createdAt = 1_700_000_000_000;
+      ClockProvider.setClock(() => createdAt);
+      const { client, putBuilder } = makeClient();
+      const oldLease = {
+        grant: vi.fn().mockResolvedValue('lease-a'),
+        revoke: vi.fn().mockResolvedValue(undefined),
+      };
+      const newLease = {
+        grant: vi.fn().mockResolvedValue('lease-b'),
+        revoke: vi.fn().mockResolvedValue(undefined),
+      };
+      client.lease = vi.fn().mockReturnValueOnce(oldLease).mockReturnValueOnce(newLease);
+      const lockTxn = {} as MockTxn;
+      Object.defineProperty(lockTxn, 'then', { value: vi.fn().mockReturnValue(lockTxn) });
+      lockTxn.else = vi.fn().mockReturnValue(lockTxn);
+      lockTxn.commit = vi.fn().mockResolvedValue({ succeeded: true });
+      const unlockTxn = {} as MockTxn;
+      Object.defineProperty(unlockTxn, 'then', { value: vi.fn().mockReturnValue(unlockTxn) });
+      unlockTxn.else = vi.fn().mockReturnValue(unlockTxn);
+      unlockTxn.commit = vi.fn().mockRejectedValue(new Error('commit failed'));
+      client.if = vi.fn().mockReturnValueOnce(lockTxn).mockReturnValueOnce(unlockTxn);
+
+      const provider = new EtcdLockProvider(client);
+      const lock = await provider.lock(makeConfig('reject-commit', 30_000, 10_000));
+      expect(lock).toBeDefined();
+
+      await expect(lock?.unlock()).rejects.toThrow('commit failed');
+
+      expect(oldLease.revoke).not.toHaveBeenCalled();
+      expect(newLease.revoke).toHaveBeenCalled();
+      expect(putBuilder.exec).not.toHaveBeenCalled();
+      ClockProvider.resetClock();
+    });
   });
 
   describe('extend', () => {
