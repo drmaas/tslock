@@ -34,6 +34,8 @@ export default {
 };
 ```
 
+Authenticate this route in your app before it forwards a request to the Durable Object.
+
 ## Client usage
 
 ```typescript
@@ -65,7 +67,13 @@ createCloudflareDoLockProvider({
 
 ## Ownership and clocks
 
-Unlock is a no-op when `lockedBy` does not match the caller, so a late unlock after expiry cannot release a new holder. The Durable Object compares stored `lockUntil` to its own `Date.now()` while new deadlines use client `createdAt` + durations — keep client and Worker clocks NTP-synced (same assumption as the rest of TSLock).
+Each acquire generates a `crypto.randomUUID()` token in the client. The Durable Object stores that token and returns it on `{ ok: true, acquired: true, token }`. Unlock and extend send the same token. A write happens only when it matches the stored token. `lockedBy` is the hostname label and is not an ownership check.
+
+Unlock with a mismatched or empty token returns `{ ok: true }` and does not write. Extend with a mismatched or empty token returns `{ ok: false, reason: 'not_owner' }`. A record with no token is not owned and is left unchanged until `lockUntil` passes.
+
+Deploy `TslockLockDurableObject` (or your class that calls `handleTslockLockRequest`) and this client together. An older class does not store or check the token.
+
+The Durable Object compares stored `lockUntil` to its own `Date.now()` while new deadlines use client `createdAt` + durations — keep client and Worker clocks NTP-synced (same assumption as the rest of TSLock).
 
 ## Bun / Node
 

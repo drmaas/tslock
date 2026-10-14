@@ -1,9 +1,15 @@
 import type { DoLockStorage } from './do-lock-storage.js';
 import { storageKeyForLock } from './do-lock-storage.js';
-import type { LockOp, LockOpResult } from './protocol.js';
+import type { DoLockRecord, LockOp, LockOpResult } from './protocol.js';
 
 function unlockUntilMs(createdAt: number, lockAtLeastFor: number, now: number): number {
   return Math.max(now, createdAt + lockAtLeastFor);
+}
+
+function owns(existing: DoLockRecord, token: string): existing is DoLockRecord & { token: string } {
+  return (
+    token.length > 0 && typeof existing.token === 'string' && existing.token.length > 0 && existing.token === token
+  );
 }
 
 export async function applyLockOp(
@@ -14,6 +20,9 @@ export async function applyLockOp(
   const key = storageKeyForLock(body.name);
 
   if (body.op === 'lock') {
+    if (body.token.length === 0) {
+      return { ok: false, reason: 'not_owner' };
+    }
     const existing = await storage.get(key);
     if (existing && existing.lockUntil > now) {
       return { ok: false, reason: 'held' };
@@ -22,22 +31,21 @@ export async function applyLockOp(
       lockUntil: body.createdAt + body.lockAtMostFor,
       lockedAt: body.createdAt,
       lockedBy: body.lockedBy,
+      token: body.token,
     });
-    return { ok: true, acquired: true };
+    return { ok: true, acquired: true, token: body.token };
   }
 
   if (body.op === 'unlock') {
     const existing = await storage.get(key);
-    if (!existing) {
-      return { ok: true };
-    }
-    if (existing.lockedBy !== body.lockedBy) {
+    if (!existing || !owns(existing, body.token)) {
       return { ok: true };
     }
     await storage.put(key, {
       lockUntil: unlockUntilMs(body.createdAt, body.lockAtLeastFor, now),
       lockedAt: existing.lockedAt,
       lockedBy: existing.lockedBy,
+      token: existing.token,
     });
     return { ok: true };
   }
@@ -46,7 +54,7 @@ export async function applyLockOp(
   if (!existing) {
     return { ok: false, reason: 'missing' };
   }
-  if (existing.lockedBy !== body.lockedBy) {
+  if (!owns(existing, body.token)) {
     return { ok: false, reason: 'not_owner' };
   }
   if (existing.lockUntil <= now) {
@@ -56,6 +64,7 @@ export async function applyLockOp(
     lockUntil: body.createdAt + body.lockAtMostFor,
     lockedAt: existing.lockedAt,
     lockedBy: existing.lockedBy,
+    token: existing.token,
   });
   return { ok: true, extended: true };
 }
@@ -84,6 +93,8 @@ export async function handleTslockLockRequest(
     typeof op.lockAtLeastFor !== 'number' ||
     typeof op.createdAt !== 'number' ||
     typeof op.lockedBy !== 'string' ||
+    typeof op.token !== 'string' ||
+    op.token.length === 0 ||
     (op.op !== 'lock' && op.op !== 'unlock' && op.op !== 'extend')
   ) {
     return Response.json({ error: 'invalid body' }, { status: 400 });
