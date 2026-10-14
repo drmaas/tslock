@@ -2,6 +2,7 @@ export interface DoLockRecord {
   lockUntil: number;
   lockedAt: number;
   lockedBy: string;
+  token?: string;
 }
 
 export type LockOp =
@@ -12,6 +13,7 @@ export type LockOp =
       lockAtLeastFor: number;
       createdAt: number;
       lockedBy: string;
+      token: string;
     }
   | {
       op: 'unlock';
@@ -20,6 +22,7 @@ export type LockOp =
       lockAtLeastFor: number;
       createdAt: number;
       lockedBy: string;
+      token: string;
     }
   | {
       op: 'extend';
@@ -28,8 +31,9 @@ export type LockOp =
       lockAtLeastFor: number;
       createdAt: number;
       lockedBy: string;
+      token: string;
     };
 
 export type LockOpResult =
-  | { ok: true; acquired?: boolean; extended?: boolean }
+  | { ok: true; acquired?: boolean; extended?: boolean; token?: string }
   | { ok: false; reason: 'held' | 'not_owner' | 'expired' | 'missing' };
