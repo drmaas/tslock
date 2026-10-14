@@ -1,7 +1,7 @@
 import { ClockProvider, createLockConfig, Utils } from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collections';
 import type { Database } from 'arangojs/databases';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ArangoDbLockDocument } from '../src/arangodb-lock-document.js';
 import { ArangoDbLockProvider } from '../src/arangodb-lock-provider.js';
 
@@ -51,6 +51,10 @@ function config(name = 'test', most = 60_000, least = 0) {
 }
 
 describe('ArangoDbLockProvider', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('lock() acquires first lock when doc not found', async () => {
     const txn = makeTxn();
     const col = makeCol({
@@ -213,16 +217,61 @@ describe('ArangoDbLockProvider', () => {
     expect(col.update).toHaveBeenCalled();
   });
 
-  it('unlock() calls update with unlockTime', async () => {
+  it('unlock() sets unlockTime when lockedBy matches this host', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
     const txn = makeTxn();
     const col = makeCol({
-      document: vi.fn().mockRejectedValue({ errorNum: 1202, name: 'ArangoError' }),
+      document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
+        _key: 'test',
+        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockedAt: '2999-01-01T00:00:00.000Z',
+        lockedBy: 'this-host',
+        _rev: 'rev-a',
+      }),
+    });
+    const db = makeDb(txn);
+    const provider = new ArangoDbLockProvider(col, db);
+    const lock = (await provider.lock(config('test', 60_000, 5_000)))!;
+    await lock.unlock();
+    expect(col.update).toHaveBeenCalledWith('test', { lockUntil: '1970-01-01T00:16:45.000Z' }, { ifMatch: 'rev-a' });
+  });
+
+  it('unlock() does not update when a different host holds the document', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const txn = makeTxn();
+    const col = makeCol({
+      document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
+        _key: 'test',
+        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockedAt: '2999-01-01T00:00:00.000Z',
+        lockedBy: 'other-host',
+        _rev: 'rev-b',
+      }),
     });
     const db = makeDb(txn);
     const provider = new ArangoDbLockProvider(col, db);
     const lock = (await provider.lock(config()))!;
-    await lock.unlock();
-    expect(col.update).toHaveBeenCalledWith('test', expect.objectContaining({ lockUntil: expect.any(String) }));
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(col.update).not.toHaveBeenCalled();
+  });
+
+  it('unlock() swallows document-not-found from the update', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const txn = makeTxn();
+    const col = makeCol({
+      document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
+        _key: 'test',
+        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockedAt: '2999-01-01T00:00:00.000Z',
+        lockedBy: 'this-host',
+        _rev: 'rev-a',
+      }),
+      update: vi.fn().mockRejectedValue({ errorNum: 1202, name: 'ArangoError' }),
+    });
+    const db = makeDb(txn);
+    const provider = new ArangoDbLockProvider(col, db);
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
   });
 
   it('unlock() swallows document-not-found errors', async () => {
@@ -235,12 +284,43 @@ describe('ArangoDbLockProvider', () => {
     const provider = new ArangoDbLockProvider(col, db);
     const lock = (await provider.lock(config()))!;
     await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(col.update).not.toHaveBeenCalled();
+  });
+
+  it('unlock() resolves when the stored revision no longer matches', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const update = vi.fn().mockRejectedValue({ errorNum: 1200, name: 'ArangoError' });
+    const txn = makeTxn();
+    const col = makeCol({
+      document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
+        _key: 'test',
+        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockedAt: '2999-01-01T00:00:00.000Z',
+        lockedBy: 'this-host',
+        _rev: 'rev-a',
+      }),
+      update,
+    });
+    const db = makeDb(txn);
+    const provider = new ArangoDbLockProvider(col, db);
+    const lock = (await provider.lock(config()))!;
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(update).toHaveBeenCalledWith('test', expect.objectContaining({ lockUntil: expect.any(String) }), {
+      ifMatch: 'rev-a',
+    });
   });
 
   it('unlock() propagates non-1202 errors', async () => {
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
     const txn = makeTxn();
     const col = makeCol({
-      document: vi.fn().mockRejectedValue({ errorNum: 1202, name: 'ArangoError' }),
+      document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
+        _key: 'test',
+        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockedAt: '2999-01-01T00:00:00.000Z',
+        lockedBy: 'this-host',
+        _rev: 'rev-a',
+      }),
       update: vi.fn().mockRejectedValue(new Error('network error')),
     });
     const db = makeDb(txn);

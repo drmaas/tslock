@@ -91,6 +91,7 @@ export class SearchLockAccessor {
 
   async unlock(config: LockConfiguration): Promise<void> {
     const isoUnlock = Utils.toIsoString(unlockTime(config));
+    const hostname = Utils.getHostname();
 
     try {
       await this.client.update({
@@ -101,7 +102,9 @@ export class SearchLockAccessor {
           source: UNLOCK_SCRIPT,
           params: {
             unlockTime: isoUnlock,
+            lockedBy: hostname,
             lockUntilField: this.fieldNames.lockUntil,
+            lockedByField: this.fieldNames.lockedBy,
           },
         },
       });

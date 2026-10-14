@@ -9,6 +9,7 @@ import {
 } from '@tslock/core';
 import type { DocumentCollection, EdgeCollection } from 'arangojs/collections';
 import type { Database } from 'arangojs/databases';
+import type { Document } from 'arangojs/documents';
 import type { ArangoDbLockDocument } from './arangodb-lock-document.js';
 
 type ArangoCollection<T extends Record<string, unknown>> = DocumentCollection<T> & EdgeCollection<T>;
@@ -93,7 +94,7 @@ export class ArangoDbAccessor {
     const hostname = Utils.getHostname();
     const documentId = config.name;
 
-    let existing: ArangoDbLockDocument;
+    let existing: Document<ArangoDbLockDocument>;
     try {
       existing = await this.collection.document(documentId);
     } catch (e) {
@@ -104,15 +105,14 @@ export class ArangoDbAccessor {
     if (existing.lockedBy !== hostname) return undefined;
     if (Date.parse(existing.lockUntil) <= now) return undefined;
 
-    const rev = (existing as unknown as Record<string, unknown>)._rev as string | undefined;
     try {
       await this.collection.update(
         documentId,
         { lockUntil: Utils.toIsoString(lockAtMostUntil(config)) },
-        rev ? { ifMatch: rev } : undefined,
+        { ifMatch: existing._rev },
       );
     } catch (e) {
-      if (rev && isConflictError(e)) return undefined;
+      if (isConflictError(e)) return undefined;
       throw e;
     }
 
@@ -120,12 +120,25 @@ export class ArangoDbAccessor {
   }
 
   async unlock(config: LockConfiguration): Promise<void> {
+    const hostname = Utils.getHostname();
+    let existing: Document<ArangoDbLockDocument>;
     try {
-      await this.collection.update(config.name, {
-        lockUntil: Utils.toIsoString(unlockTime(config)),
-      });
+      existing = await this.collection.document(config.name);
     } catch (e) {
       if (isDocumentNotFoundError(e)) return;
+      throw e;
+    }
+
+    if (existing.lockedBy !== hostname) return;
+
+    try {
+      await this.collection.update(
+        config.name,
+        { lockUntil: Utils.toIsoString(unlockTime(config)) },
+        { ifMatch: existing._rev },
+      );
+    } catch (e) {
+      if (isDocumentNotFoundError(e) || isConflictError(e)) return;
       throw e;
     }
   }

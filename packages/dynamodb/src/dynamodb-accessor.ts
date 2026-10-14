@@ -82,6 +82,7 @@ export class DynamoDBAccessor {
 
   async unlock(config: LockConfiguration): Promise<void> {
     const isoUnlock = Utils.toIsoString(unlockTime(config));
+    const hostname = Utils.getHostname();
 
     try {
       await this.client.send(
@@ -89,12 +90,10 @@ export class DynamoDBAccessor {
           TableName: this.tableName,
           Key: this.buildKey(config.name),
           UpdateExpression: 'SET lockUntil = :unlockTime',
-          ConditionExpression: 'attribute_exists(#partitionKey)',
-          ExpressionAttributeNames: {
-            '#partitionKey': this.partitionKey,
-          },
+          ConditionExpression: 'lockedBy = :lockedBy',
           ExpressionAttributeValues: {
             ':unlockTime': { S: isoUnlock },
+            ':lockedBy': { S: hostname },
           },
         }),
       );
