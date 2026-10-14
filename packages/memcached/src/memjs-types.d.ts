@@ -6,6 +6,7 @@ declare module 'memjs' {
     add(key: string, value: string | Buffer, options?: ClientAddOptions): Promise<boolean>;
     replace(key: string, value: string | Buffer, options?: ClientAddOptions): Promise<boolean>;
     delete(key: string): Promise<boolean>;
+    get(key: string): Promise<{ value: Buffer | null; flags: Buffer | null }>;
   }
   interface ClientCreateOptions {
     [key: string]: unknown;

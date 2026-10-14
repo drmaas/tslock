@@ -187,6 +187,83 @@ describe('EtcdLockProvider', () => {
       expect(client.lease).toHaveBeenNthCalledWith(2, 11, { autoKeepAlive: false });
       expect(oldLease.revoke).toHaveBeenCalled();
     });
+
+    it('re-puts with a Lease compare and attaches the new lease for the remaining minimum', async () => {
+      const createdAt = 1_700_000_000_000;
+      ClockProvider.setClock(() => createdAt);
+      const { client, putBuilder } = makeClient();
+      const oldLease = {
+        grant: vi.fn().mockResolvedValue('lease-a'),
+        revoke: vi.fn().mockResolvedValue(undefined),
+      };
+      const newLease = {
+        grant: vi.fn().mockResolvedValue('lease-b'),
+        revoke: vi.fn().mockResolvedValue(undefined),
+      };
+      client.lease = vi.fn().mockReturnValueOnce(oldLease).mockReturnValueOnce(newLease);
+      const lockTxn = {} as MockTxn;
+      Object.defineProperty(lockTxn, 'then', { value: vi.fn().mockReturnValue(lockTxn) });
+      lockTxn.else = vi.fn().mockReturnValue(lockTxn);
+      lockTxn.commit = vi.fn().mockResolvedValue({ succeeded: true });
+      const unlockTxn = {} as MockTxn;
+      Object.defineProperty(unlockTxn, 'then', { value: vi.fn().mockReturnValue(unlockTxn) });
+      unlockTxn.else = vi.fn().mockReturnValue(unlockTxn);
+      unlockTxn.commit = vi.fn().mockResolvedValue({ succeeded: true });
+      client.if = vi.fn().mockReturnValueOnce(lockTxn).mockReturnValueOnce(unlockTxn);
+
+      const provider = new EtcdLockProvider(client);
+      const lock = await provider.lock(makeConfig('keep-lock', 30_000, 10_000));
+      expect(lock).toBeDefined();
+
+      const elapsed = 2_500;
+      ClockProvider.setClock(() => createdAt + elapsed);
+      await lock?.unlock();
+
+      const remainingMs = 10_000 - elapsed;
+      expect(client.if).toHaveBeenLastCalledWith('shedlock:default:keep-lock', 'Lease', '==', 'lease-a');
+      expect(client.lease).toHaveBeenNthCalledWith(2, Utils.toTtlSeconds(remainingMs), { autoKeepAlive: false });
+      expect(putBuilder.exec).not.toHaveBeenCalled();
+      await expect(putBuilder.lease.mock.calls.at(-1)?.[0]).resolves.toBe('lease-b');
+      expect(oldLease.revoke).toHaveBeenCalled();
+      expect(newLease.revoke).not.toHaveBeenCalled();
+      ClockProvider.resetClock();
+    });
+
+    it('does not write when the lease compare fails and still revokes the original lease', async () => {
+      const createdAt = 1_700_000_000_000;
+      ClockProvider.setClock(() => createdAt);
+      const { client, putBuilder } = makeClient();
+      const oldLease = {
+        grant: vi.fn().mockResolvedValue('lease-a'),
+        revoke: vi.fn().mockResolvedValue(undefined),
+      };
+      const newLease = {
+        grant: vi.fn().mockResolvedValue('lease-b'),
+        revoke: vi.fn().mockResolvedValue(undefined),
+      };
+      client.lease = vi.fn().mockReturnValueOnce(oldLease).mockReturnValueOnce(newLease);
+      const lockTxn = {} as MockTxn;
+      Object.defineProperty(lockTxn, 'then', { value: vi.fn().mockReturnValue(lockTxn) });
+      lockTxn.else = vi.fn().mockReturnValue(lockTxn);
+      lockTxn.commit = vi.fn().mockResolvedValue({ succeeded: true });
+      const unlockTxn = {} as MockTxn;
+      Object.defineProperty(unlockTxn, 'then', { value: vi.fn().mockReturnValue(unlockTxn) });
+      unlockTxn.else = vi.fn().mockReturnValue(unlockTxn);
+      unlockTxn.commit = vi.fn().mockResolvedValue({ succeeded: false });
+      client.if = vi.fn().mockReturnValueOnce(lockTxn).mockReturnValueOnce(unlockTxn);
+
+      const provider = new EtcdLockProvider(client);
+      const lock = await provider.lock(makeConfig('lost-lease', 30_000, 10_000));
+      expect(lock).toBeDefined();
+
+      await expect(lock?.unlock()).resolves.toBeUndefined();
+
+      expect(client.if).toHaveBeenLastCalledWith('shedlock:default:lost-lease', 'Lease', '==', 'lease-a');
+      expect(putBuilder.exec).not.toHaveBeenCalled();
+      expect(oldLease.revoke).toHaveBeenCalled();
+      expect(newLease.revoke).toHaveBeenCalled();
+      ClockProvider.resetClock();
+    });
   });
 
   describe('extend', () => {

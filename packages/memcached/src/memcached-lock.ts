@@ -19,6 +19,9 @@ export class MemcachedLock extends AbstractSimpleLock {
   }
 
   protected override async doUnlock(): Promise<void> {
+    const current = await this.client.get(this.key);
+    if (!sameBytes(current.value, this.value)) return;
+
     const keepLockFor = lockAtLeastUntil(this.config) - ClockProvider.now();
     if (keepLockFor <= 0) {
       const result = await this.client.delete(this.key);
@@ -33,4 +36,9 @@ export class MemcachedLock extends AbstractSimpleLock {
       }
     }
   }
+}
+
+function sameBytes(stored: Buffer | null, expected: string): boolean {
+  if (stored === null) return false;
+  return stored.equals(Buffer.from(expected));
 }
