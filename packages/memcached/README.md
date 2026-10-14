@@ -2,7 +2,7 @@
 
 > TSLock provider backed by [Memcached](https://memcached.org/) via `memjs`.
 
-A [TSLock](../../README.md) provider that implements `LockProvider` directly. Lock acquisition uses the memcached `add` command, which fails atomically if the key already exists. Unlock is a `delete` (or a `replace` with a shorter TTL when `lockAtLeastFor > 0`, so the key lingers briefly to prevent immediate re-acquisition from clock drift).
+A [TSLock](../../README.md) provider that implements `LockProvider` directly. Lock acquisition uses the memcached `add` command, which fails atomically if the key already exists. Unlock reads the key and, only when the stored bytes equal the value written at acquisition, deletes it or replaces it with a shorter TTL when `lockAtLeastFor > 0`.
 
 > **Caveat:** Memcached can evict keys early under memory pressure. Use a dedicated memcached instance (or a different provider) for critical locks. See [failure modes](../../docs/failure-modes.md#3-memcached-early-eviction).
 
@@ -41,7 +41,7 @@ The full key is `shedlock:${env}:${lockName}`.
 
 > **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes.
 >
-> Memcached ownership values intentionally contain the timestamp and hostname only. Memcached unlock operations do not compare an ownership token; the value is retained only when `lockAtLeastFor` requires a delayed release. TTLs use the shared `floor(milliseconds / 1000) + 1` safety buffer.
+> Unlock compares the stored bytes with the acquisition value (`ADDED:<iso>@<host>`) before `delete` or `replace`. memjs 1.3 has no compare-and-swap on `get`, `delete`, or `replace`, so another client can still change the key between that read and the following write. TTLs use the shared `floor(milliseconds / 1000) + 1` safety buffer.
 
 ## Integration tests
 

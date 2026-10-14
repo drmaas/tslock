@@ -2,7 +2,7 @@
 
 > TSLock provider backed by [etcd](https://etcd.io/) v3.
 
-A [TSLock](../../README.md) provider that implements `LockProvider` directly over the official `etcd3` client. Each lock is a KV entry whose key is `shedlock:${env}:${lockName}` and whose value is `ADDED:${isoNow}@${hostname}`. Locks are acquired with a transaction that asserts `key.version == 0` (key does not exist) and, on success, puts the value with a lease whose TTL uses the shared `floor(milliseconds / 1000) + 1` safety buffer. Unlock revokes the lease.
+A [TSLock](../../README.md) provider that implements `LockProvider` directly over the official `etcd3` client. Each lock is a KV entry whose key is `shedlock:${env}:${lockName}` and whose value is `ADDED:${isoNow}@${hostname}`. Locks are acquired with a transaction that asserts `key.version == 0` (key does not exist) and, on success, puts the value with a lease whose TTL uses the shared `floor(milliseconds / 1000) + 1` safety buffer. Unlock revokes that lease. When `lockAtLeastFor` is still open, the shortened value is written only if the key is still attached to the original lease.
 
 ## Installation
 
@@ -40,7 +40,7 @@ The full key is `shedlock:${env}:${lockName}`.
 
 > **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes.
 >
-> Etcd ownership values intentionally contain the timestamp and hostname only. Etcd unlock revokes the lease rather than comparing an ownership token, so a crypto-random value is not used. TTLs use the shared `floor(milliseconds / 1000) + 1` safety buffer.
+> When `lockAtLeastFor` is still open, unlock writes the shortened value in one transaction that succeeds only if the key's lease is still the original lease, then revokes that lease. A failed compare writes nothing and still revokes the original lease. TTLs use the shared `floor(milliseconds / 1000) + 1` safety buffer.
 
 ## Integration tests
 

@@ -30,31 +30,30 @@ export class HazelcastAccessor {
 
       const existing = await store.get(config.name);
 
+      const acquired = (record: HazelcastLockRecord): SimpleLock =>
+        new DelegatingSimpleLock(config, {
+          unlock: () => this.unlock(config, record),
+        });
+
       if (existing === null) {
-        await store.put(
-          config.name,
-          {
-            lockUntil: Utils.toIsoString(lockUntil),
-            lockedAt: Utils.toIsoString(now),
-            lockedBy: Utils.getHostname(),
-          },
-          config.lockAtMostFor,
-        );
-        return new DelegatingSimpleLock(config, this);
+        const record: HazelcastLockRecord = {
+          lockUntil: Utils.toIsoString(lockUntil),
+          lockedAt: Utils.toIsoString(now),
+          lockedBy: Utils.getHostname(),
+        };
+        await store.put(config.name, record, config.lockAtMostFor);
+        return acquired(record);
       }
 
       const existingLockUntil = Date.parse(existing.lockUntil);
       if (existingLockUntil <= now) {
-        await store.put(
-          config.name,
-          {
-            lockUntil: Utils.toIsoString(lockUntil),
-            lockedAt: Utils.toIsoString(now),
-            lockedBy: Utils.getHostname(),
-          },
-          config.lockAtMostFor,
-        );
-        return new DelegatingSimpleLock(config, this);
+        const record: HazelcastLockRecord = {
+          lockUntil: Utils.toIsoString(lockUntil),
+          lockedAt: Utils.toIsoString(now),
+          lockedBy: Utils.getHostname(),
+        };
+        await store.put(config.name, record, config.lockAtMostFor);
+        return acquired(record);
       }
 
       return undefined;
@@ -67,7 +66,7 @@ export class HazelcastAccessor {
     }
   }
 
-  async unlock(config: LockConfiguration): Promise<void> {
+  async unlock(config: LockConfiguration, expected: HazelcastLockRecord): Promise<void> {
     const now = ClockProvider.now();
     const lockAtLeastUntilValue = lockAtLeastUntil(config);
     const store = await this.client.getMap<string, HazelcastLockRecord>(this.lockStoreKey);
@@ -77,6 +76,9 @@ export class HazelcastAccessor {
       await store.lock(config.name, this.lockLeaseTimeMs);
       locked = true;
 
+      const existing = await store.get(config.name);
+      if (!sameAcquisition(existing, expected)) return;
+
       if (now >= lockAtLeastUntilValue) {
         await store.remove(config.name);
       } else {
@@ -84,8 +86,8 @@ export class HazelcastAccessor {
           config.name,
           {
             lockUntil: Utils.toIsoString(lockAtLeastUntilValue),
-            lockedAt: Utils.toIsoString(now),
-            lockedBy: Utils.getHostname(),
+            lockedAt: expected.lockedAt,
+            lockedBy: expected.lockedBy,
           },
           config.lockAtLeastFor,
         );
@@ -98,4 +100,13 @@ export class HazelcastAccessor {
       }
     }
   }
+}
+
+function sameAcquisition(existing: HazelcastLockRecord | null | undefined, expected: HazelcastLockRecord): boolean {
+  if (existing === null || existing === undefined) return false;
+  return (
+    existing.lockedBy === expected.lockedBy &&
+    existing.lockedAt === expected.lockedAt &&
+    existing.lockUntil === expected.lockUntil
+  );
 }

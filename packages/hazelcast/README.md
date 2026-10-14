@@ -2,7 +2,7 @@
 
 > TSLock provider backed by [Hazelcast](https://hazelcast.com/).
 
-A [TSLock](../../README.md) provider that uses a Hazelcast `IMap` to store lock records. It takes Hazelcast's entry-level lock on the map key, does a get-check-put under that lock, and releases the entry lock — so the lock record update is mutually exclusive across the cluster. A TTL on the entry-level lock is a safety net in case a holder crashes mid-update.
+A [TSLock](../../README.md) provider that uses a Hazelcast `IMap` to store lock records. It takes Hazelcast's entry-level lock on the map key, does a get-check-put under that lock, and releases the entry lock — so the lock record update is mutually exclusive across the cluster. A TTL on the entry-level lock is a safety net in case a holder crashes mid-update. Unlock removes the entry, or shortens `lockUntil` to `lockAtLeastFor`, only when `lockedBy`, `lockedAt`, and `lockUntil` still match the record this acquisition wrote.
 
 ## Installation
 

@@ -1,18 +1,18 @@
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException, Utils } from '@tslock/core';
 import type { Client as HazelcastClient } from 'hazelcast-client';
 import { describe, expect, it, vi } from 'vitest';
 import { HazelcastLockProvider } from '../src/hazelcast-lock-provider.js';
 
 function makeStore(overrides: Record<string, unknown> = {}) {
-  const get = overrides.get ?? vi.fn().mockResolvedValue(null);
-  return {
+  const store = {
     lock: vi.fn().mockResolvedValue(undefined),
     unlock: vi.fn().mockResolvedValue(undefined),
-    get,
+    get: vi.fn().mockResolvedValue(null),
     put: vi.fn().mockResolvedValue(undefined),
     remove: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
   };
+  Object.assign(store, overrides);
+  return store;
 }
 
 function makeClient(store?: Record<string, unknown>): HazelcastClient {
@@ -101,6 +101,7 @@ describe('HazelcastLockProvider', () => {
     const client = makeClient(store);
     const provider = new HazelcastLockProvider(client);
     const lock = (await provider.lock(config('test', 60_000, 0)))!;
+    store.get.mockResolvedValue(store.put.mock.calls[0]![1]);
     await lock.unlock();
     expect(store.remove).toHaveBeenCalledWith('test');
     expect(store.put).toHaveBeenCalledTimes(1);
@@ -113,9 +114,79 @@ describe('HazelcastLockProvider', () => {
     const client = makeClient(store);
     const provider = new HazelcastLockProvider(client);
     const lock = (await provider.lock(config('test', 60_000, 10_000)))!;
+    store.get.mockResolvedValue(store.put.mock.calls[0]![1]);
     await lock.unlock();
     expect(store.put).toHaveBeenCalled();
     expect(store.remove).not.toHaveBeenCalled();
+  });
+
+  it('unlock() resolves without remove or put when the second get is another owner', async () => {
+    const store = makeStore();
+    const client = makeClient(store);
+    const provider = new HazelcastLockProvider(client);
+    const lock = (await provider.lock(config('test', 60_000, 0)))!;
+    store.get.mockResolvedValue({
+      lockUntil: '1970-01-01T00:00:00.000Z',
+      lockedAt: '1970-01-01T00:00:00.000Z',
+      lockedBy: 'other-host',
+    });
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(store.remove).not.toHaveBeenCalled();
+    expect(store.put).toHaveBeenCalledTimes(1);
+    expect(store.unlock).toHaveBeenCalledWith('test');
+  });
+
+  it('unlock() does not write when lockedBy matches but lockedAt does not', async () => {
+    const store = makeStore();
+    const client = makeClient(store);
+    const provider = new HazelcastLockProvider(client);
+    const lock = (await provider.lock(config('test', 60_000, 0)))!;
+    const written = store.put.mock.calls[0]![1] as { lockUntil: string; lockedAt: string; lockedBy: string };
+    store.get.mockResolvedValue({ ...written, lockedAt: '1970-01-01T00:00:00.000Z' });
+    await expect(lock.unlock()).resolves.toBeUndefined();
+    expect(store.remove).not.toHaveBeenCalled();
+    expect(store.put).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlock() removes when the second get matches this acquisition', async () => {
+    const store = makeStore();
+    const client = makeClient(store);
+    const provider = new HazelcastLockProvider(client);
+    const lock = (await provider.lock(config('test', 60_000, 0)))!;
+    store.get.mockResolvedValue(store.put.mock.calls[0]![1]);
+    await lock.unlock();
+    expect(store.get).toHaveBeenCalledTimes(2);
+    expect(store.remove).toHaveBeenCalledWith('test');
+    expect(store.put).toHaveBeenCalledTimes(1);
+  });
+
+  it('unlock() puts when the minimum is still open even if the stored lockUntil is past', async () => {
+    ClockProvider.setClock(() => 1_000_000);
+    const store = makeStore();
+    const client = makeClient(store);
+    const provider = new HazelcastLockProvider(client);
+    const lock = (await provider.lock({
+      name: 'test',
+      lockAtMostFor: 1_000,
+      lockAtLeastFor: 30_000,
+      createdAt: 1_000_000,
+    }))!;
+    const written = store.put.mock.calls[0]![1] as { lockUntil: string; lockedAt: string; lockedBy: string };
+    expect(Date.parse(written.lockUntil)).toBeLessThan(1_010_000);
+    ClockProvider.setClock(() => 1_010_000);
+    store.get.mockResolvedValue(written);
+    await lock.unlock();
+    expect(store.remove).not.toHaveBeenCalled();
+    expect(store.put).toHaveBeenLastCalledWith(
+      'test',
+      {
+        lockUntil: Utils.toIsoString(1_030_000),
+        lockedAt: written.lockedAt,
+        lockedBy: written.lockedBy,
+      },
+      30_000,
+    );
+    ClockProvider.resetClock();
   });
 
   it('unlock() calls lock with lockLeaseTimeMs', async () => {

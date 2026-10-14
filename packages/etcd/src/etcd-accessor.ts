@@ -56,9 +56,25 @@ export class EtcdAccessor {
     const hostname = Utils.getHostname();
     const value = `ADDED:${Utils.toIsoString(now)}@${hostname}`;
     const newTtlSeconds = Utils.toTtlSeconds(remainingMs);
-
+    const leaseId = await lease.grant();
     const newLease = this.client.lease(newTtlSeconds, { autoKeepAlive: false });
-    await this.client.put(key).value(value).lease(newLease.grant()).exec();
+
+    let result: { succeeded: boolean };
+    try {
+      result = await this.client
+        .if(key, 'Lease', '==', leaseId)
+        .then(this.client.put(key).value(value).lease(newLease.grant()))
+        .commit();
+    } catch (error) {
+      try {
+        await newLease.revoke();
+      } catch {}
+      throw error;
+    }
+
+    if (!result.succeeded) {
+      await newLease.revoke();
+    }
     await lease.revoke();
   }
 }
