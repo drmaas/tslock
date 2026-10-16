@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ClockProvider } from '../src/clock-provider.js';
 import { KeepAliveLockProvider } from '../src/keep-alive-lock-provider.js';
 import { createLockConfig } from '../src/lock-configuration.js';
 import { LockException } from '../src/lock-exception.js';
@@ -52,6 +53,7 @@ describe('KeepAliveLockProvider', () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    ClockProvider.resetClock();
   });
 
   it('throws when lockAtMostFor < 30s', async () => {
@@ -140,6 +142,65 @@ describe('KeepAliveLockProvider', () => {
     const [cfg, error] = onKeepAliveFailure.mock.calls[0]!;
     expect(cfg.name).toBe('t');
     expect((error as Error).message).toBe('Keep-alive lock was lost');
+  });
+
+  it('renews past the original lockAtMostUntil and keeps the interval', async () => {
+    let now = 1_000_000;
+    ClockProvider.setClock(() => now);
+    const { provider, extendMock } = makeProvider();
+    const renewed: SimpleLock = { unlock: vi.fn(), extend: extendMock as SimpleLock['extend'] };
+    extendMock.mockResolvedValue(renewed);
+    const kap = new KeepAliveLockProvider(provider, scheduler);
+    await kap.lock(createLockConfig('t', 60_000));
+
+    for (const at of [1_030_000, 1_060_000, 1_090_000]) {
+      now = at;
+      const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+      await cb();
+    }
+
+    expect(extendMock).toHaveBeenCalledTimes(3);
+    expect(scheduler.callbacks.size).toBe(1);
+  });
+
+  it('stops and notifies when the renewed deadline has passed', async () => {
+    let now = 1_000_000;
+    ClockProvider.setClock(() => now);
+    const { provider, extendMock } = makeProvider();
+    const renewed: SimpleLock = { unlock: vi.fn(), extend: extendMock as SimpleLock['extend'] };
+    extendMock.mockResolvedValue(renewed);
+    const onKeepAliveFailure = vi.fn();
+    const kap = new KeepAliveLockProvider(provider, scheduler, onKeepAliveFailure);
+    await kap.lock(createLockConfig('t', 60_000));
+
+    now = 1_030_000;
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+    await cb();
+    expect(extendMock).toHaveBeenCalledTimes(1);
+
+    now = 1_090_001;
+    await cb();
+    expect(extendMock).toHaveBeenCalledTimes(1);
+    expect(scheduler.callbacks.size).toBe(0);
+    expect(onKeepAliveFailure).toHaveBeenCalledOnce();
+    const [cfg, error] = onKeepAliveFailure.mock.calls[0]!;
+    expect(cfg.name).toBe('t');
+    expect(error).toBeInstanceOf(LockException);
+    expect((error as Error).message).toBe('Keep-alive lock was lost');
+  });
+
+  it('unlocking before the original deadline cancels the interval and unlocks the wrapped lock', async () => {
+    let now = 1_000_000;
+    ClockProvider.setClock(() => now);
+    const { provider, unlockMock } = makeProvider();
+    const kap = new KeepAliveLockProvider(provider, scheduler);
+    const lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    expect(scheduler.callbacks.size).toBe(1);
+
+    now = 1_030_000;
+    await lock.unlock();
+    expect(scheduler.callbacks.size).toBe(0);
+    expect(unlockMock).toHaveBeenCalledOnce();
   });
 
   it('unlock after a failed keep-alive still releases the underlying lock', async () => {
