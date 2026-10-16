@@ -1,10 +1,13 @@
 import { DatabaseProduct } from '@tslock/sql-support';
-import type { Pool } from 'pg';
 import { translateToPositional } from '../param-translator.js';
 import type { QueryResult, SqlConnection } from '../sql-connection.js';
 
+interface PgQueryable {
+  query(sql: string, values: readonly unknown[]): Promise<{ rowCount: number | null }>;
+}
+
 export class PgConnection implements SqlConnection {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly pool: PgQueryable) {}
 
   getDatabaseProduct(): DatabaseProduct {
     return DatabaseProduct.POSTGRES;
