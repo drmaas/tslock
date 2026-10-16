@@ -167,6 +167,8 @@ describe('KeepAliveLockProvider', () => {
     let now = 1_000_000;
     ClockProvider.setClock(() => now);
     const { provider, extendMock } = makeProvider();
+    const renewed: SimpleLock = { unlock: vi.fn(), extend: extendMock };
+    extendMock.mockResolvedValue(renewed);
     const onKeepAliveFailure = vi.fn();
     const kap = new KeepAliveLockProvider(provider, scheduler, onKeepAliveFailure);
     await kap.lock(createLockConfig('t', 60_000));
