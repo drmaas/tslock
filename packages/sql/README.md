@@ -4,13 +4,14 @@
 
 A [TSLock](../../README.md) provider built on the shared SQL infrastructure in [`@tslock/sql-support`](../sql-support/README.md). It ships thin `SqlConnection` adapters for the three most common Node SQL drivers and a `SqlLockProvider` that executes the standard ShedLock insert-or-update SQL through whichever adapter you choose.
 
-You only install the driver you actually use (declared as a peer dependency).
+You only install the driver you actually use. `pg`, `mysql2`, and `mssql` are optional peer dependencies.
 
 ## Installation
 
 ```bash
-pnpm add @tslock/core @tslock/sql @tslock/sql-support pg
-# or: mysql2 / mssql instead of pg
+pnpm add @tslock/core @tslock/sql @tslock/sql-support pg @types/pg
+# or: mysql2 instead of pg and @types/pg
+# or: mssql @types/mssql instead of pg and @types/pg
 ```
 
 ## Setup
@@ -88,7 +89,7 @@ A running Docker daemon is required. The suite starts and removes its own contai
 ## Requirements
 
 - Node.js >= 22
-- One peer driver: `pg`, `mysql2`, or `mssql`
+- One optional peer driver: `pg` with `@types/pg`, `mysql2`, or `mssql` with `@types/mssql`
 
 ## License
 

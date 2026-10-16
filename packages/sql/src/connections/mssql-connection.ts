@@ -1,10 +1,18 @@
 import { DatabaseProduct } from '@tslock/sql-support';
-import type { ConnectionPool, Request } from 'mssql';
 import { translateToNamed } from '../param-translator.js';
 import type { QueryResult, SqlConnection } from '../sql-connection.js';
 
+interface MssqlRequest {
+  input(name: string, value: unknown): MssqlRequest;
+  query(command: string): Promise<{ rowsAffected?: number[] }>;
+}
+
+interface MssqlQueryable {
+  request(): MssqlRequest;
+}
+
 export class MssqlConnection implements SqlConnection {
-  constructor(private readonly pool: ConnectionPool) {}
+  constructor(private readonly pool: MssqlQueryable) {}
 
   getDatabaseProduct(): DatabaseProduct {
     return DatabaseProduct.SQL_SERVER;
@@ -12,7 +20,7 @@ export class MssqlConnection implements SqlConnection {
 
   async query(sql: string, params: Record<string, unknown>): Promise<QueryResult> {
     const { sql: mssqlSql, params: namedParams } = translateToNamed(sql, params, '@');
-    const request: Request = this.pool.request();
+    const request = this.pool.request();
     for (const [name, value] of Object.entries(namedParams)) {
       request.input(name, value);
     }

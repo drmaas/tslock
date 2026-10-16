@@ -1,22 +1,25 @@
 import { DatabaseProduct } from '@tslock/sql-support';
-import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { translateToPositional } from '../param-translator.js';
 import type { QueryResult, SqlConnection } from '../sql-connection.js';
 
+interface Mysql2Queryable {
+  query(sql: string, values?: unknown[]): Promise<unknown>;
+}
+
 export class Mysql2Connection implements SqlConnection {
   private constructor(
-    private readonly pool: Pool,
+    private readonly pool: Mysql2Queryable,
     private readonly product: DatabaseProduct,
   ) {}
 
-  static async create(pool: Pool): Promise<Mysql2Connection> {
-    const result = (await pool.query<RowDataPacket[]>('SELECT VERSION() AS version')) as unknown;
+  static async create(pool: Mysql2Queryable): Promise<Mysql2Connection> {
+    const result = await pool.query('SELECT VERSION() AS version');
     const firstRow = Array.isArray(result)
       ? Array.isArray(result[0])
-        ? (result[0] as RowDataPacket[])[0]
-        : (result[0] as RowDataPacket)
-      : (result as { rows?: RowDataPacket[] }).rows?.[0];
-    const version = String((firstRow as { version?: string })?.version ?? '').toLowerCase();
+        ? (result[0] as { version?: string }[])[0]
+        : (result[0] as { version?: string })
+      : (result as { rows?: { version?: string }[] }).rows?.[0];
+    const version = String(firstRow?.version ?? '').toLowerCase();
     const product = version.includes('mariadb') ? DatabaseProduct.MARIA_DB : DatabaseProduct.MYSQL;
     return new Mysql2Connection(pool, product);
   }
@@ -27,7 +30,7 @@ export class Mysql2Connection implements SqlConnection {
 
   async query(sql: string, params: Record<string, unknown>): Promise<QueryResult> {
     const { sql: mysqlSql, values } = translateToPositional(sql, params, () => '?');
-    const result = (await this.pool.query(mysqlSql, values)) as unknown;
+    const result = await this.pool.query(mysqlSql, values);
     const resultRow = Array.isArray(result)
       ? Array.isArray(result[0])
         ? (result[0] as { affectedRows?: number }[])
