@@ -29,7 +29,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tslock/core": "workspace:*"
+    "@tslock/core": "workspace:^"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

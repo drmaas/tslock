@@ -234,10 +234,10 @@ importers:
   packages/aws-lambda:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@tslock/scheduler-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../scheduler-core
     devDependencies:
       tsup:
@@ -253,10 +253,10 @@ importers:
   packages/bree:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@tslock/scheduler-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../scheduler-core
       bree:
         specifier: ^9.0.0
@@ -499,10 +499,10 @@ importers:
   packages/express:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@tslock/middleware-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../middleware-core
     devDependencies:
       '@tslock/in-memory':
@@ -527,10 +527,10 @@ importers:
   packages/fastify:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@tslock/middleware-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../middleware-core
     devDependencies:
       '@tslock/in-memory':
@@ -609,10 +609,10 @@ importers:
   packages/hono:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@tslock/middleware-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../middleware-core
     devDependencies:
       '@tslock/in-memory':
@@ -652,10 +652,10 @@ importers:
   packages/koa:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@tslock/middleware-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../middleware-core
     devDependencies:
       '@tslock/in-memory':
@@ -737,7 +737,7 @@ importers:
   packages/middleware-core:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       tsup:
@@ -822,7 +822,7 @@ importers:
   packages/nestjs:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       reflect-metadata:
         specifier: ^0.2.2
@@ -856,10 +856,10 @@ importers:
   packages/node-cron:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@tslock/scheduler-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../scheduler-core
       node-cron:
         specifier: ^3.0.0 || ^4.0.0
@@ -899,7 +899,7 @@ importers:
   packages/otel:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       '@opentelemetry/api':
@@ -1008,7 +1008,7 @@ importers:
   packages/scheduler-core:
     dependencies:
       '@tslock/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       '@tslock/in-memory':

@@ -34,7 +34,7 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
+    "@tslock/core": "workspace:^",
     "nats": "^2.0.0"
   },
   "peerDependenciesMeta": {

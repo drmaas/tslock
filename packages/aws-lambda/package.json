@@ -29,8 +29,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tslock/core": "workspace:*",
-    "@tslock/scheduler-core": "workspace:*"
+    "@tslock/core": "workspace:^",
+    "@tslock/scheduler-core": "workspace:^"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

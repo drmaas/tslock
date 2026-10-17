@@ -16,7 +16,7 @@ jobs:
         with:
           node-version-file: .nvmrc
       - name: Reject an unparseable pnpm-lock.yaml
-        run: node --test scripts/validate-lockfile.test.mjs scripts/create-signed-commit.test.mjs scripts/check-exports.test.mjs && node scripts/validate-lockfile.mjs
+        run: node --test scripts/validate-lockfile.test.mjs scripts/create-signed-commit.test.mjs scripts/check-exports.test.mjs scripts/check-packed-peers.test.mjs && node scripts/validate-lockfile.mjs
       - name: Enable pnpm
         run: npm install -g corepack@latest && corepack enable
       - name: Fail if the lockfile is out of date
@@ -89,6 +89,7 @@ jobs:
           CI: true
       - run: pnpm build
       - run: pnpm check:packed-peers
+      - run: node --test scripts/install-fixture.test.mjs
       - name: Pack all workspace packages
         run: |
           mkdir -p /tmp/tslock-packs

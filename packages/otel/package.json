@@ -29,7 +29,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tslock/core": "workspace:*"
+    "@tslock/core": "workspace:^"
   },
   "peerDependencies": {
     "@opentelemetry/api": "^1.9.0"

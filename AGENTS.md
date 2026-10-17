@@ -162,7 +162,7 @@ pnpm -r test              # vitest run (unit tests) across all packages
 pnpm test:integration     # in-memory, MongoDB, and PostgreSQL suites; Redis is opt-in via TSLOCK_REDIS_INTEGRATION=1
 pnpm -r build             # tsup build across all packages
 pnpm bench                # build artifacts and run manual performance measurements
-pnpm check:packed-peers   # verify packed peer dependencies contain no workspace:* ranges
+pnpm check:packed-peers   # verify packed @tslock dependencies and peers publish as caret ranges
 pnpm knip                 # unused files, exports, and dependencies
 pnpm validate:lockfile    # unique pnpm-lock.yaml keys plus lockfileVersion 9.0; CI runs this before install
 pnpm format               # auto-format all files with Biome
