@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   existsSync,
@@ -17,7 +17,9 @@ import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
+const execFileAsync = promisify(execFile);
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const caretRange = /^\^\d+\.\d+\.\d+$/;
 
@@ -66,7 +68,7 @@ describe('install fixture', () => {
         publishedFromArchive('@tslock/express', packs.express),
       ],
       async (registry) => {
-        const appDir = installApp(registry, [`@tslock/express@${current.version}`, `@tslock/core@${next}`]);
+        const appDir = await installApp(registry, [`@tslock/express@${current.version}`, `@tslock/core@${next}`]);
         try {
           const resolved = resolveConsumers(appDir);
           assert.deepEqual(resolved.versions, [next]);
@@ -108,7 +110,7 @@ describe('install fixture', () => {
         publishedFromArchive('@tslock/express', express),
       ],
       async (registry) => {
-        const appDir = installApp(registry, [`@tslock/express@${current.version}`, `@tslock/core@${next}`]);
+        const appDir = await installApp(registry, [`@tslock/express@${current.version}`, `@tslock/core@${next}`]);
         try {
           const resolved = resolveConsumers(appDir);
           assert.ok(resolved.versions.includes(current.version));
@@ -218,7 +220,7 @@ function startRegistry(published) {
     const pathname = decodeURIComponent((request.url ?? '/').split('?')[0]);
     requests.push(`${request.method} ${pathname}`);
     const registry = `http://127.0.0.1:${server.address().port}`;
-    if (pathname.startsWith('/-/')) {
+    if (pathname === '/npm' || pathname.startsWith('/-/')) {
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end('{}');
       return;
@@ -289,13 +291,14 @@ async function withRegistry(published, run) {
   try {
     return await run(registry);
   } finally {
+    registry.server.closeAllConnections();
     await new Promise((resolve, reject) => {
       registry.server.close((error) => (error ? reject(error) : resolve()));
     });
   }
 }
 
-function installApp(registry, specifiers) {
+async function installApp(registry, specifiers) {
   const appDir = mkdtempSync(join(tmpdir(), 'tslock-install-fixture-'));
   const cacheDir = mkdtempSync(join(tmpdir(), 'tslock-npm-cache-'));
   writeFileSync(
@@ -303,7 +306,7 @@ function installApp(registry, specifiers) {
     `${JSON.stringify({ name: 'tslock-install-fixture', private: true, version: '1.0.0' }, null, 2)}\n`,
   );
   try {
-    execFileSync(
+    await execFileAsync(
       'npm',
       [
         'install',
