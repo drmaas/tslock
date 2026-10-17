@@ -10,6 +10,26 @@ import {
 } from '@tslock/core';
 import type { SpannerColumnNames } from './spanner-configuration.js';
 
+function isTimestampValue(value: unknown): value is { getTime(): number } {
+  return (
+    value instanceof Date ||
+    (typeof value === 'object' && value !== null && typeof (value as { getTime?: unknown }).getTime === 'function')
+  );
+}
+
+function readLockUntilMillis(value: unknown, lockName: string): number {
+  let millis = Number.NaN;
+  if (isTimestampValue(value)) {
+    millis = value.getTime();
+  } else if (typeof value === 'string') {
+    millis = Date.parse(value);
+  }
+  if (!Number.isFinite(millis)) {
+    throw new LockException(`Invalid lockUntil for ${lockName}`);
+  }
+  return millis;
+}
+
 export class SpannerStorageAccessor extends AbstractStorageAccessor {
   private readonly database: Database;
   private readonly tableName: string;
@@ -50,7 +70,10 @@ export class SpannerStorageAccessor extends AbstractStorageAccessor {
         json: true,
       });
       if (rows.length === 0) throw new LockException(`Lock record not found: ${config.name}`);
-      const currentLockUntil = Date.parse((rows[0] as Record<string, unknown>)[this.colNames.lockUntil] as string);
+      const currentLockUntil = readLockUntilMillis(
+        (rows[0] as Record<string, unknown>)[this.colNames.lockUntil],
+        config.name,
+      );
       if (currentLockUntil > ClockProvider.now()) return false;
       tx.update(this.tableName, {
         [this.colNames.name]: config.name,
@@ -72,6 +95,9 @@ export class SpannerStorageAccessor extends AbstractStorageAccessor {
           name: config.name,
           lockedBy: this.lockedByValue,
         },
+        types: {
+          unlockTime: 'timestamp',
+        },
       });
       await tx.commit();
     });
@@ -86,6 +112,10 @@ export class SpannerStorageAccessor extends AbstractStorageAccessor {
           name: config.name,
           lockedBy: this.lockedByValue,
           now: Utils.toIsoString(ClockProvider.now()),
+        },
+        types: {
+          lockUntil: 'timestamp',
+          now: 'timestamp',
         },
       });
       await tx.commit();
