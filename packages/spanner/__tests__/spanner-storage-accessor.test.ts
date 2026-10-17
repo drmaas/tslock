@@ -181,6 +181,84 @@ describe('SpannerStorageAccessor', () => {
       expect(tx.update).not.toHaveBeenCalled();
     });
 
+    it('returns true when lockUntil is an expired Date', async () => {
+      const tx = makeTx();
+      tx.read.mockResolvedValue([[{ lockUntil: new Date(NOW - 1) }]]);
+      const db = makeDb({
+        runTransactionAsync: vi
+          .fn()
+          .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
+      });
+      const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
+      expect(await accessor.updateRecord(cfg())).toBe(true);
+      expect(tx.update).toHaveBeenCalledOnce();
+    });
+
+    it('returns false when lockUntil is a Date with sub-second time remaining', async () => {
+      const tx = makeTx();
+      tx.read.mockResolvedValue([[{ lockUntil: new Date(NOW + 700) }]]);
+      const db = makeDb({
+        runTransactionAsync: vi
+          .fn()
+          .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
+      });
+      const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
+      expect(await accessor.updateRecord(cfg())).toBe(false);
+      expect(tx.update).not.toHaveBeenCalled();
+    });
+
+    it('returns false when lockUntil is a PreciseDate-like value with time remaining', async () => {
+      const tx = makeTx();
+      tx.read.mockResolvedValue([[{ lockUntil: { getTime: () => NOW + 700 } }]]);
+      const db = makeDb({
+        runTransactionAsync: vi
+          .fn()
+          .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
+      });
+      const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
+      expect(await accessor.updateRecord(cfg())).toBe(false);
+      expect(tx.update).not.toHaveBeenCalled();
+    });
+
+    it('throws when lockUntil is missing', async () => {
+      const tx = makeTx();
+      tx.read.mockResolvedValue([[{}]]);
+      const db = makeDb({
+        runTransactionAsync: vi
+          .fn()
+          .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
+      });
+      const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
+      await expect(accessor.updateRecord(cfg())).rejects.toBeInstanceOf(LockException);
+      expect(tx.update).not.toHaveBeenCalled();
+    });
+
+    it('throws when lockUntil Date is not finite', async () => {
+      const tx = makeTx();
+      tx.read.mockResolvedValue([[{ lockUntil: new Date(Number.NaN) }]]);
+      const db = makeDb({
+        runTransactionAsync: vi
+          .fn()
+          .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
+      });
+      const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
+      await expect(accessor.updateRecord(cfg())).rejects.toBeInstanceOf(LockException);
+      expect(tx.update).not.toHaveBeenCalled();
+    });
+
+    it('throws when lockUntil is not finite', async () => {
+      const tx = makeTx();
+      tx.read.mockResolvedValue([[{ lockUntil: 'not-a-timestamp' }]]);
+      const db = makeDb({
+        runTransactionAsync: vi
+          .fn()
+          .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
+      });
+      const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
+      await expect(accessor.updateRecord(cfg())).rejects.toBeInstanceOf(LockException);
+      expect(tx.update).not.toHaveBeenCalled();
+    });
+
     it('throws when row missing', async () => {
       const tx = makeTx();
       tx.read.mockResolvedValue([[]]);
@@ -223,11 +301,13 @@ describe('SpannerStorageAccessor', () => {
 
     it('generates SQL with backtick-quoted identifiers', async () => {
       const tx = makeTx();
-      const captured: { sql: string; params?: Record<string, unknown> }[] = [];
-      tx.runUpdate.mockImplementation((q: { sql: string; params?: Record<string, unknown> }) => {
-        captured.push(q);
-        return [1];
-      });
+      const captured: { sql: string; params?: Record<string, unknown>; types?: Record<string, string> }[] = [];
+      tx.runUpdate.mockImplementation(
+        (q: { sql: string; params?: Record<string, unknown>; types?: Record<string, string> }) => {
+          captured.push(q);
+          return [1];
+        },
+      );
       const db = makeDb({
         runTransactionAsync: vi
           .fn()
@@ -244,10 +324,13 @@ describe('SpannerStorageAccessor', () => {
       expect(captured[0]!.sql).toContain('SET `lu` = @unlockTime');
       expect(captured[0]!.sql).toContain('WHERE `n` = @name');
       expect(captured[0]!.sql).toContain('AND `lb` = @lockedBy');
-      expect(captured[0]!.params).toMatchObject({
-        unlockTime: expect.any(String),
+      expect(captured[0]!.params).toEqual({
+        unlockTime: '1970-01-01T00:16:40.000Z',
         name: 'test',
         lockedBy: 'my-host',
+      });
+      expect(captured[0]!.types).toEqual({
+        unlockTime: 'timestamp',
       });
     });
   });
@@ -278,13 +361,15 @@ describe('SpannerStorageAccessor', () => {
       expect(await accessor.extend(cfg())).toBe(false);
     });
 
-    it('includes lockUntil > @now condition', async () => {
+    it('includes lockUntil > @now condition and types timestamp params', async () => {
       const tx = makeTx();
-      const captured: { sql: string; params?: Record<string, unknown> }[] = [];
-      tx.runUpdate.mockImplementation((q: { sql: string; params?: Record<string, unknown> }) => {
-        captured.push(q);
-        return [1];
-      });
+      const captured: { sql: string; params?: Record<string, unknown>; types?: Record<string, string> }[] = [];
+      tx.runUpdate.mockImplementation(
+        (q: { sql: string; params?: Record<string, unknown>; types?: Record<string, string> }) => {
+          captured.push(q);
+          return [1];
+        },
+      );
       const db = makeDb({
         runTransactionAsync: vi
           .fn()
@@ -293,11 +378,15 @@ describe('SpannerStorageAccessor', () => {
       const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
       await accessor.extend(cfg());
       expect(captured[0]!.sql).toContain('AND `lockUntil` > @now');
-      expect(captured[0]!.params).toMatchObject({
-        lockUntil: expect.any(String),
+      expect(captured[0]!.params).toEqual({
+        lockUntil: '1970-01-01T00:17:40.000Z',
         name: 'test',
         lockedBy: 'my-host',
-        now: expect.any(String),
+        now: '1970-01-01T00:16:40.000Z',
+      });
+      expect(captured[0]!.types).toEqual({
+        lockUntil: 'timestamp',
+        now: 'timestamp',
       });
     });
   });
