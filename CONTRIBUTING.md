@@ -118,7 +118,7 @@ pnpm typecheck         # per-package tsc --noEmit, then typecheck:tests
 pnpm -r test           # vitest run (unit tests)
 pnpm test:integration  # in-memory, MongoDB, and PostgreSQL; Redis is opt-in
 pnpm -r build          # tsup build across all packages
-pnpm check:packed-peers # verify packed peer dependency ranges
+pnpm check:packed-peers # verify packed @tslock dependencies and peers publish as caret ranges
 pnpm knip              # unused files, exports, and dependencies
 ```
 

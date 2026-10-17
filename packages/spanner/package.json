@@ -33,7 +33,7 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
+    "@tslock/core": "workspace:^",
     "@google-cloud/spanner": "^9.0.0"
   },
   "peerDependenciesMeta": {

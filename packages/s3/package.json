@@ -33,7 +33,7 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
+    "@tslock/core": "workspace:^",
     "@aws-sdk/client-s3": "^3.600.0"
   },
   "peerDependenciesMeta": {

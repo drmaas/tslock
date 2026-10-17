@@ -34,8 +34,8 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
-    "@tslock/sql-support": "workspace:*",
+    "@tslock/core": "workspace:^",
+    "@tslock/sql-support": "workspace:^",
     "drizzle-orm": "^0.45.2"
   },
   "peerDependenciesMeta": {

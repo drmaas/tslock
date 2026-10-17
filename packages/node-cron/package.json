@@ -29,8 +29,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tslock/core": "workspace:*",
-    "@tslock/scheduler-core": "workspace:*"
+    "@tslock/core": "workspace:^",
+    "@tslock/scheduler-core": "workspace:^"
   },
   "peerDependencies": {
     "node-cron": "^3.0.0 || ^4.0.0"

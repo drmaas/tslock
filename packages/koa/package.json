@@ -30,8 +30,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tslock/core": "workspace:*",
-    "@tslock/middleware-core": "workspace:*"
+    "@tslock/core": "workspace:^",
+    "@tslock/middleware-core": "workspace:^"
   },
   "peerDependencies": {
     "koa": "^2.0.0"

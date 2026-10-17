@@ -265,7 +265,7 @@ pnpm check:fix          # combined format + lint, applying safe fixes
 pnpm format             # auto-format all files with Biome
 pnpm lint               # lint with Biome
 pnpm bench              # build packages and measure lock/executor overhead
-pnpm check:packed-peers # verify packed peer ranges contain no workspace:* values
+pnpm check:packed-peers # verify packed @tslock dependencies and peers publish as caret ranges
 ```
 
 CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` on every push.

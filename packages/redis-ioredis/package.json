@@ -34,8 +34,8 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
-    "@tslock/redis-core": "workspace:*",
+    "@tslock/core": "workspace:^",
+    "@tslock/redis-core": "workspace:^",
     "ioredis": "^5.0.0"
   },
   "peerDependenciesMeta": {

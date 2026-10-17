@@ -34,8 +34,8 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
-    "@tslock/sql-support": "workspace:*",
+    "@tslock/core": "workspace:^",
+    "@tslock/sql-support": "workspace:^",
     "kysely": "^0.29.6"
   },
   "peerDependenciesMeta": {

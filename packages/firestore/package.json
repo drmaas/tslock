@@ -32,7 +32,7 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@tslock/core": "workspace:*",
+    "@tslock/core": "workspace:^",
     "@google-cloud/firestore": "^9.3.0"
   },
   "peerDependenciesMeta": {
