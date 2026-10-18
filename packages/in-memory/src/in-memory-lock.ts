@@ -1,5 +1,6 @@
 import {
   AbstractSimpleLock,
+  ClockProvider,
   type LockConfiguration,
   lockAtLeastUntil,
   lockAtMostUntil,
@@ -20,8 +21,9 @@ export class InMemoryLock extends AbstractSimpleLock {
   }
 
   protected override async doExtend(newConfig: LockConfiguration): Promise<SimpleLock | undefined> {
-    if (this.provider.isLocked(newConfig.name)) {
-      this.provider.locks.set(newConfig.name, lockAtMostUntil(newConfig));
+    const ownedUntil = lockAtMostUntil(this.config);
+    if (this.provider.locks.get(this.config.name) === ownedUntil && ownedUntil > ClockProvider.now()) {
+      this.provider.locks.set(this.config.name, lockAtMostUntil(newConfig));
       return new InMemoryLock(this.provider, newConfig);
     }
     return undefined;
