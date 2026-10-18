@@ -2,8 +2,19 @@ import type { DoLockStorage } from './do-lock-storage.js';
 import { storageKeyForLock } from './do-lock-storage.js';
 import type { DoLockRecord, LockOp, LockOpResult } from './protocol.js';
 
-function unlockUntilMs(createdAt: number, lockAtLeastFor: number, now: number): number {
-  return Math.max(now, createdAt + lockAtLeastFor);
+function durationsAreValid(lockAtMostFor: number, lockAtLeastFor: number): boolean {
+  return (
+    Number.isFinite(lockAtMostFor) &&
+    Number.isFinite(lockAtLeastFor) &&
+    lockAtMostFor >= 0 &&
+    lockAtLeastFor >= 0 &&
+    lockAtLeastFor <= lockAtMostFor
+  );
+}
+
+function storedLeastUntil(existing: DoLockRecord, now: number): number {
+  const stored = existing.lockAtLeastUntil;
+  return typeof stored === 'number' && Number.isFinite(stored) ? stored : now;
 }
 
 function owns(existing: DoLockRecord, token: string): existing is DoLockRecord & { token: string } {
@@ -28,8 +39,9 @@ export async function applyLockOp(
       return { ok: false, reason: 'held' };
     }
     await storage.put(key, {
-      lockUntil: body.createdAt + body.lockAtMostFor,
-      lockedAt: body.createdAt,
+      lockUntil: now + body.lockAtMostFor,
+      lockAtLeastUntil: now + body.lockAtLeastFor,
+      lockedAt: now,
       lockedBy: body.lockedBy,
       token: body.token,
     });
@@ -41,12 +53,16 @@ export async function applyLockOp(
     if (!existing || !owns(existing, body.token)) {
       return { ok: true };
     }
-    await storage.put(key, {
-      lockUntil: unlockUntilMs(body.createdAt, body.lockAtLeastFor, now),
+    const next: DoLockRecord = {
+      lockUntil: Math.max(now, storedLeastUntil(existing, now)),
       lockedAt: existing.lockedAt,
       lockedBy: existing.lockedBy,
       token: existing.token,
-    });
+    };
+    if (typeof existing.lockAtLeastUntil === 'number' && Number.isFinite(existing.lockAtLeastUntil)) {
+      next.lockAtLeastUntil = existing.lockAtLeastUntil;
+    }
+    await storage.put(key, next);
     return { ok: true };
   }
 
@@ -61,7 +77,8 @@ export async function applyLockOp(
     return { ok: false, reason: 'expired' };
   }
   await storage.put(key, {
-    lockUntil: body.createdAt + body.lockAtMostFor,
+    lockUntil: now + body.lockAtMostFor,
+    lockAtLeastUntil: Math.max(storedLeastUntil(existing, now), now, now + body.lockAtLeastFor),
     lockedAt: existing.lockedAt,
     lockedBy: existing.lockedBy,
     token: existing.token,
@@ -97,6 +114,9 @@ export async function handleTslockLockRequest(
     op.token.length === 0 ||
     (op.op !== 'lock' && op.op !== 'unlock' && op.op !== 'extend')
   ) {
+    return Response.json({ error: 'invalid body' }, { status: 400 });
+  }
+  if (!durationsAreValid(op.lockAtMostFor, op.lockAtLeastFor)) {
     return Response.json({ error: 'invalid body' }, { status: 400 });
   }
   const result = await applyLockOp(storage, op, now);
