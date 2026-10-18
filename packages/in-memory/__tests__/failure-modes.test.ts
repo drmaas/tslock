@@ -111,6 +111,50 @@ describe('documented failure modes (in-memory harness)', () => {
     });
   });
 
+  it('rejects extend after another caller reacquires the lock', async () => {
+    await withMutableClock(1_000_000, async (clock) => {
+      const provider = new InMemoryLockProvider();
+      const first = (await provider.lock(createLockConfig('job', 5_000)))!;
+
+      clock.advance(5_001);
+      const second = (await provider.lock(createLockConfig('job', 60_000)))!;
+      const deadline = provider.locks.get('job');
+      expect(deadline).toBe(clock.now() + 60_000);
+
+      expect(await first.extend(60_000, 0)).toBeUndefined();
+      expect(provider.locks.get('job')).toBe(deadline);
+      expect(await provider.lock(createLockConfig('job', 5_000))).toBeUndefined();
+
+      await second.unlock();
+    });
+  });
+
+  it('notifies onKeepAliveFailure when a renewal runs after another caller reacquires', async () => {
+    await withMutableClock(1_000_000, async (clock) => {
+      const storage = new InMemoryLockProvider();
+      const scheduler = new ManualScheduler();
+      const onKeepAliveFailure = vi.fn();
+      const keepAlive = new KeepAliveLockProvider(storage, scheduler, onKeepAliveFailure);
+
+      const first = await keepAlive.lock(createLockConfig('job', 30_000));
+      expect(first).toBeDefined();
+
+      storage.locks.delete('job');
+      clock.advance(1_000);
+      const second = await storage.lock(createLockConfig('job', 60_000));
+      expect(second).toBeDefined();
+      const deadline = storage.locks.get('job');
+      expect(deadline).toBe(clock.now() + 60_000);
+
+      await scheduler.tickAll();
+
+      expect(onKeepAliveFailure).toHaveBeenCalledOnce();
+      const [, error] = onKeepAliveFailure.mock.calls[0]!;
+      expect((error as Error).message).toBe('Keep-alive lock was lost');
+      expect(storage.locks.get('job')).toBe(deadline);
+    });
+  });
+
   it('shows stale unlock after re-acquisition can overwrite the new holder (in-memory)', async () => {
     await withMutableClock(1_000_000, async (clock) => {
       const provider = new InMemoryLockProvider();
