@@ -341,6 +341,39 @@ describe('applyLockOp', () => {
       lockAtLeastUntil: now + 1_000 + 8_000,
     });
   });
+
+  it('does not write a lock or extend when the deadline is negative or non-finite', async () => {
+    const now = 1_700_000_000_000;
+    const storage = createMemoryDoLockStorage();
+
+    const negativeLock = await applyLockOp(storage, op({ op: 'lock', token: 'a', lockAtMostFor: -1 }), now);
+    const infiniteLock = await applyLockOp(
+      storage,
+      op({ op: 'lock', token: 'a', lockAtMostFor: Number.POSITIVE_INFINITY }),
+      now,
+    );
+    expect(negativeLock).toEqual({ ok: true });
+    expect(infiniteLock).toEqual({ ok: true });
+    expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
+
+    await applyLockOp(storage, op({ op: 'lock', token: 'holder', lockAtMostFor: 60_000 }), now);
+    const before = await storage.get(storageKeyForLock('job'));
+    const watched = countPuts(storage);
+    const negativeExtend = await applyLockOp(
+      watched.storage,
+      op({ op: 'extend', token: 'holder', lockAtMostFor: -1 }),
+      now + 1,
+    );
+    const infiniteExtend = await applyLockOp(
+      watched.storage,
+      op({ op: 'extend', token: 'holder', lockAtMostFor: Number.POSITIVE_INFINITY }),
+      now + 1,
+    );
+    expect(negativeExtend).toEqual({ ok: true });
+    expect(infiniteExtend).toEqual({ ok: true });
+    expect(watched.puts()).toBe(0);
+    expect(await storage.get(storageKeyForLock('job'))).toEqual(before);
+  });
 });
 
 describe('handleTslockLockRequest', () => {
@@ -419,6 +452,25 @@ describe('handleTslockLockRequest', () => {
       }),
     );
     expect(res.status).toBe(400);
+    expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
+  });
+
+  it('returns 200 without acquired when lockAtMostFor does not pass the object clock', async () => {
+    const storage = createMemoryDoLockStorage();
+    const now = 1_700_000_000_000;
+    for (const lockAtMostFor of [0, 1e-10]) {
+      const res = await handleTslockLockRequest(
+        storage,
+        new Request('https://example.test', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(op({ op: 'lock', token: 'a', lockAtMostFor, lockAtLeastFor: 0 })),
+        }),
+        now,
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ ok: true });
+    }
     expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
   });
 

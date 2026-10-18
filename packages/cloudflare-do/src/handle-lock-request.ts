@@ -17,6 +17,12 @@ function storedLeastUntil(existing: DoLockRecord, now: number): number {
   return typeof stored === 'number' && Number.isFinite(stored) ? stored : now;
 }
 
+function strictFutureDeadline(now: number, duration: number): number | undefined {
+  const deadline = now + duration;
+  if (!Number.isFinite(deadline) || deadline <= now) return undefined;
+  return deadline;
+}
+
 function owns(existing: DoLockRecord, token: string): existing is DoLockRecord & { token: string } {
   return (
     token.length > 0 && typeof existing.token === 'string' && existing.token.length > 0 && existing.token === token
@@ -38,9 +44,14 @@ export async function applyLockOp(
     if (existing && existing.lockUntil > now) {
       return { ok: false, reason: 'held' };
     }
+    const lockUntil = strictFutureDeadline(now, body.lockAtMostFor);
+    const lockAtLeastUntil = now + body.lockAtLeastFor;
+    if (lockUntil === undefined || !Number.isFinite(lockAtLeastUntil)) {
+      return { ok: true };
+    }
     await storage.put(key, {
-      lockUntil: now + body.lockAtMostFor,
-      lockAtLeastUntil: now + body.lockAtLeastFor,
+      lockUntil,
+      lockAtLeastUntil,
       lockedAt: now,
       lockedBy: body.lockedBy,
       token: body.token,
@@ -76,9 +87,14 @@ export async function applyLockOp(
   if (existing.lockUntil <= now) {
     return { ok: false, reason: 'expired' };
   }
+  const lockUntil = strictFutureDeadline(now, body.lockAtMostFor);
+  const lockAtLeastUntil = Math.max(storedLeastUntil(existing, now), now, now + body.lockAtLeastFor);
+  if (lockUntil === undefined || !Number.isFinite(lockAtLeastUntil)) {
+    return { ok: true };
+  }
   await storage.put(key, {
-    lockUntil: now + body.lockAtMostFor,
-    lockAtLeastUntil: Math.max(storedLeastUntil(existing, now), now, now + body.lockAtLeastFor),
+    lockUntil,
+    lockAtLeastUntil,
     lockedAt: existing.lockedAt,
     lockedBy: existing.lockedBy,
     token: existing.token,
