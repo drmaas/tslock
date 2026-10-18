@@ -3,6 +3,7 @@ export interface DoLockRecord {
   lockedAt: number;
   lockedBy: string;
   token?: string;
+  lockAtLeastUntil?: number;
 }
 
 export type LockOp =

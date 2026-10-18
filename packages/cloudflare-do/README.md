@@ -73,7 +73,7 @@ Unlock with a mismatched or empty token returns `{ ok: true }` and does not writ
 
 Deploy `TslockLockDurableObject` (or your class that calls `handleTslockLockRequest`) and this client together. An older class does not store or check the token.
 
-The Durable Object compares stored `lockUntil` to its own `Date.now()` while new deadlines use client `createdAt` + durations — keep client and Worker clocks NTP-synced (same assumption as the rest of TSLock).
+The Durable Object clock is authoritative. Acquire stores `lockedAt` and `lockUntil` from the object's `Date.now()` plus `lockAtMostFor`, and stores `lockAtLeastUntil` from that same clock plus `lockAtLeastFor`. Unlock sets `lockUntil` to the later of now and the stored `lockAtLeastUntil`. A record written before `lockAtLeastUntil` existed is treated as already at its minimum, so unlock sets `lockUntil` to now. Extend sets `lockUntil` to now plus `lockAtMostFor`, and moves `lockAtLeastUntil` forward from now. Client `createdAt` stays on the request so existing clients keep working, and it is not used as a deadline. Durations must be finite and greater than or equal to zero, and `lockAtLeastFor` must be less than or equal to `lockAtMostFor`. Otherwise the object responds with HTTP 400. When `lockAtMostFor` does not place `lockUntil` strictly after the object clock, acquire returns `{ ok: true }` without `acquired` and does not store a record.
 
 ## Bun / Node
 

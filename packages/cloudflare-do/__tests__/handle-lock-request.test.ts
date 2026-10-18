@@ -198,6 +198,182 @@ describe('applyLockOp', () => {
     );
     expect(afterExpiry).toEqual({ ok: true, acquired: true, token: 'next' });
   });
+
+  it('stores lockUntil from the object clock when createdAt is far ahead', async () => {
+    const storage = createMemoryDoLockStorage();
+    const now = 1_700_000_000_000;
+    const tenYears = 10 * 365 * 24 * 60 * 60 * 1000;
+    const acquired = await applyLockOp(
+      storage,
+      op({ op: 'lock', token: 'a', createdAt: now + tenYears, lockAtMostFor: 1_000 }),
+      now,
+    );
+    expect(acquired).toEqual({ ok: true, acquired: true, token: 'a' });
+    expect(await storage.get(storageKeyForLock('job'))).toMatchObject({
+      lockedAt: now,
+      lockUntil: now + 1_000,
+      lockAtLeastUntil: now,
+    });
+
+    const held = await applyLockOp(
+      storage,
+      op({ op: 'lock', token: 'b', createdAt: now + 500, lockAtMostFor: 1_000 }),
+      now + 500,
+    );
+    expect(held).toEqual({ ok: false, reason: 'held' });
+
+    const after = await applyLockOp(
+      storage,
+      op({ op: 'lock', token: 'b', createdAt: now + 1_001, lockAtMostFor: 1_000 }),
+      now + 1_001,
+    );
+    expect(after).toEqual({ ok: true, acquired: true, token: 'b' });
+    expect((await storage.get(storageKeyForLock('job')))?.lockUntil).toBe(now + 1_001 + 1_000);
+  });
+
+  it('does not acquire an already-expired record when createdAt is 0', async () => {
+    const storage = createMemoryDoLockStorage();
+    const now = 1_700_000_000_000;
+    const acquired = await applyLockOp(
+      storage,
+      op({ op: 'lock', token: 'a', createdAt: 0, lockAtMostFor: 1_000, lockAtLeastFor: 200 }),
+      now,
+    );
+    expect(acquired).toEqual({ ok: true, acquired: true, token: 'a' });
+    const record = await storage.get(storageKeyForLock('job'));
+    expect(record?.lockedAt).toBe(now);
+    expect(record?.lockUntil).toBe(now + 1_000);
+    expect(record?.lockAtLeastUntil).toBe(now + 200);
+    expect(record!.lockUntil).toBeGreaterThan(now);
+
+    const held = await applyLockOp(storage, op({ op: 'lock', token: 'b', createdAt: 0 }), now);
+    expect(held).toEqual({ ok: false, reason: 'held' });
+  });
+
+  it('unlock keeps the stored minimum hold when the request clock is skewed', async () => {
+    const storage = createMemoryDoLockStorage();
+    const now = 1_700_000_000_000;
+    const years = 10 * 365 * 24 * 60 * 60 * 1000;
+    await applyLockOp(
+      storage,
+      op({ op: 'lock', token: 'a', createdAt: now, lockAtMostFor: 60_000, lockAtLeastFor: 5_000 }),
+      now,
+    );
+    await applyLockOp(
+      storage,
+      op({
+        op: 'unlock',
+        token: 'a',
+        createdAt: now + years,
+        lockAtMostFor: 60_000,
+        lockAtLeastFor: 1e12,
+      }),
+      now + 1_000,
+    );
+    const record = await storage.get(storageKeyForLock('job'));
+    expect(record?.lockUntil).toBe(now + 5_000);
+    expect(record?.token).toBe('a');
+  });
+
+  it('unlock of a record without lockAtLeastUntil releases at the object clock', async () => {
+    const storage = createMemoryDoLockStorage();
+    const now = 1_700_000_000_000;
+    const legacy: DoLockRecord = {
+      lockUntil: now + 60_000,
+      lockedAt: now - 1_000,
+      lockedBy: 'localhost',
+      token: 'a',
+    };
+    await storage.put(storageKeyForLock('job'), legacy);
+    await applyLockOp(
+      storage,
+      op({ op: 'unlock', token: 'a', createdAt: now + 9_999_999, lockAtLeastFor: 50_000, lockAtMostFor: 60_000 }),
+      now + 2_000,
+    );
+    const record = await storage.get(storageKeyForLock('job'));
+    expect(record?.lockUntil).toBe(now + 2_000);
+    expect(record?.lockAtLeastUntil).toBeUndefined();
+    expect(record?.token).toBe('a');
+  });
+
+  it('extend sets lockUntil from the object clock and only moves lockAtLeastUntil forward', async () => {
+    const storage = createMemoryDoLockStorage();
+    const now = 1_700_000_000_000;
+    const years = 10 * 365 * 24 * 60 * 60 * 1000;
+    await applyLockOp(
+      storage,
+      op({ op: 'lock', token: 'a', createdAt: now - years, lockAtMostFor: 60_000, lockAtLeastFor: 5_000 }),
+      now,
+    );
+
+    const extended = await applyLockOp(
+      storage,
+      op({
+        op: 'extend',
+        token: 'a',
+        createdAt: now + years,
+        lockAtMostFor: 10_000,
+        lockAtLeastFor: 1_000,
+      }),
+      now + 500,
+    );
+    expect(extended).toEqual({ ok: true, extended: true });
+    expect(await storage.get(storageKeyForLock('job'))).toMatchObject({
+      lockUntil: now + 500 + 10_000,
+      lockAtLeastUntil: now + 5_000,
+      lockedAt: now,
+      token: 'a',
+    });
+
+    await applyLockOp(
+      storage,
+      op({
+        op: 'extend',
+        token: 'a',
+        createdAt: now,
+        lockAtMostFor: 30_000,
+        lockAtLeastFor: 8_000,
+      }),
+      now + 1_000,
+    );
+    expect(await storage.get(storageKeyForLock('job'))).toMatchObject({
+      lockUntil: now + 1_000 + 30_000,
+      lockAtLeastUntil: now + 1_000 + 8_000,
+    });
+  });
+
+  it('does not write a lock or extend when the deadline is negative or non-finite', async () => {
+    const now = 1_700_000_000_000;
+    const storage = createMemoryDoLockStorage();
+
+    const negativeLock = await applyLockOp(storage, op({ op: 'lock', token: 'a', lockAtMostFor: -1 }), now);
+    const infiniteLock = await applyLockOp(
+      storage,
+      op({ op: 'lock', token: 'a', lockAtMostFor: Number.POSITIVE_INFINITY }),
+      now,
+    );
+    expect(negativeLock).toEqual({ ok: true });
+    expect(infiniteLock).toEqual({ ok: true });
+    expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
+
+    await applyLockOp(storage, op({ op: 'lock', token: 'holder', lockAtMostFor: 60_000 }), now);
+    const before = await storage.get(storageKeyForLock('job'));
+    const watched = countPuts(storage);
+    const negativeExtend = await applyLockOp(
+      watched.storage,
+      op({ op: 'extend', token: 'holder', lockAtMostFor: -1 }),
+      now + 1,
+    );
+    const infiniteExtend = await applyLockOp(
+      watched.storage,
+      op({ op: 'extend', token: 'holder', lockAtMostFor: Number.POSITIVE_INFINITY }),
+      now + 1,
+    );
+    expect(negativeExtend).toEqual({ ok: true });
+    expect(infiniteExtend).toEqual({ ok: true });
+    expect(watched.puts()).toBe(0);
+    expect(await storage.get(storageKeyForLock('job'))).toEqual(before);
+  });
 });
 
 describe('handleTslockLockRequest', () => {
@@ -221,6 +397,80 @@ describe('handleTslockLockRequest', () => {
       }),
     );
     expect(res.status).toBe(400);
+    expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
+  });
+
+  it('returns 400 for a negative duration', async () => {
+    const storage = createMemoryDoLockStorage();
+    const most = await handleTslockLockRequest(
+      storage,
+      new Request('https://example.test', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(op({ op: 'lock', token: 'a', lockAtMostFor: -1 })),
+      }),
+    );
+    const least = await handleTslockLockRequest(
+      storage,
+      new Request('https://example.test', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(op({ op: 'lock', token: 'a', lockAtMostFor: 1_000, lockAtLeastFor: -1 })),
+      }),
+    );
+    expect(most.status).toBe(400);
+    expect(least.status).toBe(400);
+    expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
+  });
+
+  it('returns 400 for a non-finite duration', async () => {
+    const storage = createMemoryDoLockStorage();
+    const body = JSON.stringify(op({ op: 'lock', token: 'a', lockAtMostFor: 1_000 })).replace(
+      '"lockAtMostFor":1000',
+      '"lockAtMostFor":1e309',
+    );
+    const res = await handleTslockLockRequest(
+      storage,
+      new Request('https://example.test', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body,
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
+  });
+
+  it('returns 400 when lockAtLeastFor is greater than lockAtMostFor', async () => {
+    const storage = createMemoryDoLockStorage();
+    const res = await handleTslockLockRequest(
+      storage,
+      new Request('https://example.test', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(op({ op: 'lock', token: 'a', lockAtMostFor: 1_000, lockAtLeastFor: 1_001 })),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
+  });
+
+  it('returns 200 without acquired when lockAtMostFor does not pass the object clock', async () => {
+    const storage = createMemoryDoLockStorage();
+    const now = 1_700_000_000_000;
+    for (const lockAtMostFor of [0, 1e-10]) {
+      const res = await handleTslockLockRequest(
+        storage,
+        new Request('https://example.test', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(op({ op: 'lock', token: 'a', lockAtMostFor, lockAtLeastFor: 0 })),
+        }),
+        now,
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ ok: true });
+    }
     expect(await storage.get(storageKeyForLock('job'))).toBeUndefined();
   });
 
