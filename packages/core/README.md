@@ -54,6 +54,8 @@ await executor.executeWithLock(
 );
 ```
 
+`executeWithLock` unlocks `LockExtender.activeLock()` when the task finishes. After a successful `extendActiveLock`, that is the successor returned by `extend()`, so the lease is released with the task. `unlock()` on the original handle still throws. A failed `extend()` leaves the original handle valid so the executor can release it.
+
 ### Auto-renewing long tasks
 
 `KeepAliveLockProvider` wraps an extensible provider and renews the lock on a timer so long-running tasks don't hit their deadline. A plain `LockProvider` is rejected by the type checker. A cast that omits the `extensibleLockProvider` brand throws `LockException` at construction:
@@ -62,6 +64,8 @@ await executor.executeWithLock(
 import { KeepAliveLockProvider } from '@tslock/core';
 const provider = new KeepAliveLockProvider(extensibleProvider);
 ```
+
+When a renewal returns no lock, or the local deadline has already passed, keep-alive stops and reports the lock lost. A later `unlock()` on that handle cancels the timer and does not write the underlying lock, so a holder who acquired in the meantime keeps it. If `extend()` throws, `unlock()` still releases the wrapped lock.
 
 Keep-alive reduces overrun risk but does not remove clock-skew or storage-eviction failure modes — see [failure modes](../../docs/failure-modes.md).
 

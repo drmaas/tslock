@@ -11,6 +11,8 @@ export const MIN_LOCK_AT_MOST_FOR = 30_000;
 
 class KeepAliveLock extends AbstractSimpleLock {
   private active = true;
+  private lost = false;
+  private released = false;
   private remainingLockAtLeastFor: number;
   private currentLockAtMostUntil: number;
   private readonly intervalHandle: { clear(): void };
@@ -40,18 +42,24 @@ class KeepAliveLock extends AbstractSimpleLock {
   private async extendForNextPeriod(): Promise<void> {
     if (!this.active) return;
     if (this.currentLockAtMostUntil < ClockProvider.now()) {
+      this.lost = true;
       this.deactivate();
       this.onKeepAliveFailure?.(this.baseConfig, new LockException('Keep-alive lock was lost'));
       return;
     }
     const next = Math.max(0, this.remainingLockAtLeastFor);
     const now = ClockProvider.now();
-    const newLock = await this.currentLock.extend(this.baseConfig.lockAtMostFor, next);
+    const extended = this.currentLock;
+    const newLock = await extended.extend(this.baseConfig.lockAtMostFor, next);
+    if (this.released) return;
     if (!newLock) {
+      if (this.currentLock !== extended || this.lost) return;
+      this.lost = true;
       this.deactivate();
       this.onKeepAliveFailure?.(this.baseConfig, new LockException('Keep-alive lock was lost'));
       return;
     }
+    this.lost = false;
     this.currentLock = newLock;
     this.currentLockAtMostUntil = now + this.baseConfig.lockAtMostFor;
     this.remainingLockAtLeastFor = Math.max(0, next - this.baseConfig.lockAtMostFor / 2);
@@ -67,7 +75,9 @@ class KeepAliveLock extends AbstractSimpleLock {
   }
 
   protected override async doUnlock(): Promise<void> {
+    this.released = true;
     this.deactivate();
+    if (this.lost) return;
     await this.currentLock.unlock();
   }
 

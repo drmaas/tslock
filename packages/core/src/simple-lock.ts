@@ -27,7 +27,9 @@ export abstract class AbstractSimpleLock implements SimpleLock {
       createdAt: ClockProvider.now(),
     };
     const result = await this.doExtend(newConfig);
-    this.valid = false;
+    if (result !== undefined) {
+      this.valid = false;
+    }
     return result;
   }
 
