@@ -212,8 +212,10 @@ describe('DrizzleLockProvider mysql2 execute tuple', () => {
 
     const first = await provider.lock(createLockConfig('job', 1000));
     expect(first).toBeDefined();
+    expect(execute).toHaveBeenCalledTimes(1);
 
     const second = await provider.lock(createLockConfig('job', 1000));
     expect(second).toBeUndefined();
+    expect(execute).toHaveBeenCalledTimes(2);
   });
 });
