@@ -22,8 +22,9 @@ export const DRIZZLE_DIALECT_INFOS: Record<DrizzleDialectName, DrizzleDialectInf
     },
     getAffectedRows: (result) => {
       if (typeof result !== 'object' || result === null) return 0;
-      const r = result as { affectedRows?: number };
-      return r.affectedRows ?? 0;
+      const header = Array.isArray(result) ? result[0] : result;
+      if (typeof header !== 'object' || header === null) return 0;
+      return (header as { affectedRows?: number }).affectedRows ?? 0;
     },
   },
   sqlite: {
