@@ -55,6 +55,8 @@ Memcached is an LRU cache, not a durable lock store. Under memory pressure it ma
 
 `KeepAliveLockProvider` renews about every `lockAtMostFor / 2`. If renewals stop (process freeze, event-loop blockage, repeated extend failures, callback deactivation after loss), the underlying lock still expires at the last written `lockUntil`. Another instance can then acquire while the original task may still be running.
 
+Once keep-alive has reported that loss (`extend()` returned no lock, or the local deadline had already passed), `unlock()` on the keep-alive handle does not write storage. A later holder keeps the lease. An `extend()` that throws still unlocks.
+
 Keep-alive **reduces** overrun risk; it does not eliminate skew, eviction, or a hard crash that never unlocks.
 
 **Mitigation:** monitor keep-alive failures (`onKeepAliveFailure` / lock health); keep `lockAtMostFor` large enough that a single missed renewal cannot expose a long critical section; still design for idempotency.
@@ -97,7 +99,7 @@ KV returns HTTP 429 when the same key is written more than once per second. Acqu
 |---|---|---|
 | Skew / overrun | Advance the shared clock past `lockUntil` while the first lock object is not unlocked | Second `lock()` succeeds |
 | Early eviction | Delete the in-memory map entry mid-hold (Memcached-shaped loss) | Second `lock()` succeeds |
-| Crashed / failed keep-alive | Stop renewals and expire, or delete the map entry then tick renewals | Second `lock()` succeeds after expiry; `onKeepAliveFailure` fires when extend finds no lease |
+| Crashed / failed keep-alive | Stop renewals and expire, or delete the map entry then tick renewals | Second `lock()` succeeds after expiry; `onKeepAliveFailure` fires when extend finds no lease or the deadline has passed; `unlock()` after that loss leaves the new deadline unchanged |
 | `lockAtLeastFor` small drift | Unlock with a minimum hold, advance less than `lockAtLeastFor` | Second `lock()` still skipped |
 
 [`packages/cloudflare-kv/__tests__/failure-modes.test.ts`](../packages/cloudflare-kv/__tests__/failure-modes.test.ts) uses a `MutableClock` plus in-memory KV fakes (including a per-location cache) for the Workers KV rows:

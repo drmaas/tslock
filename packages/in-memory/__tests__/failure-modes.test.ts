@@ -155,6 +155,57 @@ describe('documented failure modes (in-memory harness)', () => {
     });
   });
 
+  it('leaves the new holder in place when unlock follows a lost renewal', async () => {
+    await withMutableClock(1_000_000, async (clock) => {
+      const storage = new InMemoryLockProvider();
+      const scheduler = new ManualScheduler();
+      const onKeepAliveFailure = vi.fn();
+      const keepAlive = new KeepAliveLockProvider(storage, scheduler, onKeepAliveFailure);
+      const name = 'lost-renewal';
+
+      const first = (await keepAlive.lock(createLockConfig(name, 30_000)))!;
+      storage.locks.delete(name);
+      clock.advance(1_000);
+      expect(await storage.lock(createLockConfig(name, 60_000))).toBeDefined();
+      const deadline = storage.locks.get(name);
+      expect(deadline).toBe(clock.now() + 60_000);
+
+      await scheduler.tickAll();
+      expect(onKeepAliveFailure).toHaveBeenCalledOnce();
+      const [, error] = onKeepAliveFailure.mock.calls[0]!;
+      expect((error as Error).message).toBe('Keep-alive lock was lost');
+
+      await first.unlock();
+      expect(storage.locks.get(name)).toBe(deadline);
+      expect(storage.isLocked(name)).toBe(true);
+    });
+  });
+
+  it('leaves the new holder in place when unlock follows a deadline-passed tick', async () => {
+    await withMutableClock(1_000_000, async (clock) => {
+      const storage = new InMemoryLockProvider();
+      const scheduler = new ManualScheduler();
+      const onKeepAliveFailure = vi.fn();
+      const keepAlive = new KeepAliveLockProvider(storage, scheduler, onKeepAliveFailure);
+      const name = 'deadline-passed';
+
+      const first = (await keepAlive.lock(createLockConfig(name, 30_000)))!;
+      clock.advance(30_001);
+      expect(await storage.lock(createLockConfig(name, 60_000))).toBeDefined();
+      const deadline = storage.locks.get(name);
+      expect(deadline).toBe(clock.now() + 60_000);
+
+      await scheduler.tickAll();
+      expect(onKeepAliveFailure).toHaveBeenCalledOnce();
+      const [, error] = onKeepAliveFailure.mock.calls[0]!;
+      expect((error as Error).message).toBe('Keep-alive lock was lost');
+
+      await first.unlock();
+      expect(storage.locks.get(name)).toBe(deadline);
+      expect(storage.isLocked(name)).toBe(true);
+    });
+  });
+
   it('shows stale unlock after re-acquisition can overwrite the new holder (in-memory)', async () => {
     await withMutableClock(1_000_000, async (clock) => {
       const provider = new InMemoryLockProvider();

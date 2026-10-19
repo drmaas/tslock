@@ -65,6 +65,8 @@ import { KeepAliveLockProvider } from '@tslock/core';
 const provider = new KeepAliveLockProvider(extensibleProvider);
 ```
 
+When a renewal returns no lock, or the local deadline has already passed, keep-alive stops and reports the lock lost. A later `unlock()` on that handle cancels the timer and does not write the underlying lock, so a holder who acquired in the meantime keeps it. If `extend()` throws, `unlock()` still releases the wrapped lock.
+
 Keep-alive reduces overrun risk but does not remove clock-skew or storage-eviction failure modes — see [failure modes](../../docs/failure-modes.md).
 
 ### Metrics

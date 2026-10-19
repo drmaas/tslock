@@ -214,4 +214,30 @@ describe('KeepAliveLockProvider', () => {
     await lock.unlock();
     expect(unlockMock).toHaveBeenCalledOnce();
   });
+
+  it('unlock after a lost renewal does not call the wrapped unlock', async () => {
+    const { provider, unlockMock } = makeProvider({ extendReturn: 'undefined' });
+    const kap = new KeepAliveLockProvider(provider, scheduler);
+    const lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+    await cb();
+    expect(scheduler.callbacks.size).toBe(0);
+    await lock.unlock();
+    expect(unlockMock).not.toHaveBeenCalled();
+  });
+
+  it('unlock after the deadline-passed tick does not call the wrapped unlock', async () => {
+    let now = 1_000_000;
+    ClockProvider.setClock(() => now);
+    const { provider, unlockMock, extendMock } = makeProvider();
+    const kap = new KeepAliveLockProvider(provider, scheduler);
+    const lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    now = 1_060_001;
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+    await cb();
+    expect(extendMock).not.toHaveBeenCalled();
+    expect(scheduler.callbacks.size).toBe(0);
+    await lock.unlock();
+    expect(unlockMock).not.toHaveBeenCalled();
+  });
 });
