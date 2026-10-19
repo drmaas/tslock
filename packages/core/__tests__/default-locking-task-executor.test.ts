@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createLockConfig } from '../src/lock-configuration.js';
+import { createLockConfig, type LockConfiguration } from '../src/lock-configuration.js';
+import { LockCanNotBeExtendedException, LockException } from '../src/lock-exception.js';
+import { LockExtender } from '../src/lock-extender.js';
 import type { LockProvider } from '../src/lock-provider.js';
 import { DefaultLockingTaskExecutor } from '../src/locking-task-executor.js';
 import { type LockingTaskExecutorListener, NO_OP_LISTENER } from '../src/locking-task-executor-listener.js';
-import type { SimpleLock } from '../src/simple-lock.js';
+import { AbstractSimpleLock, type SimpleLock } from '../src/simple-lock.js';
 
 function makeMockProvider(returnUndefined = false): {
   provider: LockProvider;
@@ -17,6 +19,25 @@ function makeMockProvider(returnUndefined = false): {
     lock: vi.fn().mockImplementation(() => (returnUndefined ? undefined : Promise.resolve(lock))),
   };
   return { provider, unlockMock, extendMock };
+}
+
+class RecordingLock extends AbstractSimpleLock {
+  readonly released = vi.fn();
+
+  constructor(
+    config: LockConfiguration,
+    private readonly successor?: SimpleLock,
+  ) {
+    super(config);
+  }
+
+  protected override async doUnlock(): Promise<void> {
+    this.released();
+  }
+
+  protected override async doExtend(): Promise<SimpleLock | undefined> {
+    return this.successor;
+  }
 }
 
 describe('DefaultLockingTaskExecutor', () => {
@@ -123,6 +144,46 @@ describe('DefaultLockingTaskExecutor', () => {
     expect(result.getResult()).toBe('x');
     expect(onUnlockError).toHaveBeenCalledOnce();
     expect(onUnlockError.mock.calls[0]?.[1]).toBeInstanceOf(Error);
+  });
+
+  it('unlocks the successor after extendActiveLock and does not report an unlock error', async () => {
+    const successor = new RecordingLock(createLockConfig('t', 60_000, 0));
+    const original = new RecordingLock(createLockConfig('t', 5_000, 0), successor);
+    const onUnlockError = vi.fn();
+    const executor = new DefaultLockingTaskExecutor(
+      { lock: async () => original },
+      { ...NO_OP_LISTENER, onUnlockError },
+    );
+    const result = await executor.executeWithLock(
+      async () => {
+        await LockExtender.extendActiveLock(60_000, 0);
+      },
+      createLockConfig('t', 5_000, 0),
+    );
+    expect(result.wasExecuted).toBe(true);
+    expect(successor.released).toHaveBeenCalledOnce();
+    expect(original.released).not.toHaveBeenCalled();
+    expect(onUnlockError).not.toHaveBeenCalled();
+    await expect(original.unlock()).rejects.toThrow(LockException);
+  });
+
+  it('failed extend rejects and still unlocks the original handle', async () => {
+    const original = new RecordingLock(createLockConfig('stuck', 5_000, 0));
+    const onUnlockError = vi.fn();
+    const executor = new DefaultLockingTaskExecutor(
+      { lock: async () => original },
+      { ...NO_OP_LISTENER, onUnlockError },
+    );
+    await expect(
+      executor.executeWithLock(
+        async () => {
+          await LockExtender.extendActiveLock(60_000, 0);
+        },
+        createLockConfig('stuck', 5_000, 0),
+      ),
+    ).rejects.toThrow(LockCanNotBeExtendedException);
+    expect(original.released).toHaveBeenCalledOnce();
+    expect(onUnlockError).not.toHaveBeenCalled();
   });
 
   it('onUnlockError listener exception does not propagate', async () => {

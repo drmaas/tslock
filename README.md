@@ -199,6 +199,8 @@ await executor.executeWithLock(
 );
 ```
 
+`executeWithLock` releases `LockExtender.activeLock()` when the task finishes, including the successor installed by `extendActiveLock()`.
+
 `KeepAliveLockProvider` automates this — it wraps an extensible provider and renews the lock periodically:
 
 ```typescript

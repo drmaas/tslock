@@ -51,6 +51,14 @@ describe('AbstractSimpleLock', () => {
     await expect(lock.unlock()).rejects.toThrow(LockException);
   });
 
+  it('extend() that returns undefined leaves the original unlockable', async () => {
+    const lock = new TestLock(createLockConfig('test', 1000));
+    lock.doExtendMock.mockResolvedValue(undefined);
+    await expect(lock.extend(2000, 0)).resolves.toBeUndefined();
+    await lock.unlock();
+    expect(lock.doUnlockMock).toHaveBeenCalledOnce();
+  });
+
   it('default doExtend throws', async () => {
     const lock = new NonExtensibleLock(createLockConfig('test', 1000));
     await expect(lock.extend(2000, 0)).rejects.toThrow(LockException);

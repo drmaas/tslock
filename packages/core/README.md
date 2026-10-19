@@ -54,6 +54,8 @@ await executor.executeWithLock(
 );
 ```
 
+`executeWithLock` unlocks `LockExtender.activeLock()` when the task finishes. After a successful `extendActiveLock`, that is the successor returned by `extend()`, so the lease is released with the task. `unlock()` on the original handle still throws. A failed `extend()` leaves the original handle valid so the executor can release it.
+
 ### Auto-renewing long tasks
 
 `KeepAliveLockProvider` wraps an extensible provider and renews the lock on a timer so long-running tasks don't hit their deadline. A plain `LockProvider` is rejected by the type checker. A cast that omits the `extensibleLockProvider` brand throws `LockException` at construction:

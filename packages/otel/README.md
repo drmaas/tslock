@@ -78,7 +78,7 @@ Every instrument has `lock.name`, `lock.at_most_for_ms`, and `lock.at_least_for_
 
 Duration histograms use millisecond bucket boundaries from 5ms through 5 minutes. `onUnlockError` is not a second unlock counter; the wrapper records the failed `unlock()` and the executor still reports the error to other listeners you compose yourself.
 
-`DefaultLockingTaskExecutor` unlocks the handle it acquired. After `LockExtender.extendActiveLock`, that handle is already spent, so the unlock series records `outcome=failure` and `error.type=LockException`. The extend series still records success. Keep-alive renews through the wrapped handle and unlocks the current one, so a normal keep-alive release records unlock success.
+`DefaultLockingTaskExecutor` unlocks `LockExtender.activeLock()`. After a successful `LockExtender.extendActiveLock`, that is the successor, so a normal release records unlock `outcome=success`. The original handle stays spent: calling `unlock()` on it throws `LockException`. The extend series records success. Keep-alive renews through the wrapped handle and unlocks the current one, so a normal keep-alive release also records unlock success.
 
 Names and attribute keys are exported as `TSLOCK_METRIC_NAMES` and `TSLOCK_METRIC_ATTRIBUTES`.
 

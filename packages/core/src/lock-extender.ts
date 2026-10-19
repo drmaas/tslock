@@ -23,6 +23,10 @@ export class LockExtender {
     store.stack[ACTIVE_LOCK_INDEX] = newLock;
   }
 
+  static activeLock(): SimpleLock | undefined {
+    return LockExtender.storage.getStore()?.stack[ACTIVE_LOCK_INDEX];
+  }
+
   static runWithLock<T>(lock: SimpleLock, callback: () => T | Promise<T>): Promise<T> | T {
     const current = LockExtender.storage.getStore()?.stack ?? [];
     const next = [lock, ...current];
