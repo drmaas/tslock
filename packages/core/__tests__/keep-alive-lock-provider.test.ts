@@ -226,6 +226,94 @@ describe('KeepAliveLockProvider', () => {
     expect(unlockMock).not.toHaveBeenCalled();
   });
 
+  it('unlocks the renewed lock when a lost renewal overlaps a successful one', async () => {
+    const unlockMock = vi.fn();
+    const renewedUnlock = vi.fn();
+    let resolveFirst: (value: SimpleLock | undefined) => void = () => {};
+    let resolveSecond: (value: SimpleLock | undefined) => void = () => {};
+    const renewed: SimpleLock = { unlock: renewedUnlock, extend: vi.fn() };
+    const extendMock = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<SimpleLock | undefined>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<SimpleLock | undefined>((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    const initialLock: SimpleLock = { unlock: unlockMock, extend: extendMock };
+    const provider: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
+      lock: vi.fn().mockResolvedValue(initialLock),
+    };
+    const kap = new KeepAliveLockProvider(provider, scheduler);
+    const lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+
+    const firstTick = cb();
+    await vi.waitFor(() => expect(extendMock).toHaveBeenCalledTimes(1));
+    const secondTick = cb();
+    await vi.waitFor(() => expect(extendMock).toHaveBeenCalledTimes(2));
+
+    resolveSecond(undefined);
+    await secondTick;
+    resolveFirst(renewed);
+    await firstTick;
+
+    await lock.unlock();
+    expect(renewedUnlock).toHaveBeenCalledOnce();
+    expect(unlockMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the renewed lock when an earlier in-flight renewal succeeds', async () => {
+    const unlockMock = vi.fn();
+    const renewedUnlock = vi.fn();
+    let resolveFirst: (value: SimpleLock | undefined) => void = () => {};
+    let resolveSecond: (value: SimpleLock | undefined) => void = () => {};
+    const renewed: SimpleLock = { unlock: renewedUnlock, extend: vi.fn() };
+    const extendMock = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<SimpleLock | undefined>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<SimpleLock | undefined>((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    const initialLock: SimpleLock = { unlock: unlockMock, extend: extendMock };
+    const provider: ExtensibleLockProvider = {
+      [extensibleLockProvider]: true,
+      lock: vi.fn().mockResolvedValue(initialLock),
+    };
+    const kap = new KeepAliveLockProvider(provider, scheduler);
+    const lock = (await kap.lock(createLockConfig('t', 60_000)))!;
+    const cb = [...scheduler.callbacks.values()][0] as unknown as () => Promise<void>;
+
+    const firstTick = cb();
+    await vi.waitFor(() => expect(extendMock).toHaveBeenCalledTimes(1));
+    const secondTick = cb();
+    await vi.waitFor(() => expect(extendMock).toHaveBeenCalledTimes(2));
+
+    resolveFirst(renewed);
+    await firstTick;
+    resolveSecond(undefined);
+    await secondTick;
+
+    await lock.unlock();
+    expect(renewedUnlock).toHaveBeenCalledOnce();
+    expect(unlockMock).not.toHaveBeenCalled();
+  });
+
   it('unlock after the deadline-passed tick does not call the wrapped unlock', async () => {
     let now = 1_000_000;
     ClockProvider.setClock(() => now);
