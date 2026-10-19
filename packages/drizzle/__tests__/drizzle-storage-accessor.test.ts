@@ -156,6 +156,23 @@ describe('DrizzleStorageAccessor', () => {
     expect(pgDialect.getAffectedRows({ rowCount: 5 })).toBe(5);
     expect(pgDialect.getAffectedRows({})).toBe(0);
   });
+
+  it('mysql getAffectedRows reads affectedRows from the mysql2 result tuple', () => {
+    expect(mysqlDialect.getAffectedRows([{ affectedRows: 1, insertId: 0 }, []])).toBe(1);
+    expect(mysqlDialect.getAffectedRows([{ affectedRows: 0 }, []])).toBe(0);
+    expect(mysqlDialect.getAffectedRows([])).toBe(0);
+    expect(mysqlDialect.getAffectedRows({ affectedRows: 1 })).toBe(1);
+  });
+
+  it('pg getAffectedRows still reads rowCount 1', () => {
+    expect(pgDialect.getAffectedRows({ rowCount: 1 })).toBe(1);
+  });
+
+  it('extend returns true for a mysql2 tuple with affectedRows 1', async () => {
+    const executeMock = vi.fn().mockResolvedValue([{ affectedRows: 1 }, []]);
+    const acc = new DrizzleStorageAccessor({ execute: executeMock }, source, mysqlDialect);
+    expect(await acc.extend(createLockConfig('t', 1000))).toBe(true);
+  });
 });
 
 describe('DrizzleLockProvider mysql duplicate-key wrapped in DrizzleQueryError', () => {
@@ -178,5 +195,25 @@ describe('DrizzleLockProvider mysql duplicate-key wrapped in DrizzleQueryError',
     const second = await provider.lock(createLockConfig('job', 1000));
     expect(second).toBeDefined();
     expect(executeMock).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('DrizzleLockProvider mysql2 execute tuple', () => {
+  it('returns a lock when execute resolves affectedRows 1 and undefined when the next call resolves 0', async () => {
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce([{ affectedRows: 1 }, []])
+      .mockResolvedValueOnce([{ affectedRows: 0 }, []]);
+    const provider = new DrizzleLockProvider(
+      { execute },
+      'mysql',
+      new SqlConfiguration({ databaseProduct: DatabaseProduct.MYSQL }),
+    );
+
+    const first = await provider.lock(createLockConfig('job', 1000));
+    expect(first).toBeDefined();
+
+    const second = await provider.lock(createLockConfig('job', 1000));
+    expect(second).toBeUndefined();
   });
 });
