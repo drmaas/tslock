@@ -1,6 +1,10 @@
+import { createRequire } from 'node:module';
 import { DatabaseProduct } from '@tslock/sql-support';
 import { describe, expect, it, vi } from 'vitest';
 import { MssqlConnection } from '../src/connections/mssql-connection.js';
+
+const require = createRequire(import.meta.url);
+const mssql = require('mssql') as typeof import('mssql');
 
 describe('MssqlConnection', () => {
   it('getDatabaseProduct returns SQL_SERVER', () => {
@@ -19,6 +23,21 @@ describe('MssqlConnection', () => {
     expect(inputMock).toHaveBeenCalledWith('name', 'foo');
     expect(inputMock).toHaveBeenCalledWith('lockUntil', 1234);
     expect(queryMock).toHaveBeenCalledWith('INSERT INTO t(n, l) VALUES(@name, @lockUntil)');
+  });
+
+  it('binds Date parameters as datetime2 and leaves other parameters untyped', async () => {
+    const inputMock = vi.fn();
+    const queryMock = vi.fn().mockResolvedValue({ rowsAffected: [1] });
+    const request = { input: inputMock, query: queryMock };
+    const pool = { request: vi.fn().mockReturnValue(request) };
+    const conn = new MssqlConnection(pool as never);
+    const lockUntil = new Date('2024-01-02T03:04:05.006Z');
+    await conn.query('UPDATE t SET lockUntil = @lockUntil WHERE name = @name', {
+      name: 'foo',
+      lockUntil,
+    });
+    expect(inputMock).toHaveBeenCalledWith('name', 'foo');
+    expect(inputMock).toHaveBeenCalledWith('lockUntil', mssql.DateTime2(3), lockUntil);
   });
 
   it('query defaults affectedRows to 0 when rowsAffected is undefined', async () => {
