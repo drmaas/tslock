@@ -3,6 +3,7 @@ import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@
 import { describe, expect, it, vi } from 'vitest';
 import type { SqlConnection } from '../src/sql-connection.js';
 import { SqlStorageAccessor } from '../src/sql-storage-accessor.js';
+import { InMemoryShedlock, runOwnedExtend, runSameHostScenario } from './in-memory-shedlock.js';
 
 function makeConnection(opts: { affectedRowsBySql?: Map<string, number>; insertThrows?: unknown } = {}): SqlConnection {
   const queryMock = vi.fn();
@@ -66,7 +67,7 @@ describe('SqlStorageAccessor', () => {
     const source = DEFAULT_SOURCE();
     const extendSql = source.getExtendStatement();
     const connTrue = makeConnection({ affectedRowsBySql: new Map([[extendSql, 1]]) });
-    expect(await new SqlStorageAccessor(connTrue, source).extend(createLockConfig('t', 1000))).toBe(true);
+    expect(await new SqlStorageAccessor(connTrue, source).extend(createLockConfig('t', 1000), 1_000)).toBe(true);
   });
 
   it('unlock calls query and returns void', async () => {
@@ -75,4 +76,51 @@ describe('SqlStorageAccessor', () => {
     const accessor = new SqlStorageAccessor(conn, source);
     await expect(accessor.unlock(createLockConfig('t', 1000))).resolves.toBeUndefined();
   });
+
+  it('extend binds the previous deadline as a Date', async () => {
+    const source = DEFAULT_SOURCE();
+    const query = vi.fn().mockResolvedValue({ affectedRows: 1 });
+    const conn: SqlConnection = {
+      query,
+      isDuplicateKeyError: () => false,
+      getDatabaseProduct: () => DatabaseProduct.POSTGRES,
+    };
+    const accessor = new SqlStorageAccessor(conn, source);
+    const newConfig = { name: 'job', lockAtMostFor: 20_000, lockAtLeastFor: 0, createdAt: 5_000 };
+    await accessor.extend(newConfig, 1_000);
+    expect(query).toHaveBeenCalledOnce();
+    const params = query.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(params.previousLockUntil).toEqual(new Date(1_000));
+  });
+
+  it('extend returns false when no previous deadline is given', async () => {
+    const source = DEFAULT_SOURCE();
+    const query = vi.fn().mockResolvedValue({ affectedRows: 1 });
+    const conn: SqlConnection = {
+      query,
+      isDuplicateKeyError: () => false,
+      getDatabaseProduct: () => DatabaseProduct.POSTGRES,
+    };
+    const accessor = new SqlStorageAccessor(conn, source);
+    expect(await accessor.extend(createLockConfig('t', 1000))).toBe(false);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it('does not unlock or extend a newer same-host lock', async () => {
+    const store = new InMemoryShedlock();
+    await runSameHostScenario(store, (source) => new SqlStorageAccessor(memoryConnection(store), source));
+  });
+
+  it('extends and unlocks when the stored deadline still matches', async () => {
+    const store = new InMemoryShedlock();
+    await runOwnedExtend(store, (source) => new SqlStorageAccessor(memoryConnection(store), source));
+  });
 });
+
+function memoryConnection(store: InMemoryShedlock): SqlConnection {
+  return {
+    query: (sql, params) => Promise.resolve({ affectedRows: store.execute(sql, params) }),
+    isDuplicateKeyError: () => false,
+    getDatabaseProduct: () => DatabaseProduct.MYSQL,
+  };
+}

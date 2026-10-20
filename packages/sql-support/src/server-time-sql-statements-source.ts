@@ -16,8 +16,8 @@ export abstract class ServerTimeStatementsSource extends SqlStatementsSource {
     const nowExpr = this.nowExpression();
     this.#insert = this.buildInsert(t, c, nowExpr);
     this.#update = `UPDATE ${t} SET ${c.lockUntil} = :lockUntil, ${c.lockedAt} = ${nowExpr}, ${c.lockedBy} = :lockedBy WHERE ${c.name} = :name AND ${c.lockUntil} <= ${nowExpr}`;
-    this.#extend = `UPDATE ${t} SET ${c.lockUntil} = :lockUntil WHERE ${c.name} = :name AND ${c.lockedBy} = :lockedBy AND ${c.lockUntil} > ${nowExpr}`;
-    this.#unlock = `UPDATE ${t} SET ${c.lockUntil} = :unlockTime WHERE ${c.name} = :name AND ${c.lockedBy} = :lockedBy`;
+    this.#extend = `UPDATE ${t} SET ${c.lockUntil} = :lockUntil WHERE ${c.name} = :name AND ${c.lockedBy} = :lockedBy AND ${c.lockUntil} > ${nowExpr} AND ${c.lockUntil} = :previousLockUntil`;
+    this.#unlock = `UPDATE ${t} SET ${c.lockUntil} = :unlockTime WHERE ${c.name} = :name AND ${c.lockedBy} = :lockedBy AND ${c.lockUntil} = :lockUntil`;
   }
 
   protected abstract nowExpression(): string;
@@ -43,8 +43,8 @@ export abstract class ServerTimeStatementsSource extends SqlStatementsSource {
     return this.#unlock;
   }
 
-  override params(lockConfig: LockConfiguration): Record<string, unknown> {
-    return {
+  override params(lockConfig: LockConfiguration, previousLockAtMostUntil?: number): Record<string, unknown> {
+    const bound: Record<string, unknown> = {
       [SQL_PARAM_NAMES.NAME]: lockConfig.name,
       [SQL_PARAM_NAMES.LOCK_UNTIL]: this.timestampFor(lockConfig.createdAt + lockConfig.lockAtMostFor),
       [SQL_PARAM_NAMES.LOCKED_BY]: this.config.lockedByValue,
@@ -52,6 +52,10 @@ export abstract class ServerTimeStatementsSource extends SqlStatementsSource {
         Math.max(lockConfig.createdAt + lockConfig.lockAtLeastFor, lockConfig.createdAt),
       ),
     };
+    if (previousLockAtMostUntil !== undefined) {
+      bound[SQL_PARAM_NAMES.PREVIOUS_LOCK_UNTIL] = this.timestampFor(previousLockAtMostUntil);
+    }
+    return bound;
   }
 }
 

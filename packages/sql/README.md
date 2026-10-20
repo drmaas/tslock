@@ -76,6 +76,8 @@ await executor.executeWithLock(
 
 Default column names: `name`, `lockUntil`, `lockedAt`, `lockedBy`.
 
+Unlock and extend match `lockedBy` and the deadline stored for that acquisition. A later call does not release or extend a lock that another process on the same host has re-acquired.
+
 ## Integration tests
 
 The PostgreSQL contract runs against a PostgreSQL 16 Testcontainers instance and creates an isolated `shedlock` table:

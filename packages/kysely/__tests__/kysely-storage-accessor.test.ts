@@ -2,6 +2,7 @@ import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@tslock/sql-support';
 import type { CompiledQuery, Kysely } from 'kysely';
 import { describe, expect, it, vi } from 'vitest';
+import { InMemoryShedlock, runOwnedExtend, runSameHostScenario } from '../../sql/__tests__/in-memory-shedlock.js';
 import { getDialectInfo } from '../src/dialect-info.js';
 import { KyselyStorageAccessor } from '../src/kysely-storage-accessor.js';
 
@@ -57,14 +58,53 @@ describe('KyselyStorageAccessor', () => {
   it('extend returns true/false', async () => {
     const accTrue = new KyselyStorageAccessor(makeDb(1), source, dialect);
     const accFalse = new KyselyStorageAccessor(makeDb(0), source, dialect);
-    expect(await accTrue.extend(createLockConfig('t', 1000))).toBe(true);
-    expect(await accFalse.extend(createLockConfig('t', 1000))).toBe(false);
+    expect(await accTrue.extend(createLockConfig('t', 1000), 1_000)).toBe(true);
+    expect(await accFalse.extend(createLockConfig('t', 1000), 1_000)).toBe(false);
   });
 
   it('unlock calls executeQuery and returns void', async () => {
     const db = makeDb(0);
     const accessor = new KyselyStorageAccessor(db, source, dialect);
     await expect(accessor.unlock(createLockConfig('t', 1000))).resolves.toBeUndefined();
+  });
+
+  it('extend returns false when no previous deadline is given', async () => {
+    const executeQuery = vi.fn();
+    const accessor = new KyselyStorageAccessor({ executeQuery } as unknown as Kysely<unknown>, source, dialect);
+    expect(await accessor.extend(createLockConfig('t', 1000))).toBe(false);
+    expect(executeQuery).not.toHaveBeenCalled();
+  });
+
+  it('does not unlock or extend a newer same-host lock', async () => {
+    const store = new InMemoryShedlock();
+    await runSameHostScenario(
+      store,
+      (statements) =>
+        new KyselyStorageAccessor(
+          {
+            executeQuery: (compiled: { sql: string; parameters: readonly unknown[] }) =>
+              Promise.resolve({ numAffectedRows: store.execute(compiled.sql, compiled.parameters) }),
+          } as unknown as Kysely<unknown>,
+          statements,
+          dialect,
+        ),
+    );
+  });
+
+  it('extends and unlocks when the stored deadline still matches', async () => {
+    const store = new InMemoryShedlock();
+    await runOwnedExtend(
+      store,
+      (statements) =>
+        new KyselyStorageAccessor(
+          {
+            executeQuery: (compiled: { sql: string; parameters: readonly unknown[] }) =>
+              Promise.resolve({ numAffectedRows: store.execute(compiled.sql, compiled.parameters) }),
+          } as unknown as Kysely<unknown>,
+          statements,
+          dialect,
+        ),
+    );
   });
 
   it('passes translated SQL and values to db.executeQuery', async () => {

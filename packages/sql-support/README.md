@@ -36,6 +36,8 @@ const source = createSqlStatementsSource(config);
 const insertSql = source.getInsertStatement(); // parameterized INSERT statement
 ```
 
+Unlock and extend match both `lockedBy` and the `lockUntil` value from that acquisition. After the lock expires, another process on the same host can acquire it, and the first process's later unlock or extend leaves that newer row alone.
+
 ## Requirements
 
 - Node.js >= 22
