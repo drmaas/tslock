@@ -302,7 +302,7 @@ describe('S3StorageAccessor', () => {
         })
         .mockResolvedValueOnce({ $metadata: { httpStatusCode: 200 } });
 
-      const result = await accessor.extend(defaultConfig);
+      const result = await accessor.extend(defaultConfig, 10_000);
 
       expect(result).toBe(true);
       expect(mockSend).toHaveBeenCalledTimes(2);
@@ -371,7 +371,7 @@ describe('S3StorageAccessor', () => {
         })
         .mockRejectedValueOnce(mockS3Error('PreconditionFailed', 412));
 
-      const result = await accessor.extend(defaultConfig);
+      const result = await accessor.extend(defaultConfig, 10_000);
 
       expect(result).toBe(false);
     });
@@ -390,7 +390,7 @@ describe('S3StorageAccessor', () => {
         })
         .mockRejectedValueOnce(mockS3Error('Conflict', 409));
 
-      const result = await accessor.extend(defaultConfig);
+      const result = await accessor.extend(defaultConfig, 10_000);
 
       expect(result).toBe(false);
     });
@@ -502,24 +502,30 @@ describe('S3StorageAccessor SSE-S3 ETag', () => {
       lockUntil: metadataValue(afterUpdate?.metadata ?? {}, 'lockUntil'),
     });
 
-    const extended = await accessor.extend({
-      name: 'test-lock',
-      lockAtMostFor: 30_000,
-      lockAtLeastFor: 0,
-      createdAt: 5_000,
-    });
+    const extended = await accessor.extend(
+      {
+        name: 'test-lock',
+        lockAtMostFor: 30_000,
+        lockAtLeastFor: 0,
+        createdAt: 5_000,
+      },
+      25_000,
+    );
     const afterExtend = sse.store.get(objectKey);
     expect(extended).toBe(true);
     expect(afterExtend?.etag).not.toBe(afterUpdate?.etag);
     expect(metadataValue(afterExtend?.metadata ?? {}, 'lockedBy')).toBe('host-b');
     expect(metadataValue(afterExtend?.metadata ?? {}, 'lockUntil')).toBe('1970-01-01T00:00:35.000Z');
 
-    const extendedAgain = await accessor.extend({
-      name: 'test-lock',
-      lockAtMostFor: 40_000,
-      lockAtLeastFor: 0,
-      createdAt: 5_000,
-    });
+    const extendedAgain = await accessor.extend(
+      {
+        name: 'test-lock',
+        lockAtMostFor: 40_000,
+        lockAtLeastFor: 0,
+        createdAt: 5_000,
+      },
+      35_000,
+    );
     const afterSecondExtend = sse.store.get(objectKey);
     expect(extendedAgain).toBe(true);
     expect(afterSecondExtend?.etag).not.toBe(afterExtend?.etag);

@@ -183,7 +183,7 @@ describe('GcsStorageAccessor metadata and generation preconditions', () => {
     ClockProvider.setClock(() => 5000);
     await expect(accessor.insertRecord(lockConfig)).resolves.toBe(true);
 
-    await expect(accessor.extend({ ...lockConfig, createdAt: 5000 })).resolves.toBe(true);
+    await expect(accessor.extend({ ...lockConfig, createdAt: 5000 }, 10_000)).resolves.toBe(true);
 
     const patch = requests.find((request) => request.method === 'PATCH');
     expect(patch).toBeDefined();
