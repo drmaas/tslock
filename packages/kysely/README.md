@@ -44,6 +44,8 @@ await executor.executeWithLock(
 
 The second argument is the dialect name: `'postgresql' | 'mysql' | 'sqlite'`. The third is a standard `SqlConfiguration` — see [`@tslock/sql-support`](../sql-support/README.md#configuration) for all options (table name, column overrides, `useDbTime`, etc.).
 
+Unlock and extend match `lockedBy` and the deadline stored for that acquisition. A later call does not release or extend a lock that another process on the same host has re-acquired.
+
 ## Integration tests
 
 The shared storage and fuzz contracts run against an ephemeral PostgreSQL container:

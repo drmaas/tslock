@@ -13,8 +13,8 @@ export class PostgresSqlStatementsSource extends SqlStatementsSource {
     const c = config.columnNames;
     this.#insert = `INSERT INTO ${t}(${c.name}, ${c.lockUntil}, ${c.lockedAt}, ${c.lockedBy}) VALUES(:name, :lockUntil, :now, :lockedBy) ON CONFLICT (${c.name}) DO NOTHING`;
     this.#update = `UPDATE ${t} SET ${c.lockUntil} = :lockUntil, ${c.lockedAt} = :now, ${c.lockedBy} = :lockedBy WHERE ${c.name} = :name AND ${c.lockUntil} <= :now`;
-    this.#extend = `UPDATE ${t} SET ${c.lockUntil} = :lockUntil WHERE ${c.name} = :name AND ${c.lockedBy} = :lockedBy AND ${c.lockUntil} > :now`;
-    this.#unlock = `UPDATE ${t} SET ${c.lockUntil} = :unlockTime WHERE ${c.name} = :name AND ${c.lockedBy} = :lockedBy`;
+    this.#extend = `UPDATE ${t} SET ${c.lockUntil} = :lockUntil WHERE ${c.name} = :name AND ${c.lockedBy} = :lockedBy AND ${c.lockUntil} > :now AND ${c.lockUntil} = :previousLockUntil`;
+    this.#unlock = `UPDATE ${t} SET ${c.lockUntil} = :unlockTime WHERE ${c.name} = :name AND ${c.lockedBy} = :lockedBy AND ${c.lockUntil} = :lockUntil`;
   }
 
   getInsertStatement(): string {

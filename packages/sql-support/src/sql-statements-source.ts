@@ -15,14 +15,18 @@ export abstract class SqlStatementsSource {
   abstract getExtendStatement(): string;
   abstract getUnlockStatement(): string;
 
-  params(lockConfig: LockConfiguration): Record<string, unknown> {
-    return {
+  params(lockConfig: LockConfiguration, previousLockAtMostUntil?: number): Record<string, unknown> {
+    const bound: Record<string, unknown> = {
       [SQL_PARAM_NAMES.NAME]: lockConfig.name,
       [SQL_PARAM_NAMES.LOCK_UNTIL]: this.timestampFor(lockAtMostUntil(lockConfig)),
       [SQL_PARAM_NAMES.NOW]: this.timestampFor(ClockProvider.now()),
       [SQL_PARAM_NAMES.LOCKED_BY]: this.config.lockedByValue,
       [SQL_PARAM_NAMES.UNLOCK_TIME]: this.timestampFor(unlockTime(lockConfig)),
     };
+    if (previousLockAtMostUntil !== undefined) {
+      bound[SQL_PARAM_NAMES.PREVIOUS_LOCK_UNTIL] = this.timestampFor(previousLockAtMostUntil);
+    }
+    return bound;
   }
 
   protected timestampFor(epochMillis: number): Date {

@@ -2,6 +2,7 @@ import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@tslock/sql-support';
 import { DrizzleQueryError } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
+import { InMemoryShedlock, runSameHostScenario } from '../../sql/__tests__/in-memory-shedlock.js';
 import { DRIZZLE_DIALECT_INFOS, DrizzleLockProvider } from '../src/drizzle-lock-provider.js';
 import { type DrizzleExecutor, DrizzleStorageAccessor } from '../src/drizzle-storage-accessor.js';
 
@@ -130,14 +131,40 @@ describe('DrizzleStorageAccessor', () => {
   it('extend true/false', async () => {
     const accT = new DrizzleStorageAccessor(makeDb(1).db, source, pgDialect);
     const accF = new DrizzleStorageAccessor(makeDb(0).db, source, pgDialect);
-    expect(await accT.extend(createLockConfig('t', 1000))).toBe(true);
-    expect(await accF.extend(createLockConfig('t', 1000))).toBe(false);
+    expect(await accT.extend(createLockConfig('t', 1000), 1_000)).toBe(true);
+    expect(await accF.extend(createLockConfig('t', 1000), 1_000)).toBe(false);
   });
 
   it('unlock void', async () => {
     const { db } = makeDb(0);
     const acc = new DrizzleStorageAccessor(db, source, pgDialect);
     await expect(acc.unlock(createLockConfig('t', 1000))).resolves.toBeUndefined();
+  });
+
+  it('extend returns false when no previous deadline is given', async () => {
+    const execute = vi.fn().mockResolvedValue({ affectedRows: 1 });
+    const acc = new DrizzleStorageAccessor({ execute }, source, pgDialect);
+    expect(await acc.extend(createLockConfig('t', 1000))).toBe(false);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('does not unlock or extend a newer same-host lock', async () => {
+    const store = new InMemoryShedlock();
+    await runSameHostScenario(
+      store,
+      (statements) =>
+        new DrizzleStorageAccessor(
+          {
+            execute: async (query) => {
+              const { sql, values } = flattenDrizzleSql(query);
+              const affected = store.execute(sql, values);
+              return { affectedRows: affected, rowCount: affected };
+            },
+          },
+          statements,
+          pgDialect,
+        ),
+    );
   });
 
   it('mysql getAffectedRows reads affectedRows', () => {
@@ -171,7 +198,7 @@ describe('DrizzleStorageAccessor', () => {
   it('extend returns true for a mysql2 tuple with affectedRows 1', async () => {
     const executeMock = vi.fn().mockResolvedValue([{ affectedRows: 1 }, []]);
     const acc = new DrizzleStorageAccessor({ execute: executeMock }, source, mysqlDialect);
-    expect(await acc.extend(createLockConfig('t', 1000))).toBe(true);
+    expect(await acc.extend(createLockConfig('t', 1000), 1_000)).toBe(true);
   });
 });
 
@@ -219,3 +246,22 @@ describe('DrizzleLockProvider mysql2 execute tuple', () => {
     expect(execute).toHaveBeenCalledTimes(2);
   });
 });
+
+function flattenDrizzleSql(query: unknown): { sql: string; values: unknown[] } {
+  const values: unknown[] = [];
+  return { sql: walk(query), values };
+
+  function walk(chunk: unknown): string {
+    if (!chunk || typeof chunk !== 'object') return '';
+    const record = chunk as { queryChunks?: unknown[]; value?: unknown; encoder?: unknown };
+    if (Array.isArray(record.queryChunks)) return record.queryChunks.map((part) => walk(part)).join('');
+    if (Array.isArray(record.value) && record.value.every((part) => typeof part === 'string')) {
+      return record.value.join('');
+    }
+    if ('encoder' in record) {
+      values.push(record.value);
+      return '?';
+    }
+    throw new Error(`Unrecognized SQL chunk: ${Object.keys(record).join(',')}`);
+  }
+}

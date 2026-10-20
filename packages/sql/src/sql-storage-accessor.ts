@@ -35,9 +35,10 @@ export class SqlStorageAccessor extends AbstractStorageAccessor {
     await this.connection.query(sql, params);
   }
 
-  async extend(config: LockConfiguration): Promise<boolean> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
+    if (previousLockAtMostUntil === undefined) return false;
     const sql = this.statementsSource.getExtendStatement();
-    const params = this.statementsSource.params(config);
+    const params = this.statementsSource.params(config, previousLockAtMostUntil);
     const result = await this.connection.query(sql, params);
     return result.affectedRows > 0;
   }

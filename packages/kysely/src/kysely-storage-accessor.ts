@@ -43,9 +43,10 @@ export class KyselyStorageAccessor extends AbstractStorageAccessor {
     await this.run(sqlText, params);
   }
 
-  async extend(config: LockConfiguration): Promise<boolean> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
+    if (previousLockAtMostUntil === undefined) return false;
     const sqlText = this.statementsSource.getExtendStatement();
-    const params = this.statementsSource.params(config);
+    const params = this.statementsSource.params(config, previousLockAtMostUntil);
     const result = await this.run(sqlText, params);
     return this.dialectInfo.numAffectedRows(result) > 0;
   }

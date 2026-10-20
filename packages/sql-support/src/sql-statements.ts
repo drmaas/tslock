@@ -13,6 +13,7 @@ export const SQL_PARAM_NAMES = {
   NOW: 'now',
   LOCKED_BY: 'lockedBy',
   UNLOCK_TIME: 'unlockTime',
+  PREVIOUS_LOCK_UNTIL: 'previousLockUntil',
 } as const;
 
 export const NAMED_PARAM_PATTERN = /:([a-zA-Z_][a-zA-Z0-9_]*)/g;
