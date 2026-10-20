@@ -1,4 +1,4 @@
-import type { LockConfiguration } from './lock-configuration.js';
+import { type LockConfiguration, lockAtMostUntil } from './lock-configuration.js';
 import { type ExtensibleLockProvider, extensibleLockProvider } from './lock-provider.js';
 import { AbstractSimpleLock, type SimpleLock } from './simple-lock.js';
 import { Utils } from './utils.js';
@@ -7,14 +7,14 @@ export interface StorageAccessor {
   insertRecord(config: LockConfiguration): Promise<boolean>;
   updateRecord(config: LockConfiguration): Promise<boolean>;
   unlock(config: LockConfiguration): Promise<void>;
-  extend(config: LockConfiguration): Promise<boolean>;
+  extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean>;
 }
 
 export abstract class AbstractStorageAccessor implements StorageAccessor {
   abstract insertRecord(config: LockConfiguration): Promise<boolean>;
   abstract updateRecord(config: LockConfiguration): Promise<boolean>;
   abstract unlock(config: LockConfiguration): Promise<void>;
-  abstract extend(config: LockConfiguration): Promise<boolean>;
+  abstract extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean>;
 
   protected getHostname(): string {
     return Utils.getHostname();
@@ -50,7 +50,7 @@ class StorageLock extends AbstractSimpleLock {
   }
 
   protected override async doExtend(newConfig: LockConfiguration): Promise<SimpleLock | undefined> {
-    const ok = await this.accessor.extend(newConfig);
+    const ok = await this.accessor.extend(newConfig, lockAtMostUntil(this.config));
     return ok ? new StorageLock(newConfig, this.accessor) : undefined;
   }
 }
