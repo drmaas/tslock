@@ -3,7 +3,7 @@ import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@
 import { describe, expect, it, vi } from 'vitest';
 import type { SqlConnection } from '../src/sql-connection.js';
 import { SqlStorageAccessor } from '../src/sql-storage-accessor.js';
-import { InMemoryShedlock, runSameHostScenario } from './in-memory-shedlock.js';
+import { InMemoryShedlock, runOwnedExtend, runSameHostScenario } from './in-memory-shedlock.js';
 
 function makeConnection(opts: { affectedRowsBySql?: Map<string, number>; insertThrows?: unknown } = {}): SqlConnection {
   const queryMock = vi.fn();
@@ -109,6 +109,11 @@ describe('SqlStorageAccessor', () => {
   it('does not unlock or extend a newer same-host lock', async () => {
     const store = new InMemoryShedlock();
     await runSameHostScenario(store, (source) => new SqlStorageAccessor(memoryConnection(store), source));
+  });
+
+  it('extends and unlocks when the stored deadline still matches', async () => {
+    const store = new InMemoryShedlock();
+    await runOwnedExtend(store, (source) => new SqlStorageAccessor(memoryConnection(store), source));
   });
 });
 

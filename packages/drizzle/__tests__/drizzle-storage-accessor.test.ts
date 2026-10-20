@@ -2,7 +2,7 @@ import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@tslock/sql-support';
 import { DrizzleQueryError } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
-import { InMemoryShedlock, runSameHostScenario } from '../../sql/__tests__/in-memory-shedlock.js';
+import { InMemoryShedlock, runOwnedExtend, runSameHostScenario } from '../../sql/__tests__/in-memory-shedlock.js';
 import { DRIZZLE_DIALECT_INFOS, DrizzleLockProvider } from '../src/drizzle-lock-provider.js';
 import { type DrizzleExecutor, DrizzleStorageAccessor } from '../src/drizzle-storage-accessor.js';
 
@@ -151,6 +151,25 @@ describe('DrizzleStorageAccessor', () => {
   it('does not unlock or extend a newer same-host lock', async () => {
     const store = new InMemoryShedlock();
     await runSameHostScenario(
+      store,
+      (statements) =>
+        new DrizzleStorageAccessor(
+          {
+            execute: async (query) => {
+              const { sql, values } = flattenDrizzleSql(query);
+              const affected = store.execute(sql, values);
+              return { affectedRows: affected, rowCount: affected };
+            },
+          },
+          statements,
+          pgDialect,
+        ),
+    );
+  });
+
+  it('extends and unlocks when the stored deadline still matches', async () => {
+    const store = new InMemoryShedlock();
+    await runOwnedExtend(
       store,
       (statements) =>
         new DrizzleStorageAccessor(

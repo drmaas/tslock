@@ -2,7 +2,7 @@ import { createLockConfig } from '@tslock/core';
 import { DatabaseProduct, DefaultSqlStatementsSource, SqlConfiguration } from '@tslock/sql-support';
 import type { CompiledQuery, Kysely } from 'kysely';
 import { describe, expect, it, vi } from 'vitest';
-import { InMemoryShedlock, runSameHostScenario } from '../../sql/__tests__/in-memory-shedlock.js';
+import { InMemoryShedlock, runOwnedExtend, runSameHostScenario } from '../../sql/__tests__/in-memory-shedlock.js';
 import { getDialectInfo } from '../src/dialect-info.js';
 import { KyselyStorageAccessor } from '../src/kysely-storage-accessor.js';
 
@@ -78,6 +78,22 @@ describe('KyselyStorageAccessor', () => {
   it('does not unlock or extend a newer same-host lock', async () => {
     const store = new InMemoryShedlock();
     await runSameHostScenario(
+      store,
+      (statements) =>
+        new KyselyStorageAccessor(
+          {
+            executeQuery: (compiled: { sql: string; parameters: readonly unknown[] }) =>
+              Promise.resolve({ numAffectedRows: store.execute(compiled.sql, compiled.parameters) }),
+          } as unknown as Kysely<unknown>,
+          statements,
+          dialect,
+        ),
+    );
+  });
+
+  it('extends and unlocks when the stored deadline still matches', async () => {
+    const store = new InMemoryShedlock();
+    await runOwnedExtend(
       store,
       (statements) =>
         new KyselyStorageAccessor(

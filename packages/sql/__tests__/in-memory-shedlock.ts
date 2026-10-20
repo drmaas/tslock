@@ -36,8 +36,12 @@ function literal(value: unknown): string {
   throw new Error(`Unsupported parameter: ${String(value)}`);
 }
 
+function isNamedParams(params: Record<string, unknown> | readonly unknown[]): params is Record<string, unknown> {
+  return !Array.isArray(params);
+}
+
 function bind(sql: string, params: Record<string, unknown> | readonly unknown[]): string {
-  if (Array.isArray(params)) return bindPositional(sql, params);
+  if (!isNamedParams(params)) return bindPositional(sql, params);
   return sql.replace(new RegExp(NAMED_PARAM_PATTERN.source, 'g'), (_match, name: string) => {
     if (!Object.hasOwn(params, name)) throw new Error(`Missing param: ${name}`);
     return literal(params[name]);
@@ -222,6 +226,33 @@ export async function runSameHostScenario(
     expect(await holder.extend(newConfig, 1_000)).toBe(false);
     expect(store.get(name)).toEqual(acquired);
     expect(store.get(name)?.lockUntil).toBe(25_000);
+  } finally {
+    ClockProvider.resetClock();
+  }
+}
+
+export async function runOwnedExtend(
+  store: InMemoryShedlock,
+  open: (source: SqlStatementsSource) => SameHostAccessor,
+): Promise<void> {
+  try {
+    const source = new DefaultSqlStatementsSource(
+      new SqlConfiguration({ databaseProduct: DatabaseProduct.MYSQL, lockedByValue: 'host-a' }),
+    );
+    const holder = open(source);
+    const name = 'job';
+    ClockProvider.setClock(() => 0);
+    const original: LockConfiguration = { name, lockAtMostFor: 1_000, lockAtLeastFor: 0, createdAt: 0 };
+    expect(await holder.insertRecord(original)).toBe(true);
+
+    ClockProvider.setClock(() => 500);
+    const newConfig: LockConfiguration = { name, lockAtMostFor: 10_000, lockAtLeastFor: 0, createdAt: 500 };
+    expect(await holder.extend(newConfig, 1_000)).toBe(true);
+    expect(store.get(name)?.lockUntil).toBe(10_500);
+
+    await holder.unlock(newConfig);
+    expect(store.get(name)?.lockUntil).toBe(500);
+    expect(store.get(name)?.lockedBy).toBe('host-a');
   } finally {
     ClockProvider.resetClock();
   }
