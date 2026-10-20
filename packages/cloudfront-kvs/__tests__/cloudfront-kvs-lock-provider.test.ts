@@ -1,6 +1,7 @@
 import { ClockProvider, createLockConfig, LockException, Utils } from '@tslock/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveCloudFrontKvsConfiguration } from '../src/cloudfront-kvs-configuration.js';
+import { CloudFrontKvsLock } from '../src/cloudfront-kvs-lock.js';
 import { CloudFrontKvsLockProvider } from '../src/cloudfront-kvs-lock-provider.js';
 import { encodeLockRecord } from '../src/lock-record.js';
 
@@ -178,5 +179,37 @@ describe('CloudFrontKvsLockProvider', () => {
 
     const result = await provider.extend(createLockConfig('job', 60_000));
     expect(result).toBeUndefined();
+  });
+
+  it('ignores a stale same-host unlock and extend', async () => {
+    const hostname = Utils.getHostname();
+    const oldConfig = {
+      name: 'job',
+      lockAtMostFor: 1_000,
+      lockAtLeastFor: 0,
+      createdAt: 1_000_000,
+    };
+    const laterDeadline = Utils.toIsoString(1_030_000);
+    client.send.mockImplementation(async (cmd: { constructor: { name: string } }) => {
+      if (cmd.constructor.name === 'DescribeKeyValueStoreCommand') return { ETag: 'etag-1' };
+      if (cmd.constructor.name === 'GetKeyCommand') {
+        return {
+          Value: encodeLockRecord({
+            lockUntil: laterDeadline,
+            lockedAt: Utils.toIsoString(1_005_000),
+            lockedBy: hostname,
+          }),
+        };
+      }
+      if (cmd.constructor.name === 'PutKeyCommand') return { ETag: 'etag-2' };
+      throw new Error(`unexpected ${cmd.constructor.name}`);
+    });
+
+    await provider.unlock(oldConfig);
+    expect(client.send.mock.calls.some((call) => call[0].constructor.name === 'PutKeyCommand')).toBe(false);
+
+    const extended = await new CloudFrontKvsLock(oldConfig, provider).extend(30_000, 0);
+    expect(extended).toBeUndefined();
+    expect(client.send.mock.calls.some((call) => call[0].constructor.name === 'PutKeyCommand')).toBe(false);
   });
 });

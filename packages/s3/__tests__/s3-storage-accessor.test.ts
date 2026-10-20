@@ -601,4 +601,54 @@ describe('S3StorageAccessor SSE-S3 ETag', () => {
       lockUntil: '1970-01-01T00:00:25.000Z',
     });
   });
+
+  it('ignores a stale same-host unlock after another process reacquires', async () => {
+    const sse = createSseS3Client();
+    const owner = new S3StorageAccessor(sse.client, createS3ProviderConfig({ bucket: 'test-bucket' }));
+    const successor = new S3StorageAccessor(sse.client, createS3ProviderConfig({ bucket: 'test-bucket' }));
+    vi.spyOn(owner as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host-a');
+    vi.spyOn(successor as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host-a');
+    ClockProvider.setClock(() => 0);
+    const original = { name: 'test-lock', lockAtMostFor: 1_000, lockAtLeastFor: 0, createdAt: 0 };
+    await owner.insertRecord(original);
+
+    ClockProvider.setClock(() => 5_000);
+    const updated = await successor.updateRecord({
+      name: 'test-lock',
+      lockAtMostFor: 20_000,
+      lockAtLeastFor: 0,
+      createdAt: 5_000,
+    });
+    expect(updated).toBe(true);
+
+    await owner.unlock(original);
+
+    expect(metadataValue(sse.store.get(objectKey)?.metadata ?? {}, 'lockUntil')).toBe('1970-01-01T00:00:25.000Z');
+  });
+
+  it('ignores a stale same-host extend after another process reacquires', async () => {
+    const sse = createSseS3Client();
+    const owner = new S3StorageAccessor(sse.client, createS3ProviderConfig({ bucket: 'test-bucket' }));
+    const successor = new S3StorageAccessor(sse.client, createS3ProviderConfig({ bucket: 'test-bucket' }));
+    vi.spyOn(owner as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host-a');
+    vi.spyOn(successor as unknown as { getHostname: () => string }, 'getHostname').mockReturnValue('host-a');
+    ClockProvider.setClock(() => 0);
+    await owner.insertRecord({ name: 'test-lock', lockAtMostFor: 1_000, lockAtLeastFor: 0, createdAt: 0 });
+
+    ClockProvider.setClock(() => 5_000);
+    const updated = await successor.updateRecord({
+      name: 'test-lock',
+      lockAtMostFor: 20_000,
+      lockAtLeastFor: 0,
+      createdAt: 5_000,
+    });
+    expect(updated).toBe(true);
+
+    const extended = await owner.extend(
+      { name: 'test-lock', lockAtMostFor: 20_000, lockAtLeastFor: 0, createdAt: 5_000 },
+      1_000,
+    );
+    expect(extended).toBe(false);
+    expect(metadataValue(sse.store.get(objectKey)?.metadata ?? {}, 'lockUntil')).toBe('1970-01-01T00:00:25.000Z');
+  });
 });

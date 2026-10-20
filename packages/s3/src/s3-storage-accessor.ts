@@ -120,6 +120,7 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
     const head = await this.headObject(config.name);
     if (head === null) return;
     if (getMetadataValue(head.metadata, 'lockedBy') !== this.getHostname()) return;
+    if (getMetadataValue(head.metadata, 'lockUntil') !== Utils.toIsoString(lockAtMostUntil(config))) return;
     const metadata = {
       lockUntil: Utils.toIsoString(unlockTime(config)),
       lockedAt: getMetadataValue(head.metadata, 'lockedAt') ?? Utils.toIsoString(config.createdAt),
@@ -141,13 +142,19 @@ export class S3StorageAccessor extends AbstractStorageAccessor {
     }
   }
 
-  override async extend(config: LockConfiguration): Promise<boolean> {
+  override async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
     const head = await this.headObject(config.name);
     if (head === null) return false;
     const lockUntil = this.parseLockUntil(head.metadata);
     const lockedBy = getMetadataValue(head.metadata, 'lockedBy');
     if (lockedBy !== this.getHostname()) return false;
     if (lockUntil <= ClockProvider.now()) return false;
+    if (
+      previousLockAtMostUntil !== undefined &&
+      getMetadataValue(head.metadata, 'lockUntil') !== Utils.toIsoString(previousLockAtMostUntil)
+    ) {
+      return false;
+    }
     const metadata = {
       lockUntil: Utils.toIsoString(lockAtMostUntil(config)),
       lockedAt: getMetadataValue(head.metadata, 'lockedAt') ?? Utils.toIsoString(config.createdAt),

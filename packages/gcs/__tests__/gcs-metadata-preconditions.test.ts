@@ -232,6 +232,58 @@ describe('GcsStorageAccessor metadata and generation preconditions', () => {
     expect(object?.metageneration).toBe(2);
     expect(object?.custom.lockUntil).toBe(patchedUntil);
   });
+
+  function accessorFor(lockedBy: string): GcsStorageAccessor {
+    const storage = new Storage({
+      projectId: 'test-project',
+      apiEndpoint: `http://127.0.0.1:${port}`,
+    });
+    return new GcsStorageAccessor(storage, createGcsProviderConfig({ bucket: 'test-bucket', lockedBy }));
+  }
+
+  it('ignores a stale same-host unlock after another process reacquires', async () => {
+    const owner = accessorFor('host-a');
+    const successor = accessorFor('host-a');
+    ClockProvider.setClock(() => 0);
+    const original = { name: 'test-lock', lockAtMostFor: 1_000, lockAtLeastFor: 0, createdAt: 0 };
+    await owner.insertRecord(original);
+
+    ClockProvider.setClock(() => 5_000);
+    const updated = await successor.updateRecord({
+      name: 'test-lock',
+      lockAtMostFor: 20_000,
+      lockAtLeastFor: 0,
+      createdAt: 5_000,
+    });
+    expect(updated).toBe(true);
+
+    await owner.unlock(original);
+
+    expect(object?.custom.lockUntil).toBe('1970-01-01T00:00:25.000Z');
+  });
+
+  it('ignores a stale same-host extend after another process reacquires', async () => {
+    const owner = accessorFor('host-a');
+    const successor = accessorFor('host-a');
+    ClockProvider.setClock(() => 0);
+    await owner.insertRecord({ name: 'test-lock', lockAtMostFor: 1_000, lockAtLeastFor: 0, createdAt: 0 });
+
+    ClockProvider.setClock(() => 5_000);
+    const updated = await successor.updateRecord({
+      name: 'test-lock',
+      lockAtMostFor: 20_000,
+      lockAtLeastFor: 0,
+      createdAt: 5_000,
+    });
+    expect(updated).toBe(true);
+
+    const extended = await owner.extend(
+      { name: 'test-lock', lockAtMostFor: 20_000, lockAtLeastFor: 0, createdAt: 5_000 },
+      1_000,
+    );
+    expect(extended).toBe(false);
+    expect(object?.custom.lockUntil).toBe('1970-01-01T00:00:25.000Z');
+  });
 });
 
 function generationMatches(match: string | null, object: StoredObject | null): boolean {

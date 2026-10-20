@@ -112,6 +112,7 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     const current = await this.getWithMetadata(config.name);
     if (current === null) return;
     if (current.metadata.lockedBy !== this.getHostname()) return;
+    if (current.metadata.lockUntil !== Utils.toIsoString(lockAtMostUntil(config))) return;
     const file = this.file(config.name);
     try {
       await file.setMetadata(
@@ -131,13 +132,19 @@ export class GcsStorageAccessor extends AbstractStorageAccessor {
     }
   }
 
-  override async extend(config: LockConfiguration): Promise<boolean> {
+  override async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
     const current = await this.getWithMetadata(config.name);
     if (current === null) return false;
     const lockUntil = this.parseLockUntil(current.metadata);
     const lockedBy = current.metadata.lockedBy;
     if (lockedBy !== this.getHostname()) return false;
     if (lockUntil <= ClockProvider.now()) return false;
+    if (
+      previousLockAtMostUntil !== undefined &&
+      current.metadata.lockUntil !== Utils.toIsoString(previousLockAtMostUntil)
+    ) {
+      return false;
+    }
     const file = this.file(config.name);
     try {
       await file.setMetadata(

@@ -84,10 +84,12 @@ describe('StorageBasedLockProvider', () => {
   it('StorageLock.extend true → new lock; false → undefined', async () => {
     const { accessor, extendMock } = makeAccessor({ insertReturn: true, extendReturn: true });
     const provider = new StorageBasedLockProvider(accessor);
-    const lock = (await provider.lock(createLockConfig('t', 1000)))!;
+    const config = createLockConfig('t', 1000);
+    const lock = (await provider.lock(config))!;
     const extended = await lock.extend(2000, 0);
     expect(extended).toBeDefined();
     expect(extendMock).toHaveBeenCalledOnce();
+    expect(extendMock.mock.calls[0]?.[1]).toBe(config.createdAt + config.lockAtMostFor);
   });
 
   it('StorageLock.extend false → undefined', async () => {

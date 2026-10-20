@@ -1,4 +1,4 @@
-import { AbstractSimpleLock, type LockConfiguration, type SimpleLock } from '@tslock/core';
+import { AbstractSimpleLock, type LockConfiguration, lockAtMostUntil, type SimpleLock } from '@tslock/core';
 import type { CloudFrontKvsLockProvider } from './cloudfront-kvs-lock-provider.js';
 
 export class CloudFrontKvsLock extends AbstractSimpleLock {
@@ -14,6 +14,6 @@ export class CloudFrontKvsLock extends AbstractSimpleLock {
   }
 
   protected override async doExtend(newConfig: LockConfiguration): Promise<SimpleLock | undefined> {
-    return await this.provider.extend(newConfig);
+    return await this.provider.extend(newConfig, lockAtMostUntil(this.config));
   }
 }

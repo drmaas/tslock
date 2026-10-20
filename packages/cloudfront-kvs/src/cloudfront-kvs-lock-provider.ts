@@ -115,6 +115,7 @@ export class CloudFrontKvsLockProvider implements ExtensibleLockProvider {
       const existing = await this.getRecord(config.name);
       if (existing === null) return;
       if (existing.lockedBy !== hostname) return;
+      if (existing.lockUntil !== Utils.toIsoString(lockAtMostUntil(config))) return;
       const record = buildLockRecord(
         unlockTime(config),
         Date.parse(existing.lockedAt) || config.createdAt,
@@ -130,7 +131,7 @@ export class CloudFrontKvsLockProvider implements ExtensibleLockProvider {
     }
   }
 
-  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<SimpleLock | undefined> {
     const hostname = Utils.getHostname();
     for (let attempt = 0; attempt < this.config.maxEtagRetries; attempt++) {
       const etag = await this.describeEtag();
@@ -138,6 +139,9 @@ export class CloudFrontKvsLockProvider implements ExtensibleLockProvider {
       if (existing === null) return undefined;
       if (existing.lockedBy !== hostname) return undefined;
       if (parseLockUntilMs(existing) <= ClockProvider.now()) return undefined;
+      if (previousLockAtMostUntil !== undefined && existing.lockUntil !== Utils.toIsoString(previousLockAtMostUntil)) {
+        return undefined;
+      }
       const record = buildLockRecord(
         lockAtMostUntil(config),
         Date.parse(existing.lockedAt) || config.createdAt,
