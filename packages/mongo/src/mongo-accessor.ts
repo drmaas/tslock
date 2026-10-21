@@ -1,14 +1,7 @@
-import {
-  ClockProvider,
-  DelegatingSimpleLock,
-  type LockConfiguration,
-  lockAtMostUntil,
-  type SimpleLock,
-  Utils,
-  unlockTime,
-} from '@tslock/core';
+import { ClockProvider, type LockConfiguration, lockAtMostUntil, type SimpleLock, Utils } from '@tslock/core';
 import type { Collection, Document, Filter, FindOneAndUpdateOptions } from 'mongodb';
 import { MongoServerError } from 'mongodb';
+import { MongoLock, mongoDate, storedDeadline } from './mongo-lock.js';
 import type { MongoLockDocument } from './mongo-lock-document.js';
 
 export class MongoAccessor {
@@ -16,49 +9,26 @@ export class MongoAccessor {
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     const now = ClockProvider.now();
-    const hostname = Utils.getHostname();
+    const written = mongoDate(lockAtMostUntil(config));
     try {
       const result = await this.collection.findOneAndUpdate(
-        { _id: config.name, lockUntil: { $lte: new Date(now) } } as Filter<MongoLockDocument>,
+        { _id: config.name, lockUntil: { $lte: mongoDate(now) } } as Filter<MongoLockDocument>,
         {
           $set: {
-            lockUntil: new Date(lockAtMostUntil(config)),
-            lockedAt: new Date(now),
-            lockedBy: hostname,
+            lockUntil: written,
+            lockedAt: mongoDate(now),
+            lockedBy: Utils.getHostname(),
           } as unknown as Document,
         },
         { upsert: true, returnDocument: 'after' } as FindOneAndUpdateOptions,
       );
       if (!result) return undefined;
-      return new DelegatingSimpleLock(config, this);
+      return new MongoLock(config, this.collection, storedDeadline(written, result.lockUntil));
     } catch (e) {
       if (e instanceof MongoServerError && e.code === 11000) {
         return undefined;
       }
       throw e;
     }
-  }
-
-  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
-    const now = ClockProvider.now();
-    const hostname = Utils.getHostname();
-    const result = await this.collection.findOneAndUpdate(
-      {
-        _id: config.name,
-        lockUntil: { $gt: new Date(now) },
-        lockedBy: hostname,
-      } as Filter<MongoLockDocument>,
-      { $set: { lockUntil: new Date(lockAtMostUntil(config)) } } as unknown as Document,
-      { returnDocument: 'after' } as FindOneAndUpdateOptions,
-    );
-    if (!result) return undefined;
-    return new DelegatingSimpleLock(config, this);
-  }
-
-  async unlock(config: LockConfiguration): Promise<void> {
-    await this.collection.findOneAndUpdate(
-      { _id: config.name, lockedBy: Utils.getHostname() } as Filter<MongoLockDocument>,
-      { $set: { lockUntil: new Date(unlockTime(config)) } } as unknown as Document,
-    );
   }
 }

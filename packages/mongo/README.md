@@ -41,6 +41,8 @@ await executor.executeWithLock(
 
 The lock document's `_id` is the lock name; it also stores `lockUntil`, `lockedAt`, and `lockedBy` (hostname).
 
+Unlock and extend match `lockedBy` and the deadline stored for that acquisition. A later call does not release or extend a lock that another process on the same host has re-acquired.
+
 > **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes.
 
 ## Integration tests
