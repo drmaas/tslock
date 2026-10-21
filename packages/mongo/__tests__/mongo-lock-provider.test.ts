@@ -84,7 +84,7 @@ describe('MongoLockProvider', () => {
     const lock = (await provider.lock(config('test', 60_000, 5_000)))!;
     await lock.unlock();
     const [filter, update] = findOneAndUpdate.mock.calls[1]!;
-    expect(filter).toEqual({ _id: 'test', lockedBy: 'this-host' });
+    expect(filter).toEqual({ _id: 'test', lockedBy: 'this-host', lockUntil: new Date(1_060_000) });
     expect(update.$set.lockUntil).toEqual(new Date(1_005_000));
   });
 
@@ -104,15 +104,29 @@ describe('MongoLockProvider', () => {
     const lock = (await provider.lock(config()))!;
     await expect(lock.unlock()).resolves.toBeUndefined();
     expect(findOneAndUpdate).toHaveBeenCalledTimes(2);
-    expect(findOneAndUpdate.mock.calls[1]![0]).toEqual({ _id: 'test', lockedBy: 'this-host' });
+    expect(findOneAndUpdate.mock.calls[1]![0]).toEqual({
+      _id: 'test',
+      lockedBy: 'this-host',
+      lockUntil: new Date(1_060_000),
+    });
   });
 
   it('extend() returns new lock on success', async () => {
-    const col = makeCol();
+    vi.spyOn(Utils, 'getHostname').mockReturnValue('this-host');
+    const findOneAndUpdate = vi.fn().mockResolvedValue({
+      _id: 'test',
+      lockUntil: new Date(),
+      lockedAt: new Date(),
+      lockedBy: 'this-host',
+    });
+    const col = makeCol({ findOneAndUpdate });
     const provider = new MongoLockProvider(col);
     const lock = (await provider.lock(config()))!;
     const extended = await lock.extend(120_000, 0);
     expect(extended).toBeDefined();
+    const [filter, update] = findOneAndUpdate.mock.calls[1]!;
+    expect(filter).toEqual({ _id: 'test', lockedBy: 'this-host', lockUntil: new Date(1_060_000) });
+    expect(update.$set.lockUntil).toEqual(new Date(1_120_000));
   });
 
   it('extend() returns undefined when null result', async () => {
