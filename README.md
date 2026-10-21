@@ -155,7 +155,7 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 | `@tslock/middleware-core` | Shared middleware lifecycle and configuration | [README](./packages/middleware-core/README.md) |
 | `@tslock/express` | Express 4.x / 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
 | `@tslock/fastify` | Fastify 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
-| `@tslock/koa` | Koa 2.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/koa` | Koa 2.x / 3.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
 | `@tslock/hono` | Hono 4.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
 | `@tslock/nestjs` | NestJS 10 / 11 module and `@SchedulerLock` | [README](./packages/nestjs/README.md) |
 

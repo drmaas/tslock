@@ -15,8 +15,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - name: Reject an unparseable pnpm-lock.yaml
-        run: node --test scripts/validate-lockfile.test.mjs scripts/create-signed-commit.test.mjs scripts/check-exports.test.mjs scripts/check-packed-peers.test.mjs && node scripts/validate-lockfile.mjs
+      - name: Reject an unparseable pnpm-lock.yaml or a devDependency outside its peer range
+        run: node --test scripts/validate-lockfile.test.mjs scripts/create-signed-commit.test.mjs scripts/check-exports.test.mjs scripts/check-packed-peers.test.mjs scripts/check-peer-dev-ranges.test.mjs && node scripts/validate-lockfile.mjs && node scripts/check-peer-dev-ranges.mjs
       - name: Enable pnpm
         run: npm install -g corepack@latest && corepack enable
       - name: Fail if the lockfile is out of date

@@ -164,7 +164,7 @@ pnpm -r build             # tsup build across all packages
 pnpm bench                # build artifacts and run manual performance measurements
 pnpm check:packed-peers   # verify packed @tslock dependencies and peers publish as caret ranges
 pnpm knip                 # unused files, exports, and dependencies
-pnpm validate:lockfile    # unique pnpm-lock.yaml keys plus lockfileVersion 9.0; CI runs this before install
+pnpm validate:lockfile    # lockfile keys, lockfileVersion 9.0, and non-@tslock devDependency/peer range intersection; CI runs this before install
 pnpm format               # auto-format all files with Biome
 pnpm format:check         # check formatting without writing
 pnpm lint                 # lint with Biome
