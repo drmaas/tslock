@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig } from '@tslock/core';
+import { ClockProvider, createLockConfig, lockAtMostUntil } from '@tslock/core';
 import type { Driver } from 'neo4j-driver';
 import { describe, expect, it, vi } from 'vitest';
 import { Neo4jStorageAccessor } from '../src/neo4j-storage-accessor.js';
@@ -136,11 +136,62 @@ describe('Neo4jStorageAccessor', () => {
       },
       'my-host',
     );
-    await accessor.unlock(config('test'));
+    const lock = config('test');
+    await accessor.unlock(lock);
     expect(txRun).toHaveBeenCalledWith(
-      expect.stringContaining('WHERE lock.`lockedBy` = $lockedBy'),
-      expect.objectContaining({ name: 'test', lockedBy: 'my-host' }),
+      expect.stringContaining('WHERE lock.`lockedBy` = $lockedBy AND lock.`lockUntil` = $expectedLockUntil'),
+      expect.objectContaining({ name: 'test', lockedBy: 'my-host', expectedLockUntil: lockAtMostUntil(lock) }),
     );
+  });
+
+  it('does not unlock or extend a newer same-host lock', async () => {
+    const txRun = vi.fn().mockResolvedValue({ records: [{}] });
+    const driver = makeDriver(txRun);
+    const accessor = new Neo4jStorageAccessor(
+      driver,
+      {
+        label: 'ShedLock',
+        nameCol: 'name',
+        lockUntilCol: 'lockUntil',
+        lockedAtCol: 'lockedAt',
+        lockedByCol: 'lockedBy',
+      },
+      'my-host',
+    );
+    const lock = config('test');
+    const acquired = lockAtMostUntil(lock);
+    const newerDeadline = acquired + 60_000;
+
+    await accessor.unlock(lock);
+    expect(txRun).toHaveBeenCalledWith(
+      expect.stringContaining('lock.`lockUntil` = $expectedLockUntil'),
+      expect.objectContaining({ lockedBy: 'my-host', expectedLockUntil: acquired }),
+    );
+    expect(txRun.mock.calls[0]![1].expectedLockUntil).not.toBe(newerDeadline);
+
+    expect(await accessor.extend(lock)).toBe(false);
+    expect(txRun).toHaveBeenCalledOnce();
+
+    await accessor.extend(lock, acquired);
+    expect(txRun).toHaveBeenLastCalledWith(
+      expect.stringContaining('lock.`lockUntil` = $expectedLockUntil AND lock.`lockUntil` > $now'),
+      expect.objectContaining({ lockedBy: 'my-host', expectedLockUntil: acquired, now: 1_000_000 }),
+    );
+    expect(txRun.mock.calls[1]![1].expectedLockUntil).not.toBe(newerDeadline);
+  });
+
+  it('extend returns false and does not write when no previous deadline is given', async () => {
+    const txRun = vi.fn().mockResolvedValue({ records: [{}] });
+    const driver = makeDriver(txRun);
+    const accessor = new Neo4jStorageAccessor(driver, {
+      label: 'ShedLock',
+      nameCol: 'name',
+      lockUntilCol: 'lockUntil',
+      lockedAtCol: 'lockedAt',
+      lockedByCol: 'lockedBy',
+    });
+    expect(await accessor.extend(config())).toBe(false);
+    expect(txRun).not.toHaveBeenCalled();
   });
 
   it('extend returns true when record matched', async () => {
@@ -153,8 +204,13 @@ describe('Neo4jStorageAccessor', () => {
       lockedAtCol: 'lockedAt',
       lockedByCol: 'lockedBy',
     });
-    const result = await accessor.extend(config());
+    const lock = config();
+    const result = await accessor.extend(lock, lockAtMostUntil(lock));
     expect(result).toBe(true);
+    expect(txRun).toHaveBeenCalledWith(
+      expect.stringContaining('lock.`lockUntil` = $expectedLockUntil'),
+      expect.objectContaining({ expectedLockUntil: lockAtMostUntil(lock), lockUntil: lockAtMostUntil(lock) }),
+    );
   });
 
   it('extend returns false when no record matched', async () => {
@@ -167,8 +223,10 @@ describe('Neo4jStorageAccessor', () => {
       lockedAtCol: 'lockedAt',
       lockedByCol: 'lockedBy',
     });
-    const result = await accessor.extend(config());
+    const lock = config();
+    const result = await accessor.extend(lock, lockAtMostUntil(lock));
     expect(result).toBe(false);
+    expect(txRun).toHaveBeenCalledOnce();
   });
 
   it('executesWrite passes parameters correctly', async () => {

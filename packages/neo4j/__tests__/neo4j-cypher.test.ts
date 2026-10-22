@@ -48,8 +48,15 @@ describe('buildUnlockCypher', () => {
   it('builds unlock cypher without RETURN', () => {
     const result = buildUnlockCypher(defaultOpts);
     expect(result).toContain('WHERE lock.`lockedBy` = $lockedBy');
+    expect(result).toContain('AND lock.`lockUntil` = $expectedLockUntil');
     expect(result).toContain('SET lock.`lockUntil` = $unlockTime');
     expect(result).not.toContain('RETURN');
+  });
+
+  it('uses the configured lockUntil property', () => {
+    const result = buildUnlockCypher({ ...defaultOpts, lockUntilCol: 'expires', lockedByCol: 'owner' });
+    expect(result).toContain('lock.`owner` = $lockedBy');
+    expect(result).toContain('lock.`expires` = $expectedLockUntil');
   });
 });
 
@@ -57,8 +64,16 @@ describe('buildExtendCypher', () => {
   it('builds extend cypher with ownership check', () => {
     const result = buildExtendCypher(defaultOpts);
     expect(result).toContain('WHERE lock.`lockedBy` = $lockedBy');
+    expect(result).toContain('AND lock.`lockUntil` = $expectedLockUntil');
     expect(result).toContain('AND lock.`lockUntil` > $now');
     expect(result).toContain('RETURN lock');
+  });
+
+  it('uses the configured lockUntil property', () => {
+    const result = buildExtendCypher({ ...defaultOpts, lockUntilCol: 'expires', lockedByCol: 'owner' });
+    expect(result).toContain('lock.`owner` = $lockedBy');
+    expect(result).toContain('lock.`expires` = $expectedLockUntil');
+    expect(result).toContain('lock.`expires` > $now');
   });
 });
 

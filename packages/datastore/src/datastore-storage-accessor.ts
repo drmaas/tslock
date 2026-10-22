@@ -108,10 +108,12 @@ export class DatastoreStorageAccessor extends AbstractStorageAccessor {
 
   async unlock(config: LockConfiguration): Promise<void> {
     const key = this.key(config.name);
+    const expected = lockAtMostUntil(config);
     await this.datastore.runTransaction(async (txn: Transaction) => {
       const existing = await this.safeGet(txn, key);
       if (!existing) return;
       if (existing[this.fieldNames.lockedBy] !== this.lockedByValue) return;
+      if (this.parseFieldValue(existing[this.fieldNames.lockUntil]!) !== expected) return;
       txn.upsert({
         key,
         data: {
@@ -122,14 +124,15 @@ export class DatastoreStorageAccessor extends AbstractStorageAccessor {
     });
   }
 
-  async extend(config: LockConfiguration): Promise<boolean> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
+    if (previousLockAtMostUntil === undefined) return false;
     const key = this.key(config.name);
     return await this.datastore.runTransaction(async (txn: Transaction) => {
       const existing = await this.safeGet(txn, key);
       if (!existing) return false;
       if (existing[this.fieldNames.lockedBy] !== this.lockedByValue) return false;
       const current = this.parseFieldValue(existing[this.fieldNames.lockUntil]!);
-      if (current < ClockProvider.now()) return false;
+      if (current !== previousLockAtMostUntil || current <= ClockProvider.now()) return false;
       txn.upsert({
         key,
         data: {

@@ -89,32 +89,37 @@ export class SpannerStorageAccessor extends AbstractStorageAccessor {
   async unlock(config: LockConfiguration): Promise<void> {
     await this.database.runTransactionAsync(async (tx) => {
       await tx.runUpdate({
-        sql: `UPDATE \`${this.tableName}\` SET \`${this.colNames.lockUntil}\` = @unlockTime WHERE \`${this.colNames.name}\` = @name AND \`${this.colNames.lockedBy}\` = @lockedBy`,
+        sql: `UPDATE \`${this.tableName}\` SET \`${this.colNames.lockUntil}\` = @unlockTime WHERE \`${this.colNames.name}\` = @name AND \`${this.colNames.lockedBy}\` = @lockedBy AND \`${this.colNames.lockUntil}\` = @expectedLockUntil`,
         params: {
           unlockTime: Utils.toIsoString(unlockTime(config)),
           name: config.name,
           lockedBy: this.lockedByValue,
+          expectedLockUntil: Utils.toIsoString(lockAtMostUntil(config)),
         },
         types: {
           unlockTime: 'timestamp',
+          expectedLockUntil: 'timestamp',
         },
       });
       await tx.commit();
     });
   }
 
-  async extend(config: LockConfiguration): Promise<boolean> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
+    if (previousLockAtMostUntil === undefined) return false;
     return await this.database.runTransactionAsync(async (tx) => {
       const [rowCount] = await tx.runUpdate({
-        sql: `UPDATE \`${this.tableName}\` SET \`${this.colNames.lockUntil}\` = @lockUntil WHERE \`${this.colNames.name}\` = @name AND \`${this.colNames.lockedBy}\` = @lockedBy AND \`${this.colNames.lockUntil}\` > @now`,
+        sql: `UPDATE \`${this.tableName}\` SET \`${this.colNames.lockUntil}\` = @lockUntil WHERE \`${this.colNames.name}\` = @name AND \`${this.colNames.lockedBy}\` = @lockedBy AND \`${this.colNames.lockUntil}\` = @expectedLockUntil AND \`${this.colNames.lockUntil}\` > @now`,
         params: {
           lockUntil: Utils.toIsoString(lockAtMostUntil(config)),
           name: config.name,
           lockedBy: this.lockedByValue,
+          expectedLockUntil: Utils.toIsoString(previousLockAtMostUntil),
           now: Utils.toIsoString(ClockProvider.now()),
         },
         types: {
           lockUntil: 'timestamp',
+          expectedLockUntil: 'timestamp',
           now: 'timestamp',
         },
       });

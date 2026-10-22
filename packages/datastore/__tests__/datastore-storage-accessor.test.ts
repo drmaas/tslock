@@ -1,5 +1,5 @@
 import type { Datastore, Transaction } from '@google-cloud/datastore';
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException, lockAtMostUntil, Utils } from '@tslock/core';
 import { describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { DatastoreFieldNames } from '../src/datastore-configuration.js';
 import { DatastoreStorageAccessor } from '../src/datastore-storage-accessor.js';
@@ -114,24 +114,51 @@ describe('DatastoreStorageAccessor', () => {
 
   describe('unlock', () => {
     it('updates lockUntil on match', async () => {
-      const entity = { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' };
+      const lock = cfg();
+      const entity = { lockUntil: Utils.toIsoString(lockAtMostUntil(lock)), lockedBy: 'my-host' };
       const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
       const datastore = makeDatastore({
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
-      await accessor.unlock(cfg());
+      await accessor.unlock(lock);
+      expect(txn.upsert).toHaveBeenCalledOnce();
+    });
+
+    it('unlocks a matching deadline after it has passed', async () => {
+      const lock = cfg();
+      ClockProvider.setClock(() => NOW + 120_000);
+      const entity = { lockUntil: Utils.toIsoString(lockAtMostUntil(lock)), lockedBy: 'my-host' };
+      const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
+      const datastore = makeDatastore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
+      });
+      const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
+      await accessor.unlock(lock);
       expect(txn.upsert).toHaveBeenCalledOnce();
     });
 
     it('skips when lockedBy mismatch', async () => {
-      const entity = { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'other-host' };
+      const lock = cfg();
+      const entity = { lockUntil: Utils.toIsoString(lockAtMostUntil(lock)), lockedBy: 'other-host' };
       const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
       const datastore = makeDatastore({
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
-      await accessor.unlock(cfg());
+      await accessor.unlock(lock);
+      expect(txn.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not unlock a newer same-host lock', async () => {
+      const lock = cfg();
+      const entity = { lockUntil: Utils.toIsoString(lockAtMostUntil(lock) + 60_000), lockedBy: 'my-host' };
+      const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
+      const datastore = makeDatastore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
+      });
+      const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
+      await accessor.unlock(lock);
       expect(txn.upsert).not.toHaveBeenCalled();
     });
 
@@ -146,22 +173,41 @@ describe('DatastoreStorageAccessor', () => {
     });
 
     it('preserves extra fields via spread', async () => {
-      const entity = { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host', foo: 'bar' };
+      const lock = cfg();
+      const entity = { lockUntil: Utils.toIsoString(lockAtMostUntil(lock)), lockedBy: 'my-host', foo: 'bar' };
       const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
       const datastore = makeDatastore({
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
-      await accessor.unlock(cfg());
+      await accessor.unlock(lock);
       expect(txn.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ foo: 'bar' }),
         }),
       );
     });
+
+    it('compares the configured lockUntil field', async () => {
+      const lock = cfg();
+      const entity = { lu: Utils.toIsoString(lockAtMostUntil(lock)), lb: 'my-host' };
+      const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
+      const datastore = makeDatastore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
+      });
+      const accessor = makeAccessor({
+        datastore,
+        fieldNames: { lockUntil: 'lu', lockedAt: 'la', lockedBy: 'lb' },
+        lockedByValue: 'my-host',
+      });
+      await accessor.unlock(lock);
+      expect(txn.upsert).toHaveBeenCalledOnce();
+    });
   });
 
   describe('extend', () => {
+    const future = Date.parse('2999-01-01T00:00:00.000Z');
+
     it('returns true on success', async () => {
       const entity = { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' };
       const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
@@ -169,8 +215,31 @@ describe('DatastoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
-      expect(await accessor.extend(cfg())).toBe(true);
+      expect(await accessor.extend(cfg(), future)).toBe(true);
       expect(txn.upsert).toHaveBeenCalledOnce();
+    });
+
+    it('returns false and does not write when no previous deadline is given', async () => {
+      const entity = { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' };
+      const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
+      const datastore = makeDatastore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
+      });
+      const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
+      expect(await accessor.extend(cfg())).toBe(false);
+      expect(datastore.runTransaction).not.toHaveBeenCalled();
+      expect(txn.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not extend a newer same-host lock', async () => {
+      const entity = { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' };
+      const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
+      const datastore = makeDatastore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
+      });
+      const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
+      expect(await accessor.extend(cfg(), future + 1)).toBe(false);
+      expect(txn.upsert).not.toHaveBeenCalled();
     });
 
     it('returns false when lockedBy mismatch', async () => {
@@ -180,18 +249,19 @@ describe('DatastoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
-      expect(await accessor.extend(cfg())).toBe(false);
+      expect(await accessor.extend(cfg(), future)).toBe(false);
       expect(txn.upsert).not.toHaveBeenCalled();
     });
 
     it('returns false when lock expired', async () => {
+      const expired = Date.parse('1970-01-01T00:00:00.500Z');
       const entity = { lockUntil: '1970-01-01T00:00:00.500Z', lockedBy: 'my-host' };
       const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
       const datastore = makeDatastore({
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
-      expect(await accessor.extend(cfg())).toBe(false);
+      expect(await accessor.extend(cfg(), expired)).toBe(false);
       expect(txn.upsert).not.toHaveBeenCalled();
     });
 
@@ -201,7 +271,7 @@ describe('DatastoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
-      expect(await accessor.extend(cfg())).toBe(false);
+      expect(await accessor.extend(cfg(), future)).toBe(false);
       expect(txn.upsert).not.toHaveBeenCalled();
     });
 
@@ -212,12 +282,28 @@ describe('DatastoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host' });
-      await accessor.extend(cfg());
+      await accessor.extend(cfg(), future);
       expect(txn.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ foo: 'bar' }),
         }),
       );
+    });
+
+    it('compares the configured lockUntil field', async () => {
+      const entity = { lu: '2999-01-01T00:00:00.000Z', lb: 'my-host' };
+      const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
+      const datastore = makeDatastore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
+      });
+      const accessor = makeAccessor({
+        datastore,
+        fieldNames: { lockUntil: 'lu', lockedAt: 'la', lockedBy: 'lb' },
+        lockedByValue: 'my-host',
+      });
+      expect(await accessor.extend(cfg(), future)).toBe(true);
+      expect(await accessor.extend(cfg(), future + 1)).toBe(false);
+      expect(txn.upsert).toHaveBeenCalledOnce();
     });
   });
 
@@ -276,14 +362,14 @@ describe('DatastoreStorageAccessor', () => {
     });
 
     it('parseFieldValue handles Date objects', async () => {
-      const now = Date.now();
-      const entity = { lockUntil: new Date(now + 60_000), lockedBy: 'my-host' };
+      const deadline = new Date(NOW + 60_000);
+      const entity = { lockUntil: deadline, lockedBy: 'my-host' };
       const txn = makeTxn({ get: vi.fn().mockResolvedValue([entity]) });
       const datastore = makeDatastore({
         runTransaction: vi.fn().mockImplementation(async (fn: (t: Transaction) => Promise<unknown>) => await fn(txn)),
       });
       const accessor = makeAccessor({ datastore, lockedByValue: 'my-host', useDate: true });
-      expect(await accessor.extend(cfg())).toBe(true);
+      expect(await accessor.extend(cfg(), deadline.getTime())).toBe(true);
       expect(txn.upsert).toHaveBeenCalledOnce();
     });
   });
