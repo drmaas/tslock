@@ -202,8 +202,8 @@ describe('ArangoDbLockProvider', () => {
     const col = makeCol({
       document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
         _key: 'test',
-        lockUntil: '2999-01-01T00:00:00.000Z',
-        lockedAt: '2999-01-01T00:00:00.000Z',
+        lockUntil: '1970-01-01T00:17:40.000Z',
+        lockedAt: '1970-01-01T00:00:00.000Z',
         lockedBy: 'hostname',
         _rev: 'abc123',
       }),
@@ -223,7 +223,7 @@ describe('ArangoDbLockProvider', () => {
     const col = makeCol({
       document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
         _key: 'test',
-        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockUntil: '1970-01-01T00:17:40.000Z',
         lockedAt: '2999-01-01T00:00:00.000Z',
         lockedBy: 'this-host',
         _rev: 'rev-a',
@@ -261,7 +261,7 @@ describe('ArangoDbLockProvider', () => {
     const col = makeCol({
       document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
         _key: 'test',
-        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockUntil: '1970-01-01T00:17:40.000Z',
         lockedAt: '2999-01-01T00:00:00.000Z',
         lockedBy: 'this-host',
         _rev: 'rev-a',
@@ -294,7 +294,7 @@ describe('ArangoDbLockProvider', () => {
     const col = makeCol({
       document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
         _key: 'test',
-        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockUntil: '1970-01-01T00:17:40.000Z',
         lockedAt: '2999-01-01T00:00:00.000Z',
         lockedBy: 'this-host',
         _rev: 'rev-a',
@@ -316,7 +316,7 @@ describe('ArangoDbLockProvider', () => {
     const col = makeCol({
       document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
         _key: 'test',
-        lockUntil: '2999-01-01T00:00:00.000Z',
+        lockUntil: '1970-01-01T00:17:40.000Z',
         lockedAt: '2999-01-01T00:00:00.000Z',
         lockedBy: 'this-host',
         _rev: 'rev-a',
@@ -335,8 +335,8 @@ describe('ArangoDbLockProvider', () => {
     const col = makeCol({
       document: vi.fn().mockRejectedValueOnce({ errorNum: 1202, name: 'ArangoError' }).mockResolvedValue({
         _key: 'test',
-        lockUntil: '2999-01-01T00:00:00.000Z',
-        lockedAt: '2999-01-01T00:00:00.000Z',
+        lockUntil: '1970-01-01T00:17:40.000Z',
+        lockedAt: '1970-01-01T00:00:00.000Z',
         lockedBy: 'hostname',
         _rev: 'abc123',
       }),

@@ -1,5 +1,5 @@
 import { ClockProvider } from './clock-provider.js';
-import type { LockConfiguration } from './lock-configuration.js';
+import { type LockConfiguration, lockAtMostUntil } from './lock-configuration.js';
 import { LockException } from './lock-exception.js';
 
 export interface SimpleLock {
@@ -48,7 +48,7 @@ export abstract class AbstractSimpleLock implements SimpleLock {
 
 export interface SimpleLockDelegate {
   unlock(config: LockConfiguration): Promise<void>;
-  extend?(config: LockConfiguration): Promise<SimpleLock | undefined>;
+  extend?(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<SimpleLock | undefined>;
 }
 
 export class DelegatingSimpleLock extends AbstractSimpleLock {
@@ -65,6 +65,6 @@ export class DelegatingSimpleLock extends AbstractSimpleLock {
 
   protected override async doExtend(newConfig: LockConfiguration): Promise<SimpleLock | undefined> {
     if (!this.delegate.extend) return super.doExtend(newConfig);
-    return await this.delegate.extend(newConfig);
+    return await this.delegate.extend(newConfig, lockAtMostUntil(this.config));
   }
 }

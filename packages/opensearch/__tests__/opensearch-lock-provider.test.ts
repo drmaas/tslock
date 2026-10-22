@@ -52,5 +52,6 @@ describe('OpenSearchLockProvider', () => {
     expect(request.body.script.params.lockedBy).toBe('this-host');
     expect(request.body.script.params.lockedByField).toBe('lockedBy');
     expect(request.body.script.params.unlockTime).toBe('1970-01-01T00:16:45.000Z');
+    expect(request.body.script.params.expectedLockUntil).toBe('1970-01-01T00:17:40.000Z');
   });
 });

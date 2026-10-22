@@ -53,7 +53,8 @@ export class DynamoDBAccessor {
     }
   }
 
-  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<SimpleLock | undefined> {
+    if (previousLockAtMostUntil === undefined) return undefined;
     const now = ClockProvider.now();
     const isoNow = Utils.toIsoString(now);
     const isoNewLockAtMostUntil = Utils.toIsoString(lockAtMostUntil(config));
@@ -65,10 +66,11 @@ export class DynamoDBAccessor {
           TableName: this.tableName,
           Key: this.buildKey(config.name),
           UpdateExpression: 'SET lockUntil = :lockUntil',
-          ConditionExpression: 'lockedBy = :lockedBy AND lockUntil > :now',
+          ConditionExpression: 'lockedBy = :lockedBy AND lockUntil = :expectedLockUntil AND lockUntil > :now',
           ExpressionAttributeValues: {
             ':lockUntil': { S: isoNewLockAtMostUntil },
             ':lockedBy': { S: hostname },
+            ':expectedLockUntil': { S: Utils.toIsoString(previousLockAtMostUntil) },
             ':now': { S: isoNow },
           },
         }),
@@ -90,10 +92,11 @@ export class DynamoDBAccessor {
           TableName: this.tableName,
           Key: this.buildKey(config.name),
           UpdateExpression: 'SET lockUntil = :unlockTime',
-          ConditionExpression: 'lockedBy = :lockedBy',
+          ConditionExpression: 'lockedBy = :lockedBy AND lockUntil = :expectedLockUntil',
           ExpressionAttributeValues: {
             ':unlockTime': { S: isoUnlock },
             ':lockedBy': { S: hostname },
+            ':expectedLockUntil': { S: Utils.toIsoString(lockAtMostUntil(config)) },
           },
         }),
       );

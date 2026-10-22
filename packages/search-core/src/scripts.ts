@@ -9,7 +9,7 @@ if (ctx._source[params.lockUntilField] <= params.now) {
 `;
 
 export const UNLOCK_SCRIPT = `
-if (ctx._source[params.lockedByField] == params.lockedBy) {
+if (ctx._source[params.lockedByField] == params.lockedBy && ctx._source[params.lockUntilField] == params.expectedLockUntil) {
   ctx._source[params.lockUntilField] = params.unlockTime;
 } else {
   ctx.op = 'none';
@@ -17,7 +17,7 @@ if (ctx._source[params.lockedByField] == params.lockedBy) {
 `;
 
 export const EXTEND_SCRIPT = `
-if (ctx._source[params.lockedByField] == params.lockedBy && ctx._source[params.lockUntilField] > params.now) {
+if (ctx._source[params.lockedByField] == params.lockedBy && ctx._source[params.lockUntilField] == params.expectedLockUntil && ctx._source[params.lockUntilField] > params.now) {
   ctx._source[params.lockUntilField] = params.lockUntil;
 } else {
   ctx.op = 'none';

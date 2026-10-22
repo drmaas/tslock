@@ -14,16 +14,17 @@ describe('scripts', () => {
     expect(LOCK_SCRIPT).toContain("ctx.op = 'none'");
   });
 
-  it('UNLOCK_SCRIPT sets lockUntil only when lockedBy matches', () => {
-    expect(UNLOCK_SCRIPT).toContain('if (ctx._source[params.lockedByField] == params.lockedBy) {');
+  it('UNLOCK_SCRIPT sets lockUntil only when lockedBy and the stored deadline match', () => {
+    expect(UNLOCK_SCRIPT).toContain('ctx._source[params.lockedByField] == params.lockedBy');
+    expect(UNLOCK_SCRIPT).toContain('ctx._source[params.lockUntilField] == params.expectedLockUntil');
     expect(UNLOCK_SCRIPT).toContain('ctx._source[params.lockUntilField] = params.unlockTime');
     expect(UNLOCK_SCRIPT).toContain("ctx.op = 'none'");
   });
 
-  it('EXTEND_SCRIPT requires lockedBy and active lockUntil', () => {
-    expect(EXTEND_SCRIPT).toContain(
-      'ctx._source[params.lockedByField] == params.lockedBy && ctx._source[params.lockUntilField] > params.now',
-    );
+  it('EXTEND_SCRIPT requires lockedBy, the stored deadline, and an active lockUntil', () => {
+    expect(EXTEND_SCRIPT).toContain('ctx._source[params.lockedByField] == params.lockedBy');
+    expect(EXTEND_SCRIPT).toContain('ctx._source[params.lockUntilField] == params.expectedLockUntil');
+    expect(EXTEND_SCRIPT).toContain('ctx._source[params.lockUntilField] > params.now');
     expect(EXTEND_SCRIPT).toContain("ctx.op = 'none'");
   });
 });

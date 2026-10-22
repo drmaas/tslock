@@ -115,6 +115,14 @@ describe('SearchLockAccessor', () => {
     const extended = await lock.extend(120_000, 0);
     expect(extended).toBeDefined();
     expect(sent(update, 1).script.source).toBe(EXTEND_SCRIPT);
+    expect(sent(update, 1).script.params.expectedLockUntil).toBe('1970-01-01T00:17:40.000Z');
+    expect(sent(update, 1).script.params.lockUntil).toBe('1970-01-01T00:18:40.000Z');
+  });
+
+  it('extend() does not write when the previous deadline is missing', async () => {
+    const update = vi.fn();
+    await expect(accessor(update).extend(config())).resolves.toBeUndefined();
+    expect(update).not.toHaveBeenCalled();
   });
 
   it('extend() returns undefined when update returns noop', async () => {
@@ -157,6 +165,7 @@ describe('SearchLockAccessor', () => {
     expect(request.script.params.lockedBy).toBe('this-host');
     expect(request.script.params.lockedByField).toBe('lockedBy');
     expect(request.script.params.unlockTime).toBe('1970-01-01T00:16:45.000Z');
+    expect(request.script.params.expectedLockUntil).toBe('1970-01-01T00:17:40.000Z');
     expect(request.upsert).toBeUndefined();
   });
 

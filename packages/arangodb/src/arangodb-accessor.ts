@@ -89,7 +89,8 @@ export class ArangoDbAccessor {
     }
   }
 
-  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<SimpleLock | undefined> {
+    if (previousLockAtMostUntil === undefined) return undefined;
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const documentId = config.name;
@@ -103,6 +104,7 @@ export class ArangoDbAccessor {
     }
 
     if (existing.lockedBy !== hostname) return undefined;
+    if (existing.lockUntil !== Utils.toIsoString(previousLockAtMostUntil)) return undefined;
     if (Date.parse(existing.lockUntil) <= now) return undefined;
 
     try {
@@ -130,6 +132,7 @@ export class ArangoDbAccessor {
     }
 
     if (existing.lockedBy !== hostname) return;
+    if (existing.lockUntil !== Utils.toIsoString(lockAtMostUntil(config))) return;
 
     try {
       await this.collection.update(
