@@ -81,8 +81,9 @@ describe('DynamoDBLockProvider', () => {
     await lock.unlock();
 
     const cmd = send.mock.calls[0]![0];
-    expect(cmd.input.ConditionExpression).toBe('lockedBy = :lockedBy');
+    expect(cmd.input.ConditionExpression).toBe('lockedBy = :lockedBy AND lockUntil = :expectedLockUntil');
     expect(cmd.input.ExpressionAttributeValues[':lockedBy']).toEqual({ S: 'this-host' });
+    expect(cmd.input.ExpressionAttributeValues[':expectedLockUntil']).toEqual({ S: '1970-01-01T00:17:40.000Z' });
     expect(cmd.input.ExpressionAttributeValues[':unlockTime']).toEqual({ S: '1970-01-01T00:16:45.000Z' });
     expect(cmd.input.UpdateExpression).toBe('SET lockUntil = :unlockTime');
     expect(cmd.input.Key._id.S).toBe('report-job');
@@ -101,8 +102,9 @@ describe('DynamoDBLockProvider', () => {
     await expect(lock.unlock()).resolves.toBeUndefined();
     expect(send).toHaveBeenCalledTimes(2);
     const cmd = send.mock.calls[1]![0];
-    expect(cmd.input.ConditionExpression).toBe('lockedBy = :lockedBy');
+    expect(cmd.input.ConditionExpression).toBe('lockedBy = :lockedBy AND lockUntil = :expectedLockUntil');
     expect(cmd.input.ExpressionAttributeValues[':lockedBy']).toEqual({ S: 'this-host' });
+    expect(cmd.input.ExpressionAttributeValues[':expectedLockUntil']).toEqual({ S: '1970-01-01T00:17:40.000Z' });
   });
 
   it('unlock() works', async () => {

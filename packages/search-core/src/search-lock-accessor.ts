@@ -57,7 +57,8 @@ export class SearchLockAccessor {
     }
   }
 
-  async extend(config: LockConfiguration): Promise<SimpleLock | undefined> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<SimpleLock | undefined> {
+    if (previousLockAtMostUntil === undefined) return undefined;
     const now = ClockProvider.now();
     const hostname = Utils.getHostname();
     const isoNow = Utils.toIsoString(now);
@@ -74,6 +75,7 @@ export class SearchLockAccessor {
             now: isoNow,
             lockUntil: isoNewLockUntil,
             lockedBy: hostname,
+            expectedLockUntil: Utils.toIsoString(previousLockAtMostUntil),
             lockUntilField: this.fieldNames.lockUntil,
             lockedByField: this.fieldNames.lockedBy,
           },
@@ -94,7 +96,7 @@ export class SearchLockAccessor {
     const hostname = Utils.getHostname();
 
     try {
-      await this.client.update({
+      const response = await this.client.update({
         id: config.name,
         index: this.index,
         refresh: 'wait_for',
@@ -103,11 +105,13 @@ export class SearchLockAccessor {
           params: {
             unlockTime: isoUnlock,
             lockedBy: hostname,
+            expectedLockUntil: Utils.toIsoString(lockAtMostUntil(config)),
             lockUntilField: this.fieldNames.lockUntil,
             lockedByField: this.fieldNames.lockedBy,
           },
         },
       });
+      if (response.result === 'noop') return;
     } catch (e) {
       if (isNotFoundError(e)) return;
       throw e;
