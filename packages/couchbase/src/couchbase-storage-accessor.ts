@@ -84,6 +84,7 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
     }
     const existing = getResult.content as Record<string, unknown>;
     if (existing[this.opts.lockedByCol] !== this.lockedByValue) return;
+    if (existing[this.opts.lockUntilCol] !== lockAtMostUntil(config)) return;
     try {
       await this.collection.replace(
         this.docId(config.name),
@@ -99,7 +100,8 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
     }
   }
 
-  async extend(config: LockConfiguration): Promise<boolean> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
+    if (previousLockAtMostUntil === undefined) return false;
     let getResult: GetResult;
     try {
       getResult = await this.collection.get(this.docId(config.name));
@@ -109,7 +111,8 @@ export class CouchbaseStorageAccessor extends AbstractStorageAccessor {
     }
     const existing = getResult.content as Record<string, unknown>;
     if (existing[this.opts.lockedByCol] !== this.lockedByValue) return false;
-    if ((existing[this.opts.lockUntilCol] as number) <= ClockProvider.now()) return false;
+    const current = existing[this.opts.lockUntilCol] as number;
+    if (current !== previousLockAtMostUntil || current <= ClockProvider.now()) return false;
     try {
       await this.collection.replace(
         this.docId(config.name),

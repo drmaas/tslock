@@ -44,13 +44,25 @@ describe('CQL builders', () => {
 
   it('buildUnlockCql with default options', () => {
     const cql = buildUnlockCql({ keyspace: 'shedlock', tableName: 'shedlock', columnNames: defaultCols });
-    expect(cql).toBe('UPDATE shedlock.shedlock SET lock_until = ? WHERE name = ? IF locked_by = ? AND lock_until >= ?');
+    expect(cql).toBe('UPDATE shedlock.shedlock SET lock_until = ? WHERE name = ? IF locked_by = ? AND lock_until = ?');
   });
 
-  it('buildExtendCql produces same shape as buildUnlockCql', () => {
-    const cql1 = buildUnlockCql({ keyspace: 'ks', tableName: 'tbl', columnNames: defaultCols });
-    const cql2 = buildExtendCql({ keyspace: 'ks', tableName: 'tbl', columnNames: defaultCols });
-    expect(cql1).toBe(cql2);
+  it('buildExtendCql requires the stored deadline and that it is still in the future', () => {
+    const unlock = buildUnlockCql({ keyspace: 'ks', tableName: 'tbl', columnNames: defaultCols });
+    const extend = buildExtendCql({ keyspace: 'ks', tableName: 'tbl', columnNames: defaultCols });
+    expect(unlock).toBe('UPDATE ks.tbl SET lock_until = ? WHERE name = ? IF locked_by = ? AND lock_until = ?');
+    expect(extend).toBe(
+      'UPDATE ks.tbl SET lock_until = ? WHERE name = ? IF locked_by = ? AND lock_until = ? AND lock_until > ?',
+    );
+  });
+
+  it('buildUnlockCql and buildExtendCql keep custom column names', () => {
+    const unlock = buildUnlockCql({ keyspace: 'ks', tableName: 'tbl', columnNames: customCols });
+    const extend = buildExtendCql({ keyspace: 'ks', tableName: 'tbl', columnNames: customCols });
+    expect(unlock).toBe('UPDATE ks.tbl SET expires_at = ? WHERE lock_name = ? IF owner = ? AND expires_at = ?');
+    expect(extend).toBe(
+      'UPDATE ks.tbl SET expires_at = ? WHERE lock_name = ? IF owner = ? AND expires_at = ? AND expires_at > ?',
+    );
   });
 
   it('buildCreateTableCql with default options', () => {

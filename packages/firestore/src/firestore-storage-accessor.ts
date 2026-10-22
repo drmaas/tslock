@@ -83,26 +83,28 @@ export class FirestoreStorageAccessor extends AbstractStorageAccessor {
 
   async unlock(config: LockConfiguration): Promise<void> {
     const ref = this.docRef(config.name);
+    const expected = lockAtMostUntil(config);
     await this.firestore.runTransaction(async (txn: Transaction) => {
       const snap = await txn.get(ref);
       if (!snap.exists) return;
       if (snap.get(this.fieldNames.lockedBy) !== this.lockedByValue) return;
       const current = toMillis(snap.get(this.fieldNames.lockUntil) as string | Timestamp);
-      if (current < ClockProvider.now()) return;
+      if (current !== expected) return;
       txn.update(ref, {
         [this.fieldNames.lockUntil]: this.toFieldValue(unlockTime(config)),
       });
     });
   }
 
-  async extend(config: LockConfiguration): Promise<boolean> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
+    if (previousLockAtMostUntil === undefined) return false;
     const ref = this.docRef(config.name);
     return await this.firestore.runTransaction(async (txn: Transaction) => {
       const snap = await txn.get(ref);
       if (!snap.exists) return false;
       if (snap.get(this.fieldNames.lockedBy) !== this.lockedByValue) return false;
       const current = toMillis(snap.get(this.fieldNames.lockUntil) as string | Timestamp);
-      if (current < ClockProvider.now()) return false;
+      if (current !== previousLockAtMostUntil || current <= ClockProvider.now()) return false;
       txn.update(ref, {
         [this.fieldNames.lockUntil]: this.toFieldValue(lockAtMostUntil(config)),
       });

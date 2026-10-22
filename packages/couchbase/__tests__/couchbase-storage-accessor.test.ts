@@ -89,7 +89,7 @@ describe('CouchbaseStorageAccessor', () => {
   describe('unlock', () => {
     it('resolves without error on success', async () => {
       const col = makeCollection({
-        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_050_000 }, cas: '1' }),
+        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_060_000 }, cas: '1' }),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       await expect(accessor.unlock(config())).resolves.toBeUndefined();
@@ -100,6 +100,17 @@ describe('CouchbaseStorageAccessor', () => {
       );
     });
 
+    it('replaces a matching deadline after it has passed', async () => {
+      const lock = config();
+      ClockProvider.setClock(() => 1_200_000);
+      const col = makeCollection({
+        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_060_000 }, cas: '1' }),
+      });
+      const accessor = new CouchbaseStorageAccessor(col, opts());
+      await expect(accessor.unlock(lock)).resolves.toBeUndefined();
+      expect(col.replace).toHaveBeenCalledOnce();
+    });
+
     it('no-ops on DocumentNotFoundError', async () => {
       const col = makeCollection({ get: vi.fn().mockRejectedValue(new DocumentNotFoundError(new Error('not found'))) });
       const accessor = new CouchbaseStorageAccessor(col, opts());
@@ -108,7 +119,7 @@ describe('CouchbaseStorageAccessor', () => {
 
     it('no-ops on CasMismatchError', async () => {
       const col = makeCollection({
-        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_050_000 }, cas: '1' }),
+        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_060_000 }, cas: '1' }),
         replace: vi.fn().mockRejectedValue(new CasMismatchError(new Error('cas mismatch'))),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
@@ -117,11 +128,29 @@ describe('CouchbaseStorageAccessor', () => {
 
     it('does not replace when a different owner holds the record', async () => {
       const col = makeCollection({
-        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'other-host', lockUntil: 1_050_000 }, cas: '1' }),
+        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'other-host', lockUntil: 1_060_000 }, cas: '1' }),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
       await expect(accessor.unlock(config())).resolves.toBeUndefined();
       expect(col.replace).not.toHaveBeenCalled();
+    });
+
+    it('does not unlock a newer same-host lock', async () => {
+      const col = makeCollection({
+        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_120_000 }, cas: '1' }),
+      });
+      const accessor = new CouchbaseStorageAccessor(col, opts());
+      await expect(accessor.unlock(config())).resolves.toBeUndefined();
+      expect(col.replace).not.toHaveBeenCalled();
+    });
+
+    it('compares the configured lockUntil field', async () => {
+      const col = makeCollection({
+        get: vi.fn().mockResolvedValue({ content: { owner: 'my-host', expires_at: 1_060_000 }, cas: '1' }),
+      });
+      const accessor = new CouchbaseStorageAccessor(col, opts({ lockUntilCol: 'expires_at', lockedByCol: 'owner' }));
+      await accessor.unlock(config());
+      expect(col.replace).toHaveBeenCalledOnce();
     });
   });
 
@@ -131,7 +160,27 @@ describe('CouchbaseStorageAccessor', () => {
         get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_050_000 }, cas: '1' }),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
-      expect(await accessor.extend(config())).toBe(true);
+      expect(await accessor.extend(config(), 1_050_000)).toBe(true);
+      expect(col.replace).toHaveBeenCalledOnce();
+    });
+
+    it('returns false and does not write when no previous deadline is given', async () => {
+      const col = makeCollection({
+        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_050_000 }, cas: '1' }),
+      });
+      const accessor = new CouchbaseStorageAccessor(col, opts());
+      expect(await accessor.extend(config())).toBe(false);
+      expect(col.get).not.toHaveBeenCalled();
+      expect(col.replace).not.toHaveBeenCalled();
+    });
+
+    it('does not extend a newer same-host lock', async () => {
+      const col = makeCollection({
+        get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 1_120_000 }, cas: '1' }),
+      });
+      const accessor = new CouchbaseStorageAccessor(col, opts());
+      expect(await accessor.extend(config(), 1_050_000)).toBe(false);
+      expect(col.replace).not.toHaveBeenCalled();
     });
 
     it('returns false when not owned', async () => {
@@ -139,7 +188,8 @@ describe('CouchbaseStorageAccessor', () => {
         get: vi.fn().mockResolvedValue({ content: { lockedBy: 'other-host', lockUntil: 1_050_000 }, cas: '1' }),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
-      expect(await accessor.extend(config())).toBe(false);
+      expect(await accessor.extend(config(), 1_050_000)).toBe(false);
+      expect(col.replace).not.toHaveBeenCalled();
     });
 
     it('returns false when expired', async () => {
@@ -147,13 +197,14 @@ describe('CouchbaseStorageAccessor', () => {
         get: vi.fn().mockResolvedValue({ content: { lockedBy: 'my-host', lockUntil: 900_000 }, cas: '1' }),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
-      expect(await accessor.extend(config())).toBe(false);
+      expect(await accessor.extend(config(), 900_000)).toBe(false);
+      expect(col.replace).not.toHaveBeenCalled();
     });
 
     it('returns false on DocumentNotFoundError', async () => {
       const col = makeCollection({ get: vi.fn().mockRejectedValue(new DocumentNotFoundError(new Error('not found'))) });
       const accessor = new CouchbaseStorageAccessor(col, opts());
-      expect(await accessor.extend(config())).toBe(false);
+      expect(await accessor.extend(config(), 1_050_000)).toBe(false);
     });
 
     it('returns false on CasMismatchError', async () => {
@@ -162,7 +213,17 @@ describe('CouchbaseStorageAccessor', () => {
         replace: vi.fn().mockRejectedValue(new CasMismatchError(new Error('cas mismatch'))),
       });
       const accessor = new CouchbaseStorageAccessor(col, opts());
-      expect(await accessor.extend(config())).toBe(false);
+      expect(await accessor.extend(config(), 1_050_000)).toBe(false);
+    });
+
+    it('compares the configured lockUntil field', async () => {
+      const col = makeCollection({
+        get: vi.fn().mockResolvedValue({ content: { owner: 'my-host', expires_at: 1_050_000 }, cas: '1' }),
+      });
+      const accessor = new CouchbaseStorageAccessor(col, opts({ lockUntilCol: 'expires_at', lockedByCol: 'owner' }));
+      expect(await accessor.extend(config(), 1_050_000)).toBe(true);
+      expect(await accessor.extend(config(), 1_060_000)).toBe(false);
+      expect(col.replace).toHaveBeenCalledOnce();
     });
   });
 });

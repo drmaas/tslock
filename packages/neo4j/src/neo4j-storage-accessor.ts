@@ -93,17 +93,20 @@ export class Neo4jStorageAccessor extends AbstractStorageAccessor {
         name: config.name,
         unlockTime: unlockTime(config),
         lockedBy: this.lockedByValue,
+        expectedLockUntil: lockAtMostUntil(config),
       }),
     );
   }
 
-  async extend(config: LockConfiguration): Promise<boolean> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
+    if (previousLockAtMostUntil === undefined) return false;
     const result = await this.withSession((tx) =>
       tx.run(this.extendCypher, {
         name: config.name,
         lockedBy: this.lockedByValue,
         now: ClockProvider.now(),
         lockUntil: lockAtMostUntil(config),
+        expectedLockUntil: previousLockAtMostUntil,
       }),
     );
     return result.records.length > 0;

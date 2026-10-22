@@ -51,17 +51,19 @@ export class CassandraStorageAccessor extends AbstractStorageAccessor {
       new Date(unlockTime(config)),
       config.name,
       this.opts.lockedByValue,
-      new Date(ClockProvider.now()),
+      new Date(lockAtMostUntil(config)),
     ];
     await this.executeLwt(cql, params);
   }
 
-  async extend(config: LockConfiguration): Promise<boolean> {
+  async extend(config: LockConfiguration, previousLockAtMostUntil?: number): Promise<boolean> {
+    if (previousLockAtMostUntil === undefined) return false;
     const cql = buildExtendCql(this.opts);
     const params: (string | Date)[] = [
       new Date(lockAtMostUntil(config)),
       config.name,
       this.opts.lockedByValue,
+      new Date(previousLockAtMostUntil),
       new Date(ClockProvider.now()),
     ];
     return await this.executeLwt(cql, params);

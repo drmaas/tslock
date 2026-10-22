@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException, lockAtMostUntil } from '@tslock/core';
 import cassandra from 'cassandra-driver';
 import { describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { ResolvedCassandraOptions } from '../../src/cassandra-cql.js';
@@ -150,27 +150,64 @@ describe('CassandraStorageAccessor', () => {
     const client = makeClient();
     (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
-    await accessor.unlock(config());
+    const lock = config();
+    await accessor.unlock(lock);
     expect(client.execute).toHaveBeenCalledWith(
-      expect.stringContaining('SET lock_until'),
-      expect.arrayContaining([expect.any(Date), 'test', 'myhost', expect.any(Date)]),
+      expect.stringContaining('IF locked_by = ? AND lock_until = ?'),
+      [new Date(1_000_000), 'test', 'myhost', new Date(lockAtMostUntil(lock))],
       expect.any(Object),
     );
   });
 
-  it('extend returns true when [applied] = true', async () => {
+  it('does not unlock or extend a newer same-host lock', async () => {
     const client = makeClient();
     (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
-    const result = await accessor.extend(config());
+    const lock = config();
+    const acquired = lockAtMostUntil(lock);
+    const newerDeadline = acquired + 60_000;
+
+    await accessor.unlock(lock);
+    const unlockCall = (client.execute as unknown as MockInstance).mock.calls[0]!;
+    expect(unlockCall[0]).toContain('lock_until = ?');
+    expect(unlockCall[0]).not.toContain('lock_until >= ?');
+    expect(unlockCall[1]).toEqual([new Date(1_000_000), 'test', 'myhost', new Date(acquired)]);
+    expect(unlockCall[1][3]).not.toEqual(new Date(newerDeadline));
+
+    expect(await accessor.extend(lock)).toBe(false);
+    expect(client.execute).toHaveBeenCalledOnce();
+
+    await accessor.extend(lock, acquired);
+    const extendCall = (client.execute as unknown as MockInstance).mock.calls[1]!;
+    expect(extendCall[0]).toContain('lock_until = ? AND lock_until > ?');
+    expect(extendCall[1]).toEqual([new Date(acquired), 'test', 'myhost', new Date(acquired), new Date(1_000_000)]);
+    expect(extendCall[1][3]).not.toEqual(new Date(newerDeadline));
+  });
+
+  it('extend returns false and does not write when no previous deadline is given', async () => {
+    const client = makeClient();
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
+    const accessor = new CassandraStorageAccessor(client, defaultOpts);
+    expect(await accessor.extend(config())).toBe(false);
+    expect(client.execute).not.toHaveBeenCalled();
+  });
+
+  it('extend returns true when the deadline matches and [applied] = true', async () => {
+    const client = makeClient();
+    (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': true }] });
+    const accessor = new CassandraStorageAccessor(client, defaultOpts);
+    const lock = config();
+    const result = await accessor.extend(lock, lockAtMostUntil(lock));
     expect(result).toBe(true);
+    expect(client.execute).toHaveBeenCalledOnce();
   });
 
   it('extend returns false when [applied] = false', async () => {
     const client = makeClient();
     (client.execute as unknown as MockInstance).mockResolvedValue({ rows: [{ '[applied]': false }] });
     const accessor = new CassandraStorageAccessor(client, defaultOpts);
-    const result = await accessor.extend(config());
+    const lock = config();
+    const result = await accessor.extend(lock, lockAtMostUntil(lock));
     expect(result).toBe(false);
   });
 

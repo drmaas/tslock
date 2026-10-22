@@ -1,5 +1,5 @@
 import type { Firestore } from '@google-cloud/firestore';
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException, lockAtMostUntil, Utils } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import { FirestoreStorageAccessor } from '../src/firestore-storage-accessor.js';
 
@@ -122,45 +122,90 @@ describe('FirestoreStorageAccessor', () => {
 
   describe('unlock', () => {
     it('updates lockUntil on match', async () => {
+      const lock = cfg();
       const txn = makeTxn({
         get: vi
           .fn()
-          .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' })),
+          .mockResolvedValue(
+            makeSnapshot(true, { lockUntil: Utils.toIsoString(lockAtMostUntil(lock)), lockedBy: 'my-host' }),
+          ),
       });
       const firestore = makeFirestore({
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
-      await accessor.unlock(cfg());
+      await accessor.unlock(lock);
+      expect(txn.update).toHaveBeenCalledOnce();
+    });
+
+    it('unlocks a matching deadline after it has passed', async () => {
+      const lock = cfg();
+      ClockProvider.setClock(() => NOW + 120_000);
+      const txn = makeTxn({
+        get: vi
+          .fn()
+          .mockResolvedValue(
+            makeSnapshot(true, { lockUntil: Utils.toIsoString(lockAtMostUntil(lock)), lockedBy: 'my-host' }),
+          ),
+      });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
+      const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
+      await accessor.unlock(lock);
       expect(txn.update).toHaveBeenCalledOnce();
     });
 
     it('skips when lockedBy mismatch', async () => {
+      const lock = cfg();
       const txn = makeTxn({
         get: vi
           .fn()
-          .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'other-host' })),
+          .mockResolvedValue(
+            makeSnapshot(true, { lockUntil: Utils.toIsoString(lockAtMostUntil(lock)), lockedBy: 'other-host' }),
+          ),
       });
       const firestore = makeFirestore({
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
-      await accessor.unlock(cfg());
+      await accessor.unlock(lock);
       expect(txn.update).not.toHaveBeenCalled();
     });
 
-    it('skips when lock expired (lockUntil < now)', async () => {
+    it('does not unlock a newer same-host lock', async () => {
+      const lock = cfg();
       const txn = makeTxn({
-        get: vi
-          .fn()
-          .mockResolvedValue(makeSnapshot(true, { lockUntil: '1970-01-01T00:00:00.500Z', lockedBy: 'my-host' })),
+        get: vi.fn().mockResolvedValue(
+          makeSnapshot(true, {
+            lockUntil: Utils.toIsoString(lockAtMostUntil(lock) + 60_000),
+            lockedBy: 'my-host',
+          }),
+        ),
       });
       const firestore = makeFirestore({
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
-      await accessor.unlock(cfg());
+      await accessor.unlock(lock);
       expect(txn.update).not.toHaveBeenCalled();
+    });
+
+    it('matches a Timestamp lockUntil by millis', async () => {
+      const lock = cfg();
+      const txn = makeTxn({
+        get: vi
+          .fn()
+          .mockResolvedValue(
+            makeSnapshot(true, { lockUntil: { toMillis: () => lockAtMostUntil(lock) }, lockedBy: 'my-host' }),
+          ),
+      });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
+      const accessor = makeAccessor({ firestore, lockedByValue: 'my-host', useTimestamps: true });
+      await accessor.unlock(lock);
+      expect(txn.update).toHaveBeenCalledOnce();
     });
 
     it('skips when document missing', async () => {
@@ -175,6 +220,8 @@ describe('FirestoreStorageAccessor', () => {
   });
 
   describe('extend', () => {
+    const future = Date.parse('2999-01-01T00:00:00.000Z');
+
     it('returns true on success', async () => {
       const txn = makeTxn({
         get: vi
@@ -185,8 +232,37 @@ describe('FirestoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
-      expect(await accessor.extend(cfg())).toBe(true);
+      expect(await accessor.extend(cfg(), future)).toBe(true);
       expect(txn.update).toHaveBeenCalledOnce();
+    });
+
+    it('returns false and does not write when no previous deadline is given', async () => {
+      const txn = makeTxn({
+        get: vi
+          .fn()
+          .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' })),
+      });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
+      const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
+      expect(await accessor.extend(cfg())).toBe(false);
+      expect(firestore.runTransaction).not.toHaveBeenCalled();
+      expect(txn.update).not.toHaveBeenCalled();
+    });
+
+    it('does not extend a newer same-host lock', async () => {
+      const txn = makeTxn({
+        get: vi
+          .fn()
+          .mockResolvedValue(makeSnapshot(true, { lockUntil: '2999-01-01T00:00:00.000Z', lockedBy: 'my-host' })),
+      });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
+      const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
+      expect(await accessor.extend(cfg(), future + 1)).toBe(false);
+      expect(txn.update).not.toHaveBeenCalled();
     });
 
     it('returns false when lockedBy mismatch', async () => {
@@ -199,11 +275,12 @@ describe('FirestoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
-      expect(await accessor.extend(cfg())).toBe(false);
+      expect(await accessor.extend(cfg(), future)).toBe(false);
       expect(txn.update).not.toHaveBeenCalled();
     });
 
     it('returns false when lock expired', async () => {
+      const expired = Date.parse('1970-01-01T00:00:00.500Z');
       const txn = makeTxn({
         get: vi
           .fn()
@@ -213,7 +290,7 @@ describe('FirestoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
-      expect(await accessor.extend(cfg())).toBe(false);
+      expect(await accessor.extend(cfg(), expired)).toBe(false);
       expect(txn.update).not.toHaveBeenCalled();
     });
 
@@ -223,8 +300,29 @@ describe('FirestoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host' });
-      expect(await accessor.extend(cfg())).toBe(false);
+      expect(await accessor.extend(cfg(), future)).toBe(false);
       expect(txn.update).not.toHaveBeenCalled();
+    });
+
+    it('compares the configured lockUntil field', async () => {
+      const lock = cfg();
+      const txn = makeTxn({
+        get: vi
+          .fn()
+          .mockResolvedValue(makeSnapshot(true, { lu: Utils.toIsoString(lockAtMostUntil(lock)), lb: 'my-host' })),
+      });
+      const firestore = makeFirestore({
+        runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
+      });
+      const accessor = makeAccessor({
+        firestore,
+        fieldNames: { lockUntil: 'lu', lockedAt: 'la', lockedBy: 'lb' },
+        lockedByValue: 'my-host',
+      });
+      await accessor.unlock(lock);
+      expect(txn.update).toHaveBeenCalledOnce();
+      expect(await accessor.extend(lock, lockAtMostUntil(lock) + 1)).toBe(false);
+      expect(txn.update).toHaveBeenCalledOnce();
     });
   });
 
@@ -265,7 +363,7 @@ describe('FirestoreStorageAccessor', () => {
         runTransaction: vi.fn().mockImplementation(async (fn: (...args: unknown[]) => unknown) => await fn(txn)),
       });
       const accessor = makeAccessor({ firestore, lockedByValue: 'my-host', useTimestamps: false });
-      expect(await accessor.extend(cfg())).toBe(true);
+      expect(await accessor.extend(cfg(), Date.parse('2999-01-01T00:00:00.000Z'))).toBe(true);
       expect(txn.update).toHaveBeenCalledOnce();
     });
   });

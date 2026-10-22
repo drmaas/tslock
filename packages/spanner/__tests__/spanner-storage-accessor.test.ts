@@ -1,5 +1,5 @@
 import type { Database } from '@google-cloud/spanner';
-import { ClockProvider, createLockConfig, LockException } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException, lockAtMostUntil, Utils } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { SpannerColumnNames } from '../src/spanner-configuration.js';
 import { SpannerStorageAccessor } from '../src/spanner-storage-accessor.js';
@@ -324,14 +324,50 @@ describe('SpannerStorageAccessor', () => {
       expect(captured[0]!.sql).toContain('SET `lu` = @unlockTime');
       expect(captured[0]!.sql).toContain('WHERE `n` = @name');
       expect(captured[0]!.sql).toContain('AND `lb` = @lockedBy');
+      expect(captured[0]!.sql).toContain('AND `lu` = @expectedLockUntil');
       expect(captured[0]!.params).toEqual({
         unlockTime: '1970-01-01T00:16:40.000Z',
         name: 'test',
         lockedBy: 'my-host',
+        expectedLockUntil: '1970-01-01T00:17:40.000Z',
       });
       expect(captured[0]!.types).toEqual({
         unlockTime: 'timestamp',
+        expectedLockUntil: 'timestamp',
       });
+    });
+
+    it('does not unlock or extend a newer same-host lock', async () => {
+      const tx = makeTx();
+      const captured: { sql: string; params?: Record<string, unknown> }[] = [];
+      tx.runUpdate.mockImplementation((q: { sql: string; params?: Record<string, unknown> }) => {
+        captured.push(q);
+        return [1];
+      });
+      const db = makeDb({
+        runTransactionAsync: vi
+          .fn()
+          .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
+      });
+      const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
+      const lock = cfg();
+      const acquired = Utils.toIsoString(lockAtMostUntil(lock));
+      const newer = Utils.toIsoString(lockAtMostUntil(lock) + 60_000);
+
+      await accessor.unlock(lock);
+      expect(captured[0]!.sql).toContain('`lockedBy` = @lockedBy AND `lockUntil` = @expectedLockUntil');
+      expect(captured[0]!.sql).not.toContain('`lockUntil` > @now');
+      expect(captured[0]!.params?.expectedLockUntil).toBe(acquired);
+      expect(captured[0]!.params?.expectedLockUntil).not.toBe(newer);
+
+      expect(await accessor.extend(lock)).toBe(false);
+      expect(captured).toHaveLength(1);
+
+      await accessor.extend(lock, lockAtMostUntil(lock));
+      expect(captured[1]!.sql).toContain('`lockUntil` = @expectedLockUntil AND `lockUntil` > @now');
+      expect(captured[1]!.params?.expectedLockUntil).toBe(acquired);
+      expect(captured[1]!.params?.expectedLockUntil).not.toBe(newer);
+      expect(captured[1]!.params?.lockedBy).toBe('my-host');
     });
   });
 
@@ -345,8 +381,22 @@ describe('SpannerStorageAccessor', () => {
           .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
       });
       const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
-      expect(await accessor.extend(cfg())).toBe(true);
+      const lock = cfg();
+      expect(await accessor.extend(lock, lockAtMostUntil(lock))).toBe(true);
       expect(tx.commit).toHaveBeenCalledOnce();
+    });
+
+    it('returns false and does not write when no previous deadline is given', async () => {
+      const tx = makeTx();
+      const db = makeDb({
+        runTransactionAsync: vi
+          .fn()
+          .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
+      });
+      const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
+      expect(await accessor.extend(cfg())).toBe(false);
+      expect(db.runTransactionAsync).not.toHaveBeenCalled();
+      expect(tx.runUpdate).not.toHaveBeenCalled();
     });
 
     it('returns false when row count is 0', async () => {
@@ -358,7 +408,8 @@ describe('SpannerStorageAccessor', () => {
           .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
       });
       const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
-      expect(await accessor.extend(cfg())).toBe(false);
+      const lock = cfg();
+      expect(await accessor.extend(lock, lockAtMostUntil(lock))).toBe(false);
     });
 
     it('includes lockUntil > @now condition and types timestamp params', async () => {
@@ -376,16 +427,20 @@ describe('SpannerStorageAccessor', () => {
           .mockImplementation(async (fn: (...args: unknown[]) => Promise<unknown>) => await runTx(tx, fn)),
       });
       const accessor = new SpannerStorageAccessor(db as unknown as Database, 'shedlock', cols(), 'my-host');
-      await accessor.extend(cfg());
+      const lock = cfg();
+      await accessor.extend(lock, 1_030_000);
+      expect(captured[0]!.sql).toContain('AND `lockUntil` = @expectedLockUntil');
       expect(captured[0]!.sql).toContain('AND `lockUntil` > @now');
       expect(captured[0]!.params).toEqual({
         lockUntil: '1970-01-01T00:17:40.000Z',
         name: 'test',
         lockedBy: 'my-host',
+        expectedLockUntil: '1970-01-01T00:17:10.000Z',
         now: '1970-01-01T00:16:40.000Z',
       });
       expect(captured[0]!.types).toEqual({
         lockUntil: 'timestamp',
+        expectedLockUntil: 'timestamp',
         now: 'timestamp',
       });
     });

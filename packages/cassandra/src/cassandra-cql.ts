@@ -38,7 +38,7 @@ export function buildUnlockCql(opts: {
   columnNames: ResolvedColumnNames;
 }): string {
   const { keyspace, tableName, columnNames } = opts;
-  return `UPDATE ${keyspace}.${tableName} SET ${columnNames.lockUntil} = ? WHERE ${columnNames.name} = ? IF ${columnNames.lockedBy} = ? AND ${columnNames.lockUntil} >= ?`;
+  return `UPDATE ${keyspace}.${tableName} SET ${columnNames.lockUntil} = ? WHERE ${columnNames.name} = ? IF ${columnNames.lockedBy} = ? AND ${columnNames.lockUntil} = ?`;
 }
 
 export function buildExtendCql(opts: {
@@ -47,7 +47,7 @@ export function buildExtendCql(opts: {
   columnNames: ResolvedColumnNames;
 }): string {
   const { keyspace, tableName, columnNames } = opts;
-  return `UPDATE ${keyspace}.${tableName} SET ${columnNames.lockUntil} = ? WHERE ${columnNames.name} = ? IF ${columnNames.lockedBy} = ? AND ${columnNames.lockUntil} >= ?`;
+  return `UPDATE ${keyspace}.${tableName} SET ${columnNames.lockUntil} = ? WHERE ${columnNames.name} = ? IF ${columnNames.lockedBy} = ? AND ${columnNames.lockUntil} = ? AND ${columnNames.lockUntil} > ?`;
 }
 
 export function buildCreateTableCql(opts: {
