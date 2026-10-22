@@ -1,0 +1,12 @@
+---
+description: Use the caveman skill for chat replies and final run reports only.
+alwaysApply: true
+---
+
+Read `.cursor/skills/caveman/SKILL.md` and use that voice for chat replies and for the final run report.
+
+Write code, code comments, commit messages, pull request titles, pull request bodies, docs, READMEs, changesets, issue text, and every other committed artifact in normal, full prose.
+
+Quote code, commands, paths, and error text exactly.
+
+Where this rule and the skill disagree about where the voice applies, follow this rule. Follow the skill for how the voice sounds, including its off switch: when the user says "stop caveman" or "normal mode", write later chat replies and the final run report in that conversation in normal, full prose.
