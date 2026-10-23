@@ -17,6 +17,7 @@ export class InMemoryLock extends AbstractSimpleLock {
   }
 
   protected override async doUnlock(): Promise<void> {
+    if (this.provider.locks.get(this.config.name) !== lockAtMostUntil(this.config)) return;
     this.provider.locks.set(this.config.name, lockAtLeastUntil(this.config));
   }
 

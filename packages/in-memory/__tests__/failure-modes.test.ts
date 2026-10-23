@@ -206,7 +206,7 @@ describe('documented failure modes (in-memory harness)', () => {
     });
   });
 
-  it('shows stale unlock after re-acquisition can overwrite the new holder (in-memory)', async () => {
+  it('leaves the new holder in place when unlock follows re-acquisition', async () => {
     await withMutableClock(1_000_000, async (clock) => {
       const provider = new InMemoryLockProvider();
       const first = (await provider.lock(createLockConfig('stale-unlock', 5_000, 0)))!;
@@ -216,10 +216,12 @@ describe('documented failure modes (in-memory harness)', () => {
       expect(provider.locks.get('stale-unlock')).toBe(clock.now() + 60_000);
 
       await first.unlock();
-      expect(provider.locks.get('stale-unlock')).toBe(1_000_000);
-      expect(provider.isLocked('stale-unlock')).toBe(false);
+      expect(provider.locks.get('stale-unlock')).toBe(clock.now() + 60_000);
+      expect(provider.isLocked('stale-unlock')).toBe(true);
+      expect(await provider.lock(createLockConfig('stale-unlock', 5_000))).toBeUndefined();
 
       await second.unlock();
+      expect(await provider.lock(createLockConfig('stale-unlock', 5_000))).toBeDefined();
     });
   });
 

@@ -63,7 +63,7 @@ Keep-alive **reduces** overrun risk; it does not eliminate skew, eviction, or a 
 
 ### 5. Stale unlock after re-acquisition
 
-After expiry or eviction, a second instance may hold the lock. If the first instance later calls `unlock()` (or a delayed unlock path), some backends can mutate or clear the record without proving current ownership. The in-memory harness demonstrates this class of race for teaching purposes; production providers vary (Lua ownership checks, CAS, LWT, etc.).
+After expiry or eviction, a second instance may hold the lock. If the first instance later calls `unlock()` (or a delayed unlock path), a backend that writes without proving current ownership can mutate or clear the newer record. `@tslock/in-memory` writes `lockAtLeastUntil` only when the map still stores this acquisition's `lockAtMostUntil`. A reacquire that stores a different number is left alone. The map holds only that number, so a later acquire at the same clock with the same `lockAtMostFor` still matches, and a stale unlock can replace it. An unlock of the matching acquisition still applies `lockAtLeastFor`, with no check that the deadline is still in the future. Workers KV can still delete a newer holder (section 7). Other production providers use their own ownership checks.
 
 Do not treat "I still have a `SimpleLock` object" as proof that the storage lease is exclusive after `lockUntil`.
 
