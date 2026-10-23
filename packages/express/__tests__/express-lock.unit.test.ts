@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { LockProvider, SimpleLock } from '@tslock/core';
+import { createLockConfig, type LockProvider, type SimpleLock } from '@tslock/core';
 import type { NextFunction, Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 import { createExpressLock } from '../src/index.js';
@@ -59,6 +59,32 @@ function createMockResponse() {
   res.status = vi.fn().mockReturnValue(res);
   res.off = vi.fn().mockReturnValue(res);
   return res;
+}
+
+function createHoldingLockProvider() {
+  const held = new Set<string>();
+  let unlockCount = 0;
+  const provider: LockProvider = {
+    async lock(config) {
+      if (held.has(config.name)) {
+        return undefined;
+      }
+      held.add(config.name);
+      return {
+        async unlock() {
+          held.delete(config.name);
+          unlockCount += 1;
+        },
+        async extend() {
+          return undefined;
+        },
+      } as SimpleLock;
+    },
+  };
+  return {
+    provider,
+    unlockCount: () => unlockCount,
+  };
 }
 
 function createMockLockProvider(shouldAcquire = true): LockProvider {
@@ -132,12 +158,12 @@ describe('createExpressLock', () => {
   });
 
   it('unlocks on response finish', async () => {
-    let unlocked = false;
+    let unlockCount = 0;
     const lp: LockProvider = {
       async lock() {
         return {
           async unlock() {
-            unlocked = true;
+            unlockCount += 1;
           },
           async extend() {
             return undefined;
@@ -165,27 +191,19 @@ describe('createExpressLock', () => {
 
     await vi.waitFor(
       () => {
-        expect(unlocked).toBe(true);
+        expect(unlockCount).toBe(1);
       },
       { timeout: 2000 },
     );
+
+    res.emit('close');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(unlockCount).toBe(1);
   });
 
-  it('unlocks on response close (client disconnect)', async () => {
-    let unlocked = false;
-    const lp: LockProvider = {
-      async lock() {
-        return {
-          async unlock() {
-            unlocked = true;
-          },
-          async extend() {
-            return undefined;
-          },
-        } as SimpleLock;
-      },
-    };
-    const tslock = createExpressLock({ lockProvider: lp });
+  it('keeps the lock held when the response closes before finish', async () => {
+    const { provider, unlockCount } = createHoldingLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider });
     const middleware = tslock();
 
     const req = createMockRequest('GET', '/api/test');
@@ -202,13 +220,53 @@ describe('createExpressLock', () => {
     );
 
     res.emit('close');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(unlockCount()).toBe(0);
+    await expect(provider.lock(createLockConfig('GET:/api/test', 30_000))).resolves.toBeUndefined();
+
+    res.emit('finish');
 
     await vi.waitFor(
       () => {
-        expect(unlocked).toBe(true);
+        expect(unlockCount()).toBe(1);
       },
       { timeout: 2000 },
     );
+
+    await expect(provider.lock(createLockConfig('GET:/api/test', 30_000))).resolves.toBeDefined();
+    expect(unlockCount()).toBe(1);
+  });
+
+  it('unlocks once on lockAtMostFor while the handler is still running', async () => {
+    const { provider, unlockCount } = createHoldingLockProvider();
+    const tslock = createExpressLock({ lockProvider: provider, lockAtMostFor: 50 });
+    const middleware = tslock();
+
+    const req = createMockRequest('GET', '/api/test');
+    const res = createMockResponse();
+    const next = vi.fn();
+
+    middleware(req as unknown as Request, res as unknown as Response, next as NextFunction);
+
+    await vi.waitFor(
+      () => {
+        expect(next).toHaveBeenCalled();
+      },
+      { timeout: 2000 },
+    );
+
+    await vi.waitFor(
+      () => {
+        expect(unlockCount()).toBe(1);
+      },
+      { timeout: 2000 },
+    );
+
+    res.emit('close');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(unlockCount()).toBe(1);
+    await expect(provider.lock(createLockConfig('GET:/api/test', 30_000))).resolves.toBeDefined();
   });
 
   it('uses custom lockedStatus', async () => {

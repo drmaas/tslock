@@ -2,7 +2,7 @@
 
 > TSLock middleware integration for Express.js.
 
-The Express adapter acquires a lock before entering a route handler, returns a configurable lock-failure response when another request owns the lock, and releases the lock when the response finishes or the client disconnects.
+The Express adapter acquires a lock before entering a route handler, returns a configurable lock-failure response when another request owns the lock, and releases the lock when the response finishes or `lockAtMostFor` elapses. A client disconnect leaves the lock held until one of those release paths.
 
 ## Installation
 
