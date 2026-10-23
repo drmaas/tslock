@@ -49,34 +49,17 @@ export function createExpressLock(
           const runHandler = () =>
             new Promise<void>((resolve) => {
               let settled = false;
-              const onFinish = () => {
-                if (!settled) {
-                  settled = true;
-                  cleanup();
-                  resolve();
+              const release = () => {
+                if (settled) {
+                  return;
                 }
-              };
-              const onClose = () => {
-                if (!settled) {
-                  settled = true;
-                  cleanup();
-                  resolve();
-                }
-              };
-              const timeout = setTimeout(() => {
-                if (!settled) {
-                  settled = true;
-                  cleanup();
-                  resolve();
-                }
-              }, lockAtMostMs);
-              const cleanup = () => {
+                settled = true;
                 clearTimeout(timeout);
-                res.off('finish', onFinish);
-                res.off('close', onClose);
+                res.off('finish', release);
+                resolve();
               };
-              res.on('finish', onFinish);
-              res.on('close', onClose);
+              const timeout = setTimeout(release, lockAtMostMs);
+              res.on('finish', release);
               next();
             });
 
