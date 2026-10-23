@@ -36,7 +36,7 @@ provider.isLocked('my-task'); // false until a lock is held
 
 ## Failure-mode harness
 
-Unit tests under `__tests__/failure-modes.test.ts` use a controllable clock (`withMutableClock` from `@tslock/test-support`) to document when double-execution is possible: clock advance past `lockUntil`, early map eviction (Memcached-shaped loss), and stopped keep-alive renewals. A stale `unlock()` after another caller reacquires the name leaves the new holder's deadline unchanged. See [docs/failure-modes.md](../../docs/failure-modes.md). These scenarios teach the model; they do not claim stronger multi-host guarantees.
+Unit tests under `__tests__/failure-modes.test.ts` use a controllable clock (`withMutableClock` from `@tslock/test-support`) to document when double-execution is possible: clock advance past `lockUntil`, early map eviction (Memcached-shaped loss), and stopped keep-alive renewals. A stale `unlock()` leaves the new holder's deadline unchanged when that reacquire stored a different `lockAtMostUntil`. See [docs/failure-modes.md](../../docs/failure-modes.md). These scenarios teach the model; they do not claim stronger multi-host guarantees.
 
 ## Integration tests
 
