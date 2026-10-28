@@ -1,4 +1,4 @@
-import { ClockProvider, createLockConfig, lockAtMostUntil } from '@tslock/core';
+import { ClockProvider, createLockConfig, LockException, lockAtMostUntil } from '@tslock/core';
 import type { Driver } from 'neo4j-driver';
 import { describe, expect, it, vi } from 'vitest';
 import { Neo4jStorageAccessor } from '../src/neo4j-storage-accessor.js';
@@ -80,32 +80,75 @@ describe('Neo4jStorageAccessor', () => {
     await expect(accessor.insertRecord(config('other-task'))).resolves.toBe(false);
   });
 
-  it('updateRecord returns true when record matched', async () => {
-    const txRun = vi.fn().mockResolvedValue({ records: [{}, {}] });
-    const driver = makeDriver(txRun);
-    const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock',
-      nameCol: 'name',
-      lockUntilCol: 'lockUntil',
-      lockedAtCol: 'lockedAt',
-      lockedByCol: 'lockedBy',
-    });
-    const result = await accessor.updateRecord(config());
-    expect(result).toBe(true);
-  });
+  const defaultOpts = {
+    label: 'ShedLock',
+    nameCol: 'name',
+    lockUntilCol: 'lockUntil',
+    lockedAtCol: 'lockedAt',
+    lockedByCol: 'lockedBy',
+  };
 
-  it('updateRecord returns false when no record matched', async () => {
+  function probeRecord(expired: boolean) {
+    return { get: (key: string) => (key === 'expired' ? expired : undefined) };
+  }
+
+  it('updateRecord throws LockException when probe finds no node', async () => {
     const txRun = vi.fn().mockResolvedValue({ records: [] });
     const driver = makeDriver(txRun);
-    const accessor = new Neo4jStorageAccessor(driver, {
-      label: 'ShedLock',
-      nameCol: 'name',
-      lockUntilCol: 'lockUntil',
-      lockedAtCol: 'lockedAt',
-      lockedByCol: 'lockedBy',
-    });
-    const result = await accessor.updateRecord(config());
+    const accessor = new Neo4jStorageAccessor(driver, defaultOpts);
+    const rejection = accessor.updateRecord(config());
+    await expect(rejection).rejects.toBeInstanceOf(LockException);
+    await expect(rejection).rejects.toThrow('Lock record not found: test');
+    expect(txRun).toHaveBeenCalledOnce();
+    expect(txRun.mock.calls[0]![0]).not.toContain('SET');
+  });
+
+  it('updateRecord returns false when probe reports lock still held', async () => {
+    const txRun = vi.fn().mockResolvedValue({ records: [probeRecord(false)] });
+    const driver = makeDriver(txRun);
+    const accessor = new Neo4jStorageAccessor(driver, defaultOpts);
+    const lock = config();
+    const result = await accessor.updateRecord(lock);
     expect(result).toBe(false);
+    expect(txRun).toHaveBeenCalledOnce();
+    expect(txRun.mock.calls[0]![0]).not.toContain('SET');
+    expect(txRun).toHaveBeenCalledWith(expect.stringContaining('AS expired'), {
+      name: 'test',
+      now: 1_000_000,
+    });
+  });
+
+  it('updateRecord returns true when probe reports expired and update matches', async () => {
+    const txRun = vi
+      .fn()
+      .mockResolvedValueOnce({ records: [probeRecord(true)] })
+      .mockResolvedValueOnce({ records: [{}] });
+    const driver = makeDriver(txRun);
+    const accessor = new Neo4jStorageAccessor(driver, defaultOpts, 'my-host');
+    const lock = config('my-task', 10_000);
+    const result = await accessor.updateRecord(lock);
+    expect(result).toBe(true);
+    expect(txRun).toHaveBeenCalledTimes(2);
+    expect(txRun.mock.calls[1]![1]).toEqual({
+      name: 'my-task',
+      now: 1_000_000,
+      lockUntil: 1_010_000,
+      lockedAt: 1_000_000,
+      lockedBy: 'my-host',
+    });
+  });
+
+  it('updateRecord throws LockException when probe reports expired but update matches nothing', async () => {
+    const txRun = vi
+      .fn()
+      .mockResolvedValueOnce({ records: [probeRecord(true)] })
+      .mockResolvedValueOnce({ records: [] });
+    const driver = makeDriver(txRun);
+    const accessor = new Neo4jStorageAccessor(driver, defaultOpts);
+    const rejection = accessor.updateRecord(config());
+    await expect(rejection).rejects.toBeInstanceOf(LockException);
+    await expect(rejection).rejects.toThrow('Lock record not found: test');
+    expect(txRun).toHaveBeenCalledTimes(2);
   });
 
   it('unlock resolves without inspecting result', async () => {
