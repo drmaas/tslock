@@ -18,10 +18,12 @@ import { InMemoryLockProvider } from '@tslock/in-memory';
 import { createFastifyLockPlugin } from '@tslock/fastify';
 
 const app = Fastify();
-await app.register(createFastifyLockPlugin({
-  lockProvider: new InMemoryLockProvider(),
-  lockAtMostFor: '30s',
-}));
+await app.register(
+  createFastifyLockPlugin({
+    lockProvider: new InMemoryLockProvider(),
+    lockAtMostFor: '30s',
+  }),
+);
 
 app.get('/reports', { preHandler: app.tslock() }, async () => ({ ok: true }));
 ```

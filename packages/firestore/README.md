@@ -32,13 +32,13 @@ await executor.executeWithLock(
 
 `createFirestoreProvider(config)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `firestore` | — (required) | A `Firestore` instance. |
-| `collectionName` | `'shedlock'` | The collection holding lock documents. |
-| `fieldNames` | see below | Override any of `lockUntil`, `lockedAt`, `lockedBy`. |
-| `lockedByValue` | `os.hostname()` | Identifier written to `lockedBy`. |
-| `useTimestamps` | `false` | Store the time fields as Firestore `Timestamp` values instead of strings. |
+| Option           | Default         | Description                                                               |
+| ---------------- | --------------- | ------------------------------------------------------------------------- |
+| `firestore`      | — (required)    | A `Firestore` instance.                                                   |
+| `collectionName` | `'shedlock'`    | The collection holding lock documents.                                    |
+| `fieldNames`     | see below       | Override any of `lockUntil`, `lockedAt`, `lockedBy`.                      |
+| `lockedByValue`  | `os.hostname()` | Identifier written to `lockedBy`.                                         |
+| `useTimestamps`  | `false`         | Store the time fields as Firestore `Timestamp` values instead of strings. |
 
 Default field names: `lockUntil`, `lockedAt`, `lockedBy`. The document ID is the lock name.
 

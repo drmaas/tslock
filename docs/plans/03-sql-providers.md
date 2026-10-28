@@ -122,19 +122,11 @@ Two functions:
 
 **Self-check:**
 ```typescript
-const { sql, values } = translateToPositional(
-  'INSERT INTO t(n) VALUES(:name)',
-  { name: 'foo' },
-  (i) => '$' + i,
-);
+const { sql, values } = translateToPositional('INSERT INTO t(n) VALUES(:name)', { name: 'foo' }, (i) => '$' + i);
 assert(sql === 'INSERT INTO t(n) VALUES($1)');
 assert(values.length === 1 && values[0] === 'foo');
 
-const { sql: namedSql } = translateToNamed(
-  'WHERE n=:name AND lb=:lockedBy',
-  { name: 'foo', lockedBy: 'host1' },
-  '@',
-);
+const { sql: namedSql } = translateToNamed('WHERE n=:name AND lb=:lockedBy', { name: 'foo', lockedBy: 'host1' }, '@');
 assert(namedSql === 'WHERE n=@name AND lb=@lockedBy');
 ```
 
@@ -162,8 +154,7 @@ export class PgConnection implements SqlConnection {
   }
 
   isDuplicateKeyError(error: unknown): boolean {
-    return typeof error === 'object' && error !== null &&
-      ((error as { code?: string }).code === '23505');
+    return typeof error === 'object' && error !== null && (error as { code?: string }).code === '23505';
   }
 }
 ```
@@ -198,9 +189,7 @@ export class Mysql2Connection implements SqlConnection {
     if (this.detectedProduct) return this.detectedProduct;
     const [rows] = await this.pool.query('SELECT VERSION() AS version');
     const version = (rows[0] as { version: string }).version;
-    this.detectedProduct = version.toLowerCase().includes('mariadb')
-      ? DatabaseProduct.MARIA_DB
-      : DatabaseProduct.MYSQL;
+    this.detectedProduct = version.toLowerCase().includes('mariadb') ? DatabaseProduct.MARIA_DB : DatabaseProduct.MYSQL;
     return this.detectedProduct;
   }
   // ... query() and isDuplicateKeyError()
@@ -215,26 +204,29 @@ export class Mysql2Connection implements SqlConnection {
 
 ```typescript
 class Mysql2Connection implements SqlConnection {
-  private constructor(private readonly pool: Pool, private readonly product: DatabaseProduct) {}
+  private constructor(
+    private readonly pool: Pool,
+    private readonly product: DatabaseProduct,
+  ) {}
 
   static async create(pool: Pool): Promise<Mysql2Connection> {
     const [rows] = await pool.query('SELECT VERSION() AS version');
     const version = (rows[0] as { version: string }).version;
-    const product = version.toLowerCase().includes('mariadb')
-      ? DatabaseProduct.MARIA_DB
-      : DatabaseProduct.MYSQL;
+    const product = version.toLowerCase().includes('mariadb') ? DatabaseProduct.MARIA_DB : DatabaseProduct.MYSQL;
     return new Mysql2Connection(pool, product);
   }
 
   // sync getDatabaseProduct()
-  getDatabaseProduct(): DatabaseProduct { return this.product; }
+  getDatabaseProduct(): DatabaseProduct {
+    return this.product;
+  }
   // ... query(), isDuplicateKeyError()
 }
 ```
 
 Alternatively, keep the constructor sync and let the user specify the product:
 ```typescript
-new Mysql2Connection(pool, DatabaseProduct.MYSQL)  // or MARIA_DB
+new Mysql2Connection(pool, DatabaseProduct.MYSQL); // or MARIA_DB
 ```
 
 **Final decision:** Provide both: constructor accepts an optional `product` param (defaults to `MYSQL`). If not provided, the user can call `Mysql2Connection.detect(pool)` async factory. This keeps the simple case simple and the auto-detect case explicit.
@@ -254,7 +246,9 @@ import { translateToNamed } from '../param-translator';
 export class MssqlConnection implements SqlConnection {
   constructor(private readonly pool: ConnectionPool) {}
 
-  getDatabaseProduct(): DatabaseProduct { return DatabaseProduct.SQL_SERVER; }
+  getDatabaseProduct(): DatabaseProduct {
+    return DatabaseProduct.SQL_SERVER;
+  }
 
   async query(sql: string, params: Record<string, unknown>): Promise<QueryResult> {
     const { sql: mssqlSql, params: namedParams } = translateToNamed(sql, params, '@');
@@ -267,9 +261,11 @@ export class MssqlConnection implements SqlConnection {
   }
 
   isDuplicateKeyError(error: unknown): boolean {
-    return typeof error === 'object' && error !== null &&
-      ((error as { number?: number }).number === 2627 ||
-       (error as { number?: number }).number === 2601);
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      ((error as { number?: number }).number === 2627 || (error as { number?: number }).number === 2601)
+    );
   }
 }
 ```
@@ -291,7 +287,9 @@ export class SqlStorageAccessor extends AbstractStorageAccessor {
   constructor(
     private readonly connection: SqlConnection,
     private readonly statementsSource: SqlStatementsSource,
-  ) { super(); }
+  ) {
+    super();
+  }
 
   async insertRecord(config: LockConfiguration): Promise<boolean> {
     const sql = this.statementsSource.getInsertStatement();
@@ -403,7 +401,9 @@ describe('SqlLockProvider (PostgreSQL)', () => {
   beforeAll(async () => {
     container = await new PostgreSqlContainer().start();
     pool = new Pool({ connectionString: container.getConnectionUrl() });
-    await pool.query(`CREATE TABLE shedlock (name VARCHAR(64) NOT NULL, lock_until TIMESTAMP NOT NULL, locked_at TIMESTAMP NOT NULL, locked_by VARCHAR(255) NOT NULL, PRIMARY KEY (name))`);
+    await pool.query(
+      `CREATE TABLE shedlock (name VARCHAR(64) NOT NULL, lock_until TIMESTAMP NOT NULL, locked_at TIMESTAMP NOT NULL, locked_by VARCHAR(255) NOT NULL, PRIMARY KEY (name))`,
+    );
     provider = new SqlLockProvider(
       new PgConnection(pool),
       new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES }),
@@ -510,7 +510,9 @@ export class KyselyStorageAccessor extends AbstractStorageAccessor {
     private readonly db: Kysely<unknown>,
     private readonly statementsSource: SqlStatementsSource,
     private readonly dialectInfo: KyselyDialectInfo,
-  ) { super(); }
+  ) {
+    super();
+  }
 
   async insertRecord(config: LockConfiguration): Promise<boolean> {
     const rawSql = this.statementsSource.getInsertStatement();
@@ -556,9 +558,7 @@ export class KyselyStorageAccessor extends AbstractStorageAccessor {
     // Kysely's QueryResult.numAffectedRows is bigint | undefined for pg/mysql
     const r = result as { numAffectedRows?: bigint | number };
     if (r?.numAffectedRows === undefined) return 0;
-    return typeof r.numAffectedRows === 'bigint'
-      ? Number(r.numAffectedRows)
-      : r.numAffectedRows;
+    return typeof r.numAffectedRows === 'bigint' ? Number(r.numAffectedRows) : r.numAffectedRows;
   }
 }
 ```
@@ -693,10 +693,7 @@ export function getDialectInfo(dialect: DrizzleDialect): DrizzleDialectInfo {
 ```typescript
 import { sql, SQL } from 'drizzle-orm';
 
-export function buildDrizzleQuery(
-  rawSql: string,
-  params: Record<string, unknown>,
-): SQL {
+export function buildDrizzleQuery(rawSql: string, params: Record<string, unknown>): SQL {
   const segments = rawSql.split(/:(\w+)/);
   const chunks: SQL[] = [];
   for (let i = 0; i < segments.length; i += 2) {
@@ -714,10 +711,7 @@ export function buildDrizzleQuery(
 
 **Self-check:**
 ```typescript
-const query = buildDrizzleQuery(
-  'INSERT INTO t(n) VALUES(:name)',
-  { name: 'foo' },
-);
+const query = buildDrizzleQuery('INSERT INTO t(n) VALUES(:name)', { name: 'foo' });
 // query is a SQL object that, when executed, produces:
 // INSERT INTO t(n) VALUES($1)  -- or ? for mysql/sqlite
 // with param 'foo' bound
@@ -738,7 +732,9 @@ export class DrizzleStorageAccessor extends AbstractStorageAccessor {
     private readonly db: DrizzleDatabase,
     private readonly statementsSource: SqlStatementsSource,
     private readonly dialectInfo: DrizzleDialectInfo,
-  ) { super(); }
+  ) {
+    super();
+  }
 
   async insertRecord(config: LockConfiguration): Promise<boolean> {
     const rawSql = this.statementsSource.getInsertStatement();
@@ -844,11 +840,13 @@ pnpm build
 ## Shared Test Approach
 
 ### Unit tests (no Docker)
+
 - Mock driver clients (`pg.Pool`, `mysql2/promise.Pool`, `mssql.ConnectionPool`, `Kysely`, Drizzle `db`)
 - Verify: param translation, SQL/params passed to driver, affectedRows extraction, duplicate key detection
 - Fast, run on every commit
 
 ### Integration tests (Docker via Testcontainers)
+
 - Use `testcontainers` npm package to spin up real PostgreSQL, MySQL, SQL Server
 - SQLite: in-memory `better-sqlite3` (no container)
 - Run `storageBasedLockProviderIntegrationTests` + `fuzzTests` from `@tslock/test-support`
@@ -856,6 +854,7 @@ pnpm build
 - Slower, run in CI or manually (`pnpm test:integration`)
 
 ### Integration test DDL
+
 Each integration test creates the `shedlock` table before running tests:
 ```sql
 -- PostgreSQL
@@ -869,34 +868,35 @@ CREATE TABLE shedlock (name TEXT NOT NULL, lock_until TEXT NOT NULL, locked_at T
 ```
 
 ### useDbTime integration test
+
 Additional test per provider: configure with `useDbTime: true`, run `lockProviderIntegrationTests`, verify behavior matches app-clock mode. Tests that the `now()` function substitution works correctly.
 
 ---
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| `pg`'s `rowCount` is `null` for some statements | Use `?? 0` fallback. Unit test covers null case. |
-| `mysql2` returns `[result, fields]` tuple — easy to forget destructuring | Unit tests verify correct destructuring. |
-| `mssql` `rowsAffected` is an array (one per statement) | Use `rowsAffected[0]` for single-statement queries. Unit test covers. |
-| Kysely `numAffectedRows` is `bigint` | Convert via `Number()`. Document potential precision loss for very large counts (not realistic for lock tables). |
-| Drizzle result shapes differ by dialect | `DrizzleDialectInfo` abstracts per-dialect `execute()` and `getAffectedRows()`. Unit tests cover each. |
-| Drizzle `sql.raw()` + `sql.param()` composition | Unit test `buildDrizzleQuery` with all SQL statement templates. Verify generated SQL matches expected pattern. |
-| MariaDB vs MySQL detection in `mysql2` | Static factory `Mysql2Connection.detect(pool)` or user-specified product. Document both paths. |
-| SQLite `UNIQUE constraint failed` error detection is message-based (not code-based) | Accept — SQLite's Node.js drivers don't use numeric error codes consistently. Document this. |
-| `useDbTime` server-time functions not tested against real Oracle/DB2/HSQL/H2 | These are unit-tested (string generation) only. `@tslock/sql` only ships adapters for pg/mysql2/mssql. Document that Oracle/DB2/HSQL/H2 server-time sources are provided for completeness/manual use. |
-| Peer dep not installed — runtime import fails | Use `import type` for driver types (erased at build). The actual driver module is only imported when the user instantiates the adapter (they provide the pool/connection). The error occurs at the user's `import` site, not in TSLock code. |
-| Testcontainers flakiness in CI | Use `testcontainers` retry options. Mark integration tests as a separate suite (`pnpm test:integration`) that CI runs separately from unit tests. |
+| Risk                                                                                | Mitigation                                                                                                                                                                                                                                   |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pg`'s `rowCount` is `null` for some statements                                     | Use `?? 0` fallback. Unit test covers null case.                                                                                                                                                                                             |
+| `mysql2` returns `[result, fields]` tuple — easy to forget destructuring            | Unit tests verify correct destructuring.                                                                                                                                                                                                     |
+| `mssql` `rowsAffected` is an array (one per statement)                              | Use `rowsAffected[0]` for single-statement queries. Unit test covers.                                                                                                                                                                        |
+| Kysely `numAffectedRows` is `bigint`                                                | Convert via `Number()`. Document potential precision loss for very large counts (not realistic for lock tables).                                                                                                                             |
+| Drizzle result shapes differ by dialect                                             | `DrizzleDialectInfo` abstracts per-dialect `execute()` and `getAffectedRows()`. Unit tests cover each.                                                                                                                                       |
+| Drizzle `sql.raw()` + `sql.param()` composition                                     | Unit test `buildDrizzleQuery` with all SQL statement templates. Verify generated SQL matches expected pattern.                                                                                                                               |
+| MariaDB vs MySQL detection in `mysql2`                                              | Static factory `Mysql2Connection.detect(pool)` or user-specified product. Document both paths.                                                                                                                                               |
+| SQLite `UNIQUE constraint failed` error detection is message-based (not code-based) | Accept — SQLite's Node.js drivers don't use numeric error codes consistently. Document this.                                                                                                                                                 |
+| `useDbTime` server-time functions not tested against real Oracle/DB2/HSQL/H2        | These are unit-tested (string generation) only. `@tslock/sql` only ships adapters for pg/mysql2/mssql. Document that Oracle/DB2/HSQL/H2 server-time sources are provided for completeness/manual use.                                        |
+| Peer dep not installed — runtime import fails                                       | Use `import type` for driver types (erased at build). The actual driver module is only imported when the user instantiates the adapter (they provide the pool/connection). The error occurs at the user's `import` site, not in TSLock code. |
+| Testcontainers flakiness in CI                                                      | Use `testcontainers` retry options. Mark integration tests as a separate suite (`pnpm test:integration`) that CI runs separately from unit tests.                                                                                            |
 
 ## Estimation
 
-| Package | Source files | Implementation (lines) | Tests (lines) | Effort |
-|---|---|---|---|---|
-| `@tslock/sql` | ~7 | ~300-400 | ~500-700 | 1 session |
-| `@tslock/kysely` | ~5 | ~200-300 | ~400-500 | 0.5 session (reuses patterns from sql) |
-| `@tslock/drizzle` | ~5 | ~250-350 | ~400-500 | 0.5-1 session (query builder is new) |
-| **Total** | ~17 | ~750-1050 | ~1300-1700 | ~2-3 sessions |
+| Package           | Source files | Implementation (lines) | Tests (lines) | Effort                                 |
+| ----------------- | ------------ | ---------------------- | ------------- | -------------------------------------- |
+| `@tslock/sql`     | ~7           | ~300-400               | ~500-700      | 1 session                              |
+| `@tslock/kysely`  | ~5           | ~200-300               | ~400-500      | 0.5 session (reuses patterns from sql) |
+| `@tslock/drizzle` | ~5           | ~250-350               | ~400-500      | 0.5-1 session (query builder is new)   |
+| **Total**         | ~17          | ~750-1050              | ~1300-1700    | ~2-3 sessions                          |
 
 ## Order of Implementation
 

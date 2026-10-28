@@ -8,14 +8,14 @@ Fields (`lockUntil`, `lockedAt`, `lockedBy`) are persisted as ISO-8601 strings; 
 
 ## Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/arangodb` |
-| **Driver** | `arangojs` (official ArangoDB JavaScript driver) — peer dependency |
-| **Dependencies** | `@tslock/core` (peer), `arangojs` (peer) |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
-| **Build** | tsup |
+| Field             | Value                                                              |
+| ----------------- | ------------------------------------------------------------------ |
+| **Name**          | `@tslock/arangodb`                                                 |
+| **Driver**        | `arangojs` (official ArangoDB JavaScript driver) — peer dependency |
+| **Dependencies**  | `@tslock/core` (peer), `arangojs` (peer)                           |
+| **Node.js**       | >= 22                                                              |
+| **Module format** | Dual ESM + CJS                                                     |
+| **Build**         | tsup                                                               |
 
 ## Public API
 
@@ -37,10 +37,7 @@ The constructor accepts an already-configured `Collection` from the `arangojs` d
 ```typescript
 import type { Database } from 'arangojs';
 
-function createArangoDbLockProvider(
-  database: Database,
-  options?: ArangoDbLockProviderOptions,
-): ArangoDbLockProvider;
+function createArangoDbLockProvider(database: Database, options?: ArangoDbLockProviderOptions): ArangoDbLockProvider;
 ```
 
 Convenience factory that resolves a `Collection` with the given options (collection name) and wraps it in an `ArangoDbLockProvider`. Users who want full control over the `Collection` construct `ArangoDbLockProvider` directly.
@@ -49,7 +46,7 @@ Convenience factory that resolves a `Collection` with the given options (collect
 
 ```typescript
 interface ArangoDbLockProviderOptions {
-  collection?: string;  // default: 'shedLock'
+  collection?: string; // default: 'shedLock'
 }
 ```
 
@@ -62,10 +59,10 @@ The user (or the factory) must ensure the collection exists before the provider 
 
 ```typescript
 interface ArangoDbLockDocument {
-  _key: string;        // lock name
-  lockUntil: string;   // ISO-8601 — Utils.toIsoString(epochMillis)
-  lockedAt: string;    // ISO-8601 — Utils.toIsoString(epochMillis)
-  lockedBy: string;    // hostname (Utils.getHostname())
+  _key: string; // lock name
+  lockUntil: string; // ISO-8601 — Utils.toIsoString(epochMillis)
+  lockedAt: string; // ISO-8601 — Utils.toIsoString(epochMillis)
+  lockedBy: string; // hostname (Utils.getHostname())
 }
 ```
 
@@ -247,19 +244,19 @@ packages/arangodb/
 
 ## Error Handling Summary
 
-| Situation | Behavior |
-|---|---|
-| Lock held by another instance | `lockUntil > now` → `txn.abort()` → return `undefined` |
-| First lock on a new name | `document()` throws DocumentNotFound (`1202`) → `save()` → `commit()` → `ArangoDbLock` |
-| Lock expired, second acquirer wins | `lockUntil <= now` → `update()` → `commit()` → `ArangoDbLock` |
-| Concurrent lock attempts | `exclusiveCollections` serializes transactions — only one commits; others see the new/expired doc and abort |
-| Connection error / network failure | Propagate the driver error (transaction aborted in `catch`) |
-| `txn.commit()` fails | Propagate; transaction auto-aborts server-side |
-| `txn.abort()` fails in error path | Swallowed (best-effort cleanup) |
-| `extend()` on a lock held by another | `lockedBy !== hostname` → `undefined` |
-| `extend()` on an expired lock | `lockUntil <= now` → `undefined` |
-| `extend()` on a non-existent doc | `document()` throws DocumentNotFound → `undefined` |
-| `unlock()` on a non-existent doc | `update()` throws DocumentNotFound → swallowed, no error |
+| Situation                            | Behavior                                                                                                    |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Lock held by another instance        | `lockUntil > now` → `txn.abort()` → return `undefined`                                                      |
+| First lock on a new name             | `document()` throws DocumentNotFound (`1202`) → `save()` → `commit()` → `ArangoDbLock`                      |
+| Lock expired, second acquirer wins   | `lockUntil <= now` → `update()` → `commit()` → `ArangoDbLock`                                               |
+| Concurrent lock attempts             | `exclusiveCollections` serializes transactions — only one commits; others see the new/expired doc and abort |
+| Connection error / network failure   | Propagate the driver error (transaction aborted in `catch`)                                                 |
+| `txn.commit()` fails                 | Propagate; transaction auto-aborts server-side                                                              |
+| `txn.abort()` fails in error path    | Swallowed (best-effort cleanup)                                                                             |
+| `extend()` on a lock held by another | `lockedBy !== hostname` → `undefined`                                                                       |
+| `extend()` on an expired lock        | `lockUntil <= now` → `undefined`                                                                            |
+| `extend()` on a non-existent doc     | `document()` throws DocumentNotFound → `undefined`                                                          |
+| `unlock()` on a non-existent doc     | `update()` throws DocumentNotFound → swallowed, no error                                                    |
 
 ## Dependencies
 

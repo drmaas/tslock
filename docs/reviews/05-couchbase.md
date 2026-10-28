@@ -40,13 +40,13 @@ The spec clearly explains the asymmetric error handling: `updateRecord` propagat
 2. Check `existing.lockUntil > now` → if true, return `false` (lock still held).
 3. `replace(documentId, newDocument, { cas })` → if `CasMismatchException`, return `false` (concurrent modification).
 4. Success → return `true`.
-This is correct. The `DocumentNotFoundError` propagation is the key design choice — it allows the registry to clear and retry with `insertRecord` on the next call. ✅
+   This is correct. The `DocumentNotFoundError` propagation is the key design choice — it allows the registry to clear and retry with `insertRecord` on the next call. ✅
 
 **`unlock` logic:**
 1. `get(documentId)` → if `DocumentNotFoundError`, no-op return (best-effort).
 2. `replace(documentId, { ...existing, lockUntil: unlockTime }, { cas })` → if `CasMismatchException`, swallow and log (best-effort).
 3. Success → return `void`.
-Correct. The `{ ...existing, [lockUntilColumn]: unlockTime }` preserves other fields and only updates `lockUntil`. The `CasMismatchException` swallow is correct — unlock is best-effort, and a stuck lock expires via `lockAtMostFor`. Matches ShedLock Java. ✅
+   Correct. The `{ ...existing, [lockUntilColumn]: unlockTime }` preserves other fields and only updates `lockUntil`. The `CasMismatchException` swallow is correct — unlock is best-effort, and a stuck lock expires via `lockAtMostFor`. Matches ShedLock Java. ✅
 
 **`extend` logic:**
 1. `get(documentId)` → if `DocumentNotFoundError`, return `false` (lock gone).
@@ -54,7 +54,7 @@ Correct. The `{ ...existing, [lockUntilColumn]: unlockTime }` preserves other fi
 3. Check `lockUntil <= now` → if true, return `false` (expired).
 4. `replace(documentId, { ...existing, lockUntil: lockAtMostUntil }, { cas })` → if `CasMismatchException`, return `false`.
 5. Success → return `true`.
-Correct. The ownership check (`lockedBy`) and validity check (`lockUntil`) are in the right order. The `DocumentNotFoundError` returns `false` (not propagate) — correct, because extend doesn't need to clear the registry (it's not trying to re-acquire). ✅
+   Correct. The ownership check (`lockedBy`) and validity check (`lockUntil`) are in the right order. The `DocumentNotFoundError` returns `false` (not propagate) — correct, because extend doesn't need to clear the registry (it's not trying to re-acquire). ✅
 
 **Document body:** Uses configured column names as keys. The `updateRecord` creates a fresh document (not `{...existing}`) — overwrites all fields. This is fine because the lock document only has 4 fields. The `unlock` and `extend` use `{...existing, [field]: value}` to preserve forward-compatible fields. ✅
 
@@ -65,6 +65,7 @@ Correct. The ownership check (`lockedBy`) and validity check (`lockUntil`) are i
 ## Gaps and Issues
 
 1. **Incomplete integration test for "rejects extend from a different lockedBy".** Plan Step 8 shows:
+
    ```typescript
    it('rejects extend from a different lockedBy', async () => {
      const owner = new CouchbaseLockProvider(collection, { lockedByValue: 'node-A' });
@@ -75,6 +76,7 @@ Correct. The ownership check (`lockedBy`) and validity check (`lockUntil`) are i
      await extended!.unlock();
    });
    ```
+
    This test creates an `intruder` provider but never uses it. The `lock!.extend('1m', 0)` is called on the **owner's** lock — which should succeed (same `lockedBy`). The test asserts `extended` is defined — which is the happy path, not the rejection path. The test should either: (a) acquire a lock with `owner`, then attempt to extend it via the `intruder`'s accessor (asserting `false`), or (b) acquire a lock with `owner`, then have `intruder.lock()` return `undefined` (lock held), and separately verify `intruder`'s accessor.extend returns `false`. As written, the test does not verify cross-instance extend rejection. **Should be fixed.**
 
 2. **Couchbase SDK versioning confusion.** The spec says "couchbase ^4.0.0 (SDK 3.x for Node.js is published as couchbase@4.x; the SDK is referred to as 'Couchbase SDK 3.x' in Couchbase documentation despite the npm version being 4.x)." This is confusing but accurate. The plan's risk table says "Peer dep `couchbase: ^4.0.0` (latest). Test against installed version. The SDK's `Collection` API is stable across v4.x." Recommend adding a clarifying note in the README that `couchbase@4.x` on npm = SDK 3.x in Couchbase docs.

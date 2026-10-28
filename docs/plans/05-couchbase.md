@@ -72,7 +72,6 @@ packages/couchbase/
 ### Step 2: Define configuration types
 
 **File:** `src/couchbase-lock-provider.ts`
-
 - `CouchbaseColumnNames` interface (4 readonly string fields).
 - `CouchbaseLockProviderOptions` interface (`documentIdPrefix`, `columnNames`, `lockedByValue`).
 - `DEFAULT_DOCUMENT_ID_PREFIX = 'shedlock:'`.
@@ -85,10 +84,7 @@ packages/couchbase/
 
 ```typescript
 export const MAX_DOCUMENT_ID_LENGTH = 250;
-export function buildDocumentId(
-  name: string,
-  options?: { documentIdPrefix?: string },
-): string;
+export function buildDocumentId(name: string, options?: { documentIdPrefix?: string }): string;
 ```
 
 - Returns `prefix + name`.
@@ -100,11 +96,7 @@ export function buildDocumentId(
 **File:** `src/couchbase-storage-accessor.ts`
 
 ```typescript
-import {
-  DocumentExistsException,
-  CasMismatchException,
-  DocumentNotFoundError,
-} from 'couchbase';
+import { DocumentExistsException, CasMismatchException, DocumentNotFoundError } from 'couchbase';
 import {
   AbstractStorageAccessor,
   ClockProvider,
@@ -233,13 +225,15 @@ class CouchbaseLockProvider implements ExtensibleLockProvider {
   private readonly delegate: StorageBasedLockProvider;
 
   constructor(collection: Collection, options?: CouchbaseLockProviderOptions) {
-    this.delegate = new StorageBasedLockProvider(
-      new CouchbaseStorageAccessor(collection, resolveOptions(options)),
-    );
+    this.delegate = new StorageBasedLockProvider(new CouchbaseStorageAccessor(collection, resolveOptions(options)));
   }
 
-  lock(config) { return this.delegate.lock(config); }
-  clearCache(name) { this.delegate.clearCache(name); }
+  lock(config) {
+    return this.delegate.lock(config);
+  }
+  clearCache(name) {
+    this.delegate.clearCache(name);
+  }
 }
 ```
 
@@ -262,7 +256,6 @@ Do **not** export `CouchbaseStorageAccessor` or `ResolvedOptions`.
 **File:** `__tests__/unit/couchbase-storage-accessor.test.ts`
 
 Use a mocked `Collection` (`vi.fn()` for `insert`, `get`, `replace`). The mock returns configured values or throws typed errors (`new DocumentExistsException(...)`, etc.).
-
 - `insertRecord` success → `collection.insert` called with correct document ID and body, returns `true`.
 - `insertRecord` `DocumentExistsException` → returns `false`.
 - `insertRecord` other error → propagates.
@@ -315,10 +308,7 @@ describe('CouchbaseLockProvider integration', () => {
     if (container) await container.stop();
   });
 
-  storageBasedLockProviderIntegrationTests(
-    async () => new CouchbaseLockProvider(collection),
-    { timeMode: 'real' },
-  );
+  storageBasedLockProviderIntegrationTests(async () => new CouchbaseLockProvider(collection), { timeMode: 'real' });
 
   fuzzTests(async () => new CouchbaseLockProvider(collection));
 
@@ -327,8 +317,9 @@ describe('CouchbaseLockProvider integration', () => {
       const provider = new CouchbaseLockProvider(collection);
       const lock = await provider.lock(config('dup-test', '1m'));
       expect(lock).toBeDefined();
-      await expect(collection.insert('shedlock:dup-test', { name: 'dup-test' }))
-        .rejects.toThrow(couchbase.DocumentExistsException);
+      await expect(collection.insert('shedlock:dup-test', { name: 'dup-test' })).rejects.toThrow(
+        couchbase.DocumentExistsException,
+      );
       await lock!.unlock();
     });
 
@@ -362,18 +353,18 @@ All must pass. Integration tests are gated behind a separate Vitest config.
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| **Couchbase testcontainer flakiness / slow startup** | Generous `withStartupTimeout(180_000)`. If `CouchbaseContainer` is unstable, fall back to a `GenericContainer` with an explicit REST-init script. Mark the suite `test.slow`. |
-| **`couchbase` SDK v4 vs v3 typing differences** | Peer dep `couchbase: ^4.0.0` (latest). Test against installed version. The SDK's `Collection` API is stable across v4.x. |
-| **CAS mismatch on `unlock` after task crashed mid-update** | Document that `unlock` is best-effort and swallows `CasMismatchException`. The lock will expire via `lockAtMostFor`. |
-| **`DocumentNotFoundError` from `get` after registry cache miss** | Propagate from `updateRecord`; `StorageBasedLockProvider.lock()` catches it, clears the cache, and the next call retries `insertRecord`. Test this path explicitly. |
-| **Hostname stability across lock lifetime (for `extend`)** | Document: if `Utils.getHostname()` could change between lock acquisition and extension (rare — container restart), users should set `lockedByValue` explicitly. |
-| **Document body shape changes across versions** | Unlock preserves existing fields (`...existing`) and only overwrites `lockUntil`. Extend preserves existing fields and overwrites `lockUntil`. This is forward-compatible with future fields. |
-| **Document ID length** | `buildDocumentId` throws `LockException` if `prefix + name` exceeds 250 bytes. Test the boundary. |
-| **`columnNames` collision with Couchbase reserved words** | JSON field names are not SQL identifiers; there are no reserved words. Validated as non-empty strings. |
-| **Concurrent `insertRecord` race** | Couchbase `insert` is atomic per document ID; only one concurrent caller succeeds, others get `DocumentExistsException` → `false`. |
-| **`lockedBy` value `undefined` in stored document** | If a legacy document lacks `lockedBy`, `existing[lockedByColumn]` is `undefined`; `undefined !== this.lockedByValue` returns `false` (extend rejected). This is the correct conservative behavior. |
+| Risk                                                             | Mitigation                                                                                                                                                                                         |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Couchbase testcontainer flakiness / slow startup**             | Generous `withStartupTimeout(180_000)`. If `CouchbaseContainer` is unstable, fall back to a `GenericContainer` with an explicit REST-init script. Mark the suite `test.slow`.                      |
+| **`couchbase` SDK v4 vs v3 typing differences**                  | Peer dep `couchbase: ^4.0.0` (latest). Test against installed version. The SDK's `Collection` API is stable across v4.x.                                                                           |
+| **CAS mismatch on `unlock` after task crashed mid-update**       | Document that `unlock` is best-effort and swallows `CasMismatchException`. The lock will expire via `lockAtMostFor`.                                                                               |
+| **`DocumentNotFoundError` from `get` after registry cache miss** | Propagate from `updateRecord`; `StorageBasedLockProvider.lock()` catches it, clears the cache, and the next call retries `insertRecord`. Test this path explicitly.                                |
+| **Hostname stability across lock lifetime (for `extend`)**       | Document: if `Utils.getHostname()` could change between lock acquisition and extension (rare — container restart), users should set `lockedByValue` explicitly.                                    |
+| **Document body shape changes across versions**                  | Unlock preserves existing fields (`...existing`) and only overwrites `lockUntil`. Extend preserves existing fields and overwrites `lockUntil`. This is forward-compatible with future fields.      |
+| **Document ID length**                                           | `buildDocumentId` throws `LockException` if `prefix + name` exceeds 250 bytes. Test the boundary.                                                                                                  |
+| **`columnNames` collision with Couchbase reserved words**        | JSON field names are not SQL identifiers; there are no reserved words. Validated as non-empty strings.                                                                                             |
+| **Concurrent `insertRecord` race**                               | Couchbase `insert` is atomic per document ID; only one concurrent caller succeeds, others get `DocumentExistsException` → `false`.                                                                 |
+| **`lockedBy` value `undefined` in stored document**              | If a legacy document lacks `lockedBy`, `existing[lockedByColumn]` is `undefined`; `undefined !== this.lockedByValue` returns `false` (extend rejected). This is the correct conservative behavior. |
 
 ## Estimation
 

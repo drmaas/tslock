@@ -33,11 +33,11 @@ await executor.executeWithLock(
 
 `createMongoLockProvider(db, options?)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `collection` | `'shedLock'` | The collection used for lock documents. |
-| `collectionOptions.writeConcern` | `{ w: 'majority' }` | MongoDB write concern. |
-| `collectionOptions.readConcern` | `{ level: 'majority' }` | MongoDB read concern. |
+| Option                           | Default                 | Description                             |
+| -------------------------------- | ----------------------- | --------------------------------------- |
+| `collection`                     | `'shedLock'`            | The collection used for lock documents. |
+| `collectionOptions.writeConcern` | `{ w: 'majority' }`     | MongoDB write concern.                  |
+| `collectionOptions.readConcern`  | `{ level: 'majority' }` | MongoDB read concern.                   |
 
 The lock document's `_id` is the lock name; it also stores `lockUntil`, `lockedAt`, and `lockedBy` (hostname).
 

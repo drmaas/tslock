@@ -8,13 +8,13 @@ This spec defines TSLock's web framework middleware integrations — packages th
 
 ## Packages
 
-| Package | Framework | Dependencies |
-|---|---|---|
-| `@tslock/middleware-core` | (none — shared logic) | `@tslock/core` only |
-| `@tslock/express` | Express 4.x / 5.x | `@tslock/core`, `@tslock/middleware-core`, `express` (peer) |
-| `@tslock/fastify` | Fastify 5.x | `@tslock/core`, `@tslock/middleware-core`, `fastify` (peer) |
-| `@tslock/koa` | Koa 2.x | `@tslock/core`, `@tslock/middleware-core`, `koa` (peer) |
-| `@tslock/hono` | Hono 4.x | `@tslock/core`, `@tslock/middleware-core`, `hono` (peer) |
+| Package                   | Framework             | Dependencies                                                |
+| ------------------------- | --------------------- | ----------------------------------------------------------- |
+| `@tslock/middleware-core` | (none — shared logic) | `@tslock/core` only                                         |
+| `@tslock/express`         | Express 4.x / 5.x     | `@tslock/core`, `@tslock/middleware-core`, `express` (peer) |
+| `@tslock/fastify`         | Fastify 5.x           | `@tslock/core`, `@tslock/middleware-core`, `fastify` (peer) |
+| `@tslock/koa`             | Koa 2.x               | `@tslock/core`, `@tslock/middleware-core`, `koa` (peer)     |
+| `@tslock/hono`            | Hono 4.x              | `@tslock/core`, `@tslock/middleware-core`, `hono` (peer)    |
 
 All framework adapter packages are thin — the heavy lifting lives in `@tslock/middleware-core`.
 
@@ -45,20 +45,20 @@ This package is NOT installed directly by end users. It is a dependency of the f
 ```typescript
 interface MiddlewareConfig {
   lockProvider: LockProvider;
-  lockAtMostFor?: DurationInput;    // default: parseDuration('30s')
-  lockAtLeastFor?: DurationInput;   // default: parseDuration('0s')
-  lockNamePrefix?: string;          // default: ''
-  defaultLockedStatus?: number;     // default: 503
-  defaultLockedBody?: unknown | ((meta: LockFailureResponse) => unknown);  // default: produces { error: '...', lockName, lockedBy, retryAfterSeconds }
-  lockNameStrategy?: LockNameStrategy;  // default: methodPathStrategy
+  lockAtMostFor?: DurationInput; // default: parseDuration('30s')
+  lockAtLeastFor?: DurationInput; // default: parseDuration('0s')
+  lockNamePrefix?: string; // default: ''
+  defaultLockedStatus?: number; // default: 503
+  defaultLockedBody?: unknown | ((meta: LockFailureResponse) => unknown); // default: produces { error: '...', lockName, lockedBy, retryAfterSeconds }
+  lockNameStrategy?: LockNameStrategy; // default: methodPathStrategy
 }
 
 interface RouteLockConfig {
-  name?: string;                     // override auto-derived name entirely
-  lockAtMostFor?: DurationInput;     // override global default
-  lockAtLeastFor?: DurationInput;    // override global default
-  lockedStatus?: number;             // override global default
-  lockedBody?: unknown | ((meta: LockFailureResponse) => unknown);  // override global default
+  name?: string; // override auto-derived name entirely
+  lockAtMostFor?: DurationInput; // override global default
+  lockAtLeastFor?: DurationInput; // override global default
+  lockedStatus?: number; // override global default
+  lockedBody?: unknown | ((meta: LockFailureResponse) => unknown); // override global default
 }
 
 type LockNameStrategy = (method: string, path: string) => string;
@@ -71,10 +71,10 @@ interface MiddlewareLockResult {
 
 interface LockMiddlewareMetadata {
   lockName: string;
-  lockUntil: number;        // epoch millis — when the lock expires
+  lockUntil: number; // epoch millis — when the lock expires
   lockedBy: string;
   lockAcquired: boolean;
-  lockPresent: boolean;     // true when a lock was present (even if by another instance)
+  lockPresent: boolean; // true when a lock was present (even if by another instance)
 }
 ```
 
@@ -100,16 +100,14 @@ interface LockMiddlewareLifecycle {
 interface LockFailureResponse {
   status: number;
   body: unknown;
-  headers: Record<string, string>;   // includes Retry-After, Lock-Name, Locked-By
+  headers: Record<string, string>; // includes Retry-After, Lock-Name, Locked-By
   lockName: string;
   lockedBy: string;
   lockUntil: number;
   retryAfterSeconds: number;
 }
 
-function createLockMiddlewareLifecycle(
-  config: MiddlewareConfig,
-): LockMiddlewareLifecycle;
+function createLockMiddlewareLifecycle(config: MiddlewareConfig): LockMiddlewareLifecycle;
 ```
 
 **Lock name derivation default:**
@@ -158,26 +156,43 @@ app.delete('/api/users/:id', tslock({ name: 'user-mutation' }), handler);
 **Handler execution (`runHandler` promise):** The adapter wraps Express's callback-based `next()` in a Promise that resolves after the response is sent. This promise is passed to `LockMiddlewareLifecycle.executeWithLock()` as the `runHandler` callback. The lifecycle delegates to `DefaultLockingTaskExecutor`, which calls `lock.unlock()` in its `finally` block after the `runHandler` promise settles. The adapter itself never calls unlock.
 
 ```typescript
-const runHandler = () => new Promise<void>((resolve, reject) => {
-  let settled = false;
-  const onFinish = () => { if (!settled) { settled = true; cleanup(); resolve(); } };
-  const onClose = () => { if (!settled) { settled = true; cleanup(); resolve(); } };
+const runHandler = () =>
+  new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const onFinish = () => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        resolve();
+      }
+    };
+    const onClose = () => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        resolve();
+      }
+    };
 
-  // Prevent handler hangs from holding the lock forever
-  const timeout = setTimeout(() => {
-    if (!settled) { settled = true; cleanup(); resolve(); }
-  }, lockConfig.lockAtMostFor);
+    // Prevent handler hangs from holding the lock forever
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        resolve();
+      }
+    }, lockConfig.lockAtMostFor);
 
-  const cleanup = () => {
-    clearTimeout(timeout);
-    res.off('finish', onFinish);
-    res.off('close', onClose);
-  };
+    const cleanup = () => {
+      clearTimeout(timeout);
+      res.off('finish', onFinish);
+      res.off('close', onClose);
+    };
 
-  res.on('finish', onFinish);
-  res.on('close', onClose);
-  next(); // Express dispatches the route handler synchronously within this tick
-});
+    res.on('finish', onFinish);
+    res.on('close', onClose);
+    next(); // Express dispatches the route handler synchronously within this tick
+  });
 ```
 
 **Key behaviors of this pattern:**
@@ -226,10 +241,11 @@ fastify.post('/api/users', { preHandler: tslock({ lockAtMostFor: '1m' }) }, hand
 **Handler execution (`runHandler` promise):** Fastify's `preHandler` hook receives a `done` callback that signals the hook is complete. The hook IS NOT the handler — the handler runs AFTER `done()` is called. The `runHandler` promise must therefore resolve on the `reply` completion, not on `done()`.
 
 ```typescript
-const runHandler = () => new Promise<void>((resolve) => {
-  done(); // allow Fastify to dispatch the route handler
-  reply.then(() => resolve()); // resolve when the reply is fully sent
-});
+const runHandler = () =>
+  new Promise<void>((resolve) => {
+    done(); // allow Fastify to dispatch the route handler
+    reply.then(() => resolve()); // resolve when the reply is fully sent
+  });
 ```
 
 Fastify's `reply` is a thenable that resolves after the response is sent. If the handler throws, `reply.send(err)` or the error handler sends a response, and `reply` still resolves. The `done()` callback fires immediately so Fastify can invoke the route handler; the promise will resolve later when the `reply` completes.
@@ -268,7 +284,9 @@ router.post('/api/users', tslock({ lockAtMostFor: '1m' }), handler);
 **Handler execution (`runHandler` promise):** Koa middleware is async (`await next()`). The `runHandler` promise is simply `await next()` inside a `try/finally`. Koa's middleware stack resolves `next()` only after ALL downstream middleware complete (including the route handler setting `ctx.body`). This is the simplest adapter:
 
 ```typescript
-const runHandler = async () => { await next(); };
+const runHandler = async () => {
+  await next();
+};
 ```
 
 The executor's `finally` block unlocks after `next()` resolves. The body may not be flushed to the socket at this point (Koa defers writing until after the top-level middleware returns), but that's acceptable — another instance attempting to acquire the lock will go through a network round-trip to the lock store, which takes more time than the local socket write.
@@ -345,33 +363,34 @@ Content-Type: application/json
 The `Retry-After` value is calculated as `Math.ceil((lockUntil - now) / 1000)` — seconds until the current lock expires.
 
 **Configurable:**
-
 - `lockedStatus`: any HTTP status code (typically 503, 423, or 409).
 - `lockedBody`: a static JSON-serializable value (`unknown`) or a function `(meta: LockFailureResponse) => unknown` that receives lock metadata and returns a body. The function form is useful for including dynamic `retryAfterSeconds` or `lockName` in the response body.
 
 ```typescript
 // static body
-lockedBody: { error: 'try again later' }
+lockedBody: {
+  error: 'try again later';
+}
 
 // dynamic body — includes lock metadata in the response
 lockedBody: (meta) => ({
   error: `Locked until ${new Date(meta.lockUntil).toISOString()}`,
   retryIn: meta.retryAfterSeconds,
-})
+});
 ```
 
 Actually, this is getting complex. Let me simplify: `lockedBody` is `unknown`. If a function is provided, it's called with `(metadata)` and the return value is sent as the body. Simple.
 
 ## Error Handling
 
-| Situation | Behavior |
-|---|---|
-| Lock acquired | Execute handler. Unlock on response finish/finally. Normal response. |
-| Lock held by another instance | Send failure response (503). Do NOT execute handler. |
-| `lockProvider.lock()` throws (storage error) | Propagate to framework's error handler (Express: `next(err)`, Fastify: reply with 500, Koa: throw, Hono: throw). The handler is NOT executed. |
-| `lock.unlock()` throws | Caught and logged. The response is already sent. The lock will expire via `lockAtMostFor`. |
-| Handler throws | For Express/Fastify: error propagates to framework error handler. For Koa/Hono: `await next()` re-throws, caught in try/catch, unlock in finally. Lock is always released. |
-| Unlock fails + handler threw | Handler error propagates. Unlock error is logged and discarded (don't mask handler error). |
+| Situation                                    | Behavior                                                                                                                                                                   |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lock acquired                                | Execute handler. Unlock on response finish/finally. Normal response.                                                                                                       |
+| Lock held by another instance                | Send failure response (503). Do NOT execute handler.                                                                                                                       |
+| `lockProvider.lock()` throws (storage error) | Propagate to framework's error handler (Express: `next(err)`, Fastify: reply with 500, Koa: throw, Hono: throw). The handler is NOT executed.                              |
+| `lock.unlock()` throws                       | Caught and logged. The response is already sent. The lock will expire via `lockAtMostFor`.                                                                                 |
+| Handler throws                               | For Express/Fastify: error propagates to framework error handler. For Koa/Hono: `await next()` re-throws, caught in try/catch, unlock in finally. Lock is always released. |
+| Unlock fails + handler threw                 | Handler error propagates. Unlock error is logged and discarded (don't mask handler error).                                                                                 |
 
 ## Lock Lifecycle per Request
 
@@ -398,7 +417,6 @@ Actually, this is getting complex. Let me simplify: `lockedBody` is `unknown`. I
 ## LockAssert & LockExtender Integration
 
 Middleware routes through `DefaultLockingTaskExecutor` internally so that:
-
 - `LockAssert.assertLocked()` works inside the handler.
 - `LockExtender.extendActiveLock()` works inside the handler.
 - `LockAssert.alreadyLockedBy(name)` works across nested middleware on the same route.
@@ -409,18 +427,18 @@ The `DefaultLockingTaskExecutor` is created once at `create<Framework>Lock()` ti
 
 ## Edge Cases
 
-| Edge Case | Behavior |
-|---|---|
-| **Multiple middleware on same route** | Each middleware instance acquires a separate lock (different lock name or same name → reentrancy kicks in for same name). |
-| **Parameterized routes** | Routes like `/api/users/:id` derive a single lock name `GET:/api/users/:id` (not per-ID). This protects the endpoint, not individual resources. For per-resource locking, use a custom `lockNameStrategy` or `name` override. |
-| **Wildcard routes** | Routes like `/api/*` derive `GET:/api/*`. The framework's matched path determines the lock name. |
-| **Sub-apps / nested routers** | Lock applies at the route level where middleware is attached. Nested routers require middleware on each sub-route. |
-| **Body parsing** | Lock acquisition happens before body parsing (middleware order matters). If body parsing is slow, consider moving tslock after body parsers. |
-| **Request with no matching route** | The framework handles 404 before tslock middleware runs (if placed after route registration). If tslock is global middleware, it runs for all requests including 404s — but the lock name derived from path still protects the path. |
-| **Zero-duration `lockAtMostFor`** | Allowed for "fire-and-forget" style: lock is acquired and immediately expired/unlocked. Useful for purely sequential requests that shouldn't overlap even briefly. |
-| **Concurrent requests to same route (same instance)** | The second request sees the lock held (by the first request on the same instance) and returns 503. This is correct — at-most-once execution. |
-| **Slow handler exceeds `lockAtMostFor`** | The lock expires while the handler is still running. Unlock may fail (lock already gone). Another instance may acquire the lock. The handler continues to run. Mitigation: use `KeepAliveLockProvider` or set `lockAtMostFor` longer than expected handler duration. |
-| **Client disconnects before response** | The `close` event on `res` fires, triggering unlock. Lock is released even if the response was never sent. |
+| Edge Case                                             | Behavior                                                                                                                                                                                                                                                             |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Multiple middleware on same route**                 | Each middleware instance acquires a separate lock (different lock name or same name → reentrancy kicks in for same name).                                                                                                                                            |
+| **Parameterized routes**                              | Routes like `/api/users/:id` derive a single lock name `GET:/api/users/:id` (not per-ID). This protects the endpoint, not individual resources. For per-resource locking, use a custom `lockNameStrategy` or `name` override.                                        |
+| **Wildcard routes**                                   | Routes like `/api/*` derive `GET:/api/*`. The framework's matched path determines the lock name.                                                                                                                                                                     |
+| **Sub-apps / nested routers**                         | Lock applies at the route level where middleware is attached. Nested routers require middleware on each sub-route.                                                                                                                                                   |
+| **Body parsing**                                      | Lock acquisition happens before body parsing (middleware order matters). If body parsing is slow, consider moving tslock after body parsers.                                                                                                                         |
+| **Request with no matching route**                    | The framework handles 404 before tslock middleware runs (if placed after route registration). If tslock is global middleware, it runs for all requests including 404s — but the lock name derived from path still protects the path.                                 |
+| **Zero-duration `lockAtMostFor`**                     | Allowed for "fire-and-forget" style: lock is acquired and immediately expired/unlocked. Useful for purely sequential requests that shouldn't overlap even briefly.                                                                                                   |
+| **Concurrent requests to same route (same instance)** | The second request sees the lock held (by the first request on the same instance) and returns 503. This is correct — at-most-once execution.                                                                                                                         |
+| **Slow handler exceeds `lockAtMostFor`**              | The lock expires while the handler is still running. Unlock may fail (lock already gone). Another instance may acquire the lock. The handler continues to run. Mitigation: use `KeepAliveLockProvider` or set `lockAtMostFor` longer than expected handler duration. |
+| **Client disconnects before response**                | The `close` event on `res` fires, triggering unlock. Lock is released even if the response was never sent.                                                                                                                                                           |
 
 ## File Structure
 
@@ -539,7 +557,6 @@ packages/hono/
 ### Integration Tests (per-framework)
 
 Each framework adapter has a lightweight integration test that starts a real server (Express/Fastify/Koa/Hono) with the `InMemoryLockProvider`, sends HTTP requests, and verifies:
-
 - **Lock acquired → 200:** First request executes handler, returns normal response.
 - **Lock held → 503:** Second request (concurrent) gets 503 with `Retry-After`, `Lock-Name`, `Locked-By` headers.
 - **Lock released → 200:** After first handler completes, third request executes.
@@ -565,25 +582,30 @@ Actually, the request/response shapes differ too much across frameworks to share
 ## Dependencies
 
 ### `@tslock/middleware-core`
+
 - **Runtime:** `@tslock/core`
 - **Dev:** `typescript`, `tsup`, `vitest`, `@types/node`
 
 ### `@tslock/express`
+
 - **Runtime:** `@tslock/core`, `@tslock/middleware-core`
 - **Peer:** `express` (^4.0.0 || ^5.0.0)
 - **Dev:** `express`, `@types/express`, `supertest` (for integration tests)
 
 ### `@tslock/fastify`
+
 - **Runtime:** `@tslock/core`, `@tslock/middleware-core`
 - **Peer:** `fastify` (^5.0.0)
 - **Dev:** `fastify`, `light-my-request` (for integration tests — Fastify's built-in inject)
 
 ### `@tslock/koa`
+
 - **Runtime:** `@tslock/core`, `@tslock/middleware-core`
 - **Peer:** `koa` (^2.0.0)
 - **Dev:** `koa`, `@types/koa`, `supertest`
 
 ### `@tslock/hono`
+
 - **Runtime:** `@tslock/core`, `@tslock/middleware-core`
 - **Peer:** `hono` (^4.0.0)
 - **Dev:** `hono`

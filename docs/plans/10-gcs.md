@@ -96,10 +96,7 @@ interface GcsProviderConfig {
   objectPrefix: string;
 }
 
-function createGcsProviderConfig(input: {
-  bucket: string;
-  objectPrefix?: string;
-}): GcsProviderConfig {
+function createGcsProviderConfig(input: { bucket: string; objectPrefix?: string }): GcsProviderConfig {
   // validate bucket non-empty → LockException
   // default objectPrefix to 'shedlock/'
 }
@@ -143,10 +140,18 @@ class GcsStorageAccessor extends AbstractStorageAccessor {
     return this.config.objectPrefix + name;
   }
 
-  async insertRecord(config: LockConfiguration): Promise<boolean> { /* ... */ }
-  async updateRecord(config: LockConfiguration): Promise<boolean> { /* ... */ }
-  async unlock(config: LockConfiguration): Promise<void> { /* ... */ }
-  async extend(config: LockConfiguration): Promise<boolean> { /* ... */ }
+  async insertRecord(config: LockConfiguration): Promise<boolean> {
+    /* ... */
+  }
+  async updateRecord(config: LockConfiguration): Promise<boolean> {
+    /* ... */
+  }
+  async unlock(config: LockConfiguration): Promise<void> {
+    /* ... */
+  }
+  async extend(config: LockConfiguration): Promise<boolean> {
+    /* ... */
+  }
 }
 ```
 
@@ -344,7 +349,6 @@ Construct mock `Bucket` / `File` objects that implement the subset of the GCS su
 Use a small hand-rolled mock builder rather than `vi.mock('@google-cloud/storage')` — the SDK's internal coupling makes full module mocking brittle. A builder returning plain objects with the right method signatures is more stable.
 
 Tests:
-
 - `insertRecord`:
   - Happy path: `exists()` → `[false]`, `save()` resolves → returns `true`.
   - Object exists: `exists()` → `[true]` → returns `false` (no `save`).
@@ -371,7 +375,6 @@ Tests:
   - Verify `setMetadata` preserves `lockedAt` and `lockedBy` from existing metadata.
 
 **File:** `__tests__/unit/gcs-lock-provider.test.ts`
-
 - Construct `GcsLockProvider` with a fake `Storage` (mock builder).
 - Verify delegation to `StorageBasedLockProvider`: first lock triggers `insertRecord`, second triggers `updateRecord`.
 - Verify `clearCache(name)` resets the registry so the next call is `insertRecord`.
@@ -381,7 +384,6 @@ Tests:
 **File:** `packages/gcs/MANUAL_VERIFICATION.md` (or README section).
 
 Since there is no GCS emulator, document the manual pre-release verification checklist:
-
 1. Create a dedicated GCS bucket (e.g. `tslock-verify-<random>`).
 2. Authenticate via `gcloud auth application-default login` or `GOOGLE_APPLICATION_CREDENTIALS`.
 3. Run a small script that exercises:
@@ -409,17 +411,17 @@ All must pass. Integration tests against a real bucket are a manual release-time
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| No GCS emulator → integration contract not run in CI | Unit tests cover the accessor logic with comprehensive mocks. Manual verification procedure (Step 8) is the release gate. Document this clearly so users know. |
-| `@google-cloud/storage` error shape varies (ApiError, StorageError, GaxiosError) | Duck-type on `code` / `status` numeric fields in `gcs-errors.ts`. Do not `instanceof` check. |
-| `file.get()` response shape differs across SDK versions (generation as string vs number, metadata path) | `getWithMetadata` helper centralizes the response-shape handling. Coerce `generation` via `Number()`. Test against the pinned peer-dep version (`^7.7.0`). |
-| `setMetadata` on some GCS configurations does not increment generation | Tested manually — if a real bucket shows this, document as a known incompatibility and recommend `save` with `generationMatch` instead. (Default: `setMetadata` is correct for standard GCS.) |
-| `precondition: { doesNotExist: true }` semantics differ subtly between real GCS and `fake-gcs-server` | Do not run the canonical integration suite against `fake-gcs-server`. Unit tests + manual GCS verification only. |
-| Lock objects accumulate forever | Documented non-goal. User configures bucket Lifecycle rule on `objectPrefix`. |
-| Race between `file.exists()` and `file.save()` (TOCTOU) | Expected — the `precondition: { doesNotExist: true }` is the atomic check. `exists()` is only an optimization to skip `save` when we know it will fail. |
-| `Date.parse()` of ISO string returns `NaN` for non-ISO formats | `parseLockUntil` throws `LockException('Corrupted lock record')` on `NaN`. |
-| `Utils.getHostname()` returns `'unknown'` in some environments (containers without hostname) | Acceptable — `lockedBy` is an opaque identifier. Document that callers wanting strict ownership can override via a subclass of `GcsStorageAccessor` if needed (not in v1 public API). |
+| Risk                                                                                                    | Mitigation                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No GCS emulator → integration contract not run in CI                                                    | Unit tests cover the accessor logic with comprehensive mocks. Manual verification procedure (Step 8) is the release gate. Document this clearly so users know.                                |
+| `@google-cloud/storage` error shape varies (ApiError, StorageError, GaxiosError)                        | Duck-type on `code` / `status` numeric fields in `gcs-errors.ts`. Do not `instanceof` check.                                                                                                  |
+| `file.get()` response shape differs across SDK versions (generation as string vs number, metadata path) | `getWithMetadata` helper centralizes the response-shape handling. Coerce `generation` via `Number()`. Test against the pinned peer-dep version (`^7.7.0`).                                    |
+| `setMetadata` on some GCS configurations does not increment generation                                  | Tested manually — if a real bucket shows this, document as a known incompatibility and recommend `save` with `generationMatch` instead. (Default: `setMetadata` is correct for standard GCS.) |
+| `precondition: { doesNotExist: true }` semantics differ subtly between real GCS and `fake-gcs-server`   | Do not run the canonical integration suite against `fake-gcs-server`. Unit tests + manual GCS verification only.                                                                              |
+| Lock objects accumulate forever                                                                         | Documented non-goal. User configures bucket Lifecycle rule on `objectPrefix`.                                                                                                                 |
+| Race between `file.exists()` and `file.save()` (TOCTOU)                                                 | Expected — the `precondition: { doesNotExist: true }` is the atomic check. `exists()` is only an optimization to skip `save` when we know it will fail.                                       |
+| `Date.parse()` of ISO string returns `NaN` for non-ISO formats                                          | `parseLockUntil` throws `LockException('Corrupted lock record')` on `NaN`.                                                                                                                    |
+| `Utils.getHostname()` returns `'unknown'` in some environments (containers without hostname)            | Acceptable — `lockedBy` is an opaque identifier. Document that callers wanting strict ownership can override via a subclass of `GcsStorageAccessor` if needed (not in v1 public API).         |
 
 ## Estimation
 

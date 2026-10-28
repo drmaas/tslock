@@ -8,14 +8,14 @@ This is a port of ShedLock's `DatastoreLockProvider` (Java), adapted to TypeScri
 
 ## Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/datastore` |
-| **Driver** | `@google-cloud/datastore` (peer dependency) |
-| **Core dependency** | `@tslock/core` (peer dependency) |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS (tsup) |
-| **Test strategy** | Integration tests against Datastore emulator (`gcloud beta emulators datastore`) |
+| Field               | Value                                                                            |
+| ------------------- | -------------------------------------------------------------------------------- |
+| **Name**            | `@tslock/datastore`                                                              |
+| **Driver**          | `@google-cloud/datastore` (peer dependency)                                      |
+| **Core dependency** | `@tslock/core` (peer dependency)                                                 |
+| **Node.js**         | >= 22                                                                            |
+| **Module format**   | Dual ESM + CJS (tsup)                                                            |
+| **Test strategy**   | Integration tests against Datastore emulator (`gcloud beta emulators datastore`) |
 
 ## Public API
 
@@ -39,8 +39,8 @@ interface DatastoreConfiguration {
 
 interface DatastoreFieldNames {
   readonly lockUntil: string; // default "lockUntil"
-  readonly lockedAt: string;  // default "lockedAt"
-  readonly lockedBy: string;  // default "lockedBy"
+  readonly lockedAt: string; // default "lockedAt"
+  readonly lockedBy: string; // default "lockedBy"
 }
 ```
 
@@ -243,17 +243,17 @@ If `useDate: true`, fields are stored as JS `Date` objects, which Datastore pers
 
 ## Error Handling
 
-| Situation | Behavior |
-|---|---|
-| Insert — entity already exists | Return `false` |
-| Update — entity missing | Return `false` |
-| Update — entity still locked (`lockUntil > now`) | Return `false` |
-| Unlock — entity missing or owned by another | No-op, return `void` |
-| Extend — entity missing, owned by another, or expired | Return `false` |
-| `txn.get` throws `NOT_FOUND` | `safeGet` returns `undefined` (not an error) |
-| `txn.get` throws non-NOT_FOUND error | Propagate |
-| Transaction retries exhausted | Propagate the final error |
-| Network / auth / permission error | Propagate |
+| Situation                                             | Behavior                                     |
+| ----------------------------------------------------- | -------------------------------------------- |
+| Insert — entity already exists                        | Return `false`                               |
+| Update — entity missing                               | Return `false`                               |
+| Update — entity still locked (`lockUntil > now`)      | Return `false`                               |
+| Unlock — entity missing or owned by another           | No-op, return `void`                         |
+| Extend — entity missing, owned by another, or expired | Return `false`                               |
+| `txn.get` throws `NOT_FOUND`                          | `safeGet` returns `undefined` (not an error) |
+| `txn.get` throws non-NOT_FOUND error                  | Propagate                                    |
+| Transaction retries exhausted                         | Propagate the final error                    |
+| Network / auth / permission error                     | Propagate                                    |
 
 ## Dependencies
 

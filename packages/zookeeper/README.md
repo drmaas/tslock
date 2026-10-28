@@ -37,8 +37,8 @@ await executor.executeWithLock(
 
 `createZooKeeperLockProvider(client, options?)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
+| Option     | Default       | Description                                                                                                |
+| ---------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
 | `basePath` | `'/shedlock'` | The parent znode under which one znode per lock name is created. Created on first use if it doesn't exist. |
 
 The znode for a lock is `${basePath}/${lockName}`.

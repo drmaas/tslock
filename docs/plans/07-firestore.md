@@ -70,7 +70,6 @@ packages/firestore/
 ### Step 2: Implement FirestoreConfiguration
 
 **File:** `src/firestore-configuration.ts`
-
 - `FirestoreFieldNames` interface (defaults: lockUntil="lockUntil", lockedAt="lockedAt", lockedBy="lockedBy").
 - `FirestoreConfiguration` interface.
 - `DEFAULT_FIELD_NAMES` constant.
@@ -302,15 +301,15 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 pnpm test:integration
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Firestore emulator behavior differs from production (esp. transaction retry semantics) | Run fuzz tests against emulator; document that production retry semantics may differ. Provide a skipped live-integration test for manual GCP verification. |
-| `@firebase/rules-unit-testing` version mismatch with `@google-cloud/firestore` | Pin compatible majors in devDeps. Test matrix in CI. |
-| Emulator startup flakiness in CI | Use `@firebase/rules-unit-testing`'s built-in emulator (no external process). Add wait-for-ready logic in `beforeAll`. |
-| Field encoding (ISO string vs Timestamp) mode confusion | Mode is fixed at provider construction; document that mixing modes across instances on the same collection corrupts locks. Unit-test both modes and the round-trip. |
-| Document ID character restrictions (no `/`, non-empty, <= 1500 bytes UTF-8) | Document; user is responsible for lock names. TSLock does not validate per-call names (overhead). Invalid names surface as Firestore errors. |
-| Transaction retry exhaustion surfaces as an error | Propagate. Document. |
-| Large number of lock documents accumulate in the collection | Document that TSLock does not garbage-collect; users can set a Firestore TTL policy on the `lockedAt` field. |
+| Risk                                                                                               | Mitigation                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Firestore emulator behavior differs from production (esp. transaction retry semantics)             | Run fuzz tests against emulator; document that production retry semantics may differ. Provide a skipped live-integration test for manual GCP verification.                                                                               |
+| `@firebase/rules-unit-testing` version mismatch with `@google-cloud/firestore`                     | Pin compatible majors in devDeps. Test matrix in CI.                                                                                                                                                                                     |
+| Emulator startup flakiness in CI                                                                   | Use `@firebase/rules-unit-testing`'s built-in emulator (no external process). Add wait-for-ready logic in `beforeAll`.                                                                                                                   |
+| Field encoding (ISO string vs Timestamp) mode confusion                                            | Mode is fixed at provider construction; document that mixing modes across instances on the same collection corrupts locks. Unit-test both modes and the round-trip.                                                                      |
+| Document ID character restrictions (no `/`, non-empty, <= 1500 bytes UTF-8)                        | Document; user is responsible for lock names. TSLock does not validate per-call names (overhead). Invalid names surface as Firestore errors.                                                                                             |
+| Transaction retry exhaustion surfaces as an error                                                  | Propagate. Document.                                                                                                                                                                                                                     |
+| Large number of lock documents accumulate in the collection                                        | Document that TSLock does not garbage-collect; users can set a Firestore TTL policy on the `lockedAt` field.                                                                                                                             |
 | `instanceof Timestamp` check fails across SDK module duplicates (rare ESM/CJS dual-package hazard) | Document that `useTimestamps` requires a single Firestore SDK instance in the runtime. If cross-realm `instanceof` fails, fall back to duck-typing (`typeof value.toMillis === 'function'`). Add a unit test for the duck-type fallback. |
 
 ## Estimation

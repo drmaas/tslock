@@ -43,6 +43,7 @@ if (ctx._source[params.lockUntilField] <= params.now) {
   ctx.op = 'none';
 }
 ```
+
 - Doc exists, expired (`lockUntil <= now`) → fields updated → `result: 'updated'` → lock acquired. Correct.
 - Doc exists, held (`lockUntil > now`) → `ctx.op = 'none'` → `result: 'noop'` → `undefined`. Correct.
 - Doc absent → `upsert` body creates the doc → `result: 'created'` → lock acquired. Correct.
@@ -62,16 +63,18 @@ Painless `<=` on strings performs lexicographic comparison; ISO-8601 fixed-width
 ## Gaps and Issues
 
 1. **[BUG] OpenSearch integration test uses HTTPS where HTTP is required.** The plan's OpenSearch integration test (Step 11) sets `DISABLE_SECURITY_PLUGIN: 'true'` on the container and then connects with:
+
    ```typescript
    const client = new Client({
      node: `https://${container.getHost()}:${container.getMappedPort(9200)}`,
      ssl: { rejectUnauthorized: false },
    });
    ```
+
    `DISABLE_SECURITY_PLUGIN: 'true'` removes the OpenSearch security plugin entirely, which causes the node to serve **plain HTTP** on port 9200 (no TLS). Connecting via `https://` will fail to establish a TLS handshake. The correct setup is either:
    - Keep `DISABLE_SECURITY_PLUGIN: 'true'` and use `http://${host}:${port}` (no `ssl` config), OR
    - Drop `DISABLE_SECURITY_PLUGIN`, keep the security plugin (which serves HTTPS with a self-signed cert), and use `https://` + `ssl: { rejectUnauthorized: false }` + `auth: { username: 'admin', password: 'admin' }`.
-   As written, the integration test will fail to connect. This must be fixed before implementation.
+     As written, the integration test will fail to connect. This must be fixed before implementation.
 
 2. **[UNCERTAINTY] ES v8 `body` shape is non-committal.** The spec uses `client.update({ id, index, refresh, body: { script, upsert } })`. The `@elastic/elasticsearch` v8 client still accepts the `body` wrapper for `update` (it emits a deprecation warning in some v8 minors in favor of flat top-level params). The plan's risk table flags this ("verify with installed version; if not, switch to flat-params shape") but doesn't commit. Since the integration test pins ES 8.11.0, the spec should commit to whichever shape 8.11 supports and remove the ambiguity. The flat-params shape (`script`, `upsert` as top-level args alongside `id`, `index`, `refresh`) is the v8-idiomatic form and avoids deprecation warnings. Recommend committing to the flat shape.
 

@@ -119,7 +119,6 @@ Defaults resolved in the provider constructor:
 ### Step 6: Implement RedisLock
 
 **File:** `src/redis-lock.ts`
-
 - `import { AbstractSimpleLock, LockConfiguration, SimpleLock } from '@tslock/core'`
 - `class RedisLock extends AbstractSimpleLock`:
   - `constructor(
@@ -147,7 +146,6 @@ Defaults resolved in the provider constructor:
 ### Step 7: Implement InternalRedisLockProvider
 
 **File:** `src/internal-redis-lock-provider.ts`
-
 - `import { LockConfiguration, SimpleLock, ExtensibleLockProvider, ClockProvider, Utils } from '@tslock/core'`
 - `import { randomUUID } from 'node:crypto'`
 - `class InternalRedisLockProvider implements ExtensibleLockProvider`:
@@ -188,7 +186,6 @@ Export:
 **File:** `__tests__/internal-redis-lock-provider.test.ts`
 
 Build a mock `RedisTemplate`: `const template = { setIfAbsent: vi.fn(), setIfPresent: vi.fn(), eval: vi.fn(), delete: vi.fn(), get: vi.fn() };`. Use `ClockProvider.setClock(() => fixedTime)` for deterministic timestamps.
-
 - `lock()`:
   - `setIfAbsent` returns `true` → `RedisLock` returned.
   - Assert `key === 'job-lock:default:test'` (default prefix + env).
@@ -198,7 +195,6 @@ Build a mock `RedisTemplate`: `const template = { setIfAbsent: vi.fn(), setIfPre
   - Assert `setIfAbsent` called with `(key, value, config.lockAtMostFor)`.
 
 **File:** `__tests__/redis-lock.test.ts`
-
 - `doUnlock` (`lockAtLeastFor <= 0`, `safeUpdate = true`):
   - Assert `template.eval` called with `(DEL_LUA_SCRIPT, [key], [value])`.
 - `doUnlock` (`lockAtLeastFor <= 0`, `safeUpdate = false`):
@@ -262,7 +258,6 @@ packages/redis/
 ### Step 12: Implement NodeRedisTemplate
 
 **File:** `src/node-redis-template.ts`
-
 - `import type { RedisClientType } from 'redis'`
 - `class NodeRedisTemplate implements RedisTemplate`:
   - `constructor(private readonly client: RedisClientType) {}`
@@ -283,7 +278,6 @@ packages/redis/
 ### Step 13: Implement NodeRedisLockProvider
 
 **File:** `src/node-redis-lock-provider.ts`
-
 - `import type { RedisClientType } from 'redis'`
 - `import { InternalRedisLockProvider, RedisLockProviderConfig } from '@tslock/redis-core'`
 - `class NodeRedisLockProvider implements ExtensibleLockProvider`:
@@ -307,7 +301,6 @@ Export:
 **File:** `__tests__/node-redis-template.test.ts`
 
 Mock the `redis` client: `const client = { set: vi.fn(), eval: vi.fn(), del: vi.fn(), get: vi.fn() } as unknown as RedisClientType;`.
-
 - `setIfAbsent`:
   - `client.set` returns `'OK'` → `true`. Assert call args `(key, value, { PX: expireMillis, NX })`.
   - `client.set` returns `null` → `false`.
@@ -321,8 +314,8 @@ Mock the `redis` client: `const client = { set: vi.fn(), eval: vi.fn(), del: vi.
 ### Step 16: Write redis integration tests (testcontainers Redis)
 
 **File:** `__tests__/integration/node-redis.integration.test.ts`
-
 - Use `testcontainers` Redis image:
+
   ```typescript
   import { RedisContainer } from '@testcontainers/redis';
   const container = await new RedisContainer('redis:7').start();
@@ -379,7 +372,6 @@ packages/redis-ioredis/
 ### Step 19: Implement IoRedisTemplate
 
 **File:** `src/io-redis-template.ts`
-
 - `import type Redis, { Cluster } from 'ioredis'`
 - `class IoRedisTemplate implements RedisTemplate`:
   - `constructor(private readonly client: Redis | Cluster) {}`
@@ -404,7 +396,6 @@ packages/redis-ioredis/
 ### Step 20: Implement IoRedisLockProvider
 
 **File:** `src/io-redis-lock-provider.ts`
-
 - `import type Redis, { Cluster } from 'ioredis'`
 - `import { InternalRedisLockProvider, RedisLockProviderConfig } from '@tslock/redis-core'`
 - `class IoRedisLockProvider implements ExtensibleLockProvider`:
@@ -428,7 +419,6 @@ Export:
 **File:** `__tests__/io-redis-template.test.ts`
 
 Mock the `ioredis` client: `const client = { set: vi.fn(), evalsha: vi.fn(), eval: vi.fn(), del: vi.fn(), get: vi.fn() } as unknown as Redis;`.
-
 - `setIfAbsent`: assert `client.set` called with `(key, value, 'PX', expireMillis, 'NX')`. Returns `'OK'` → `true`; `null` → `false`.
 - `setIfPresent`: assert `client.set` called with `(key, value, 'PX', expireMillis, 'XX')`.
 - `eval` (happy path): `evalsha` returns `1` → return `1`. Assert `evalsha` called with `(sha1, 1, key, ...args)`.
@@ -440,8 +430,8 @@ Mock the `ioredis` client: `const client = { set: vi.fn(), evalsha: vi.fn(), eva
 ### Step 23: Write redis-ioredis integration tests (testcontainers Redis)
 
 **File:** `__tests__/integration/io-redis.integration.test.ts`
-
 - Use `testcontainers` Redis image (same image, different client):
+
   ```typescript
   import { RedisContainer } from '@testcontainers/redis';
   const container = await new RedisContainer('redis:7').start();
@@ -462,21 +452,21 @@ pnpm typecheck && pnpm test && pnpm test:integration && pnpm build
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| `node-redis` v4 `eval` signature differs across minors (`{ keys, arguments }` vs `{ keys, args }`) | Verify against the installed `redis@^4.0.0`. The `arguments` field is the documented shape in v4.6+. Add a unit test asserting the exact call shape; if it drifts, update the adapter. Pin `redis: "^4.0.0"` in peer deps. |
-| `ioredis` v5 `evalsha`/`eval` arity (`numkeys` as second positional arg) | `ioredis` v5 uses `evalsha(sha, numkeys, ...keysAndArgs)`. Verify with a unit test. The spread `[...keys, ...args]` after `numkeys` is the documented shape. |
-| `NOSCRIPT` error detection in `ioredis` | `ioredis` surfaces Redis `NOSCRIPT` as a `ReplyError` whose `message` includes `NOSCRIPT`. The `isNoScriptError` helper checks `e?.name === 'ReplyError' && /NOSCRIPT/.test(e?.message)`. Add a unit test for the fallback path. |
-| `ioredis` `Cluster` mode and `EVALSHA` | In cluster mode, `EVALSHA` works as long as all keys hash to the same slot. Lock keys use a single key (`KEYS[1]`), so they always hit one slot. No cross-slot concern. Document this. |
-| `node-redis` `SET` options shape (`{ PX, NX }` vs positional args) | v4 uses the options-object shape `client.set(key, value, { PX, NX })`. Verify with a unit test asserting the options object is passed. |
-| `crypto.randomUUID()` availability | Available since Node 14.17 (stable in Node 16+). No concern for Node 22+. Use `import { randomUUID } from 'node:crypto'`. |
-| `SET NX PX` atomicity | Redis `SET` with `NX` and `PX` is a single atomic command (documented). No race between `SETNX` and `PEXPIRE`. No mitigation needed. |
-| `lockAtLeastFor` unlock does not verify ownership | The `lockAtLeastFor > 0` branch of `doUnlock` uses `SET key value XX PX lockAtLeastFor` without a Lua ownership check. If the lock expired and another instance acquired it (with a different value), the `XX` with our `value` would still set the TTL. ShedLock accepts this (the holder calls `unlock` well within `lockAtMostFor`). TSLock matches ShedLock. Document the caveat in the README. A stricter Lua-based path (`GET`-then-`PEXPIRE`) is possible but diverges. |
-| `safeUpdate = false` is unsafe but supported | Document that `safeUpdate: false` skips ownership checks and is only safe when the lock name is unique per holder (no concurrent takeover). Default `true`. |
-| Redis `PX` accepts millis (integer) | `lockAtMostFor` and `lockAtLeastFor` are integer millis from `parseDuration`. `PX` expects integer millis. If a user passes a sub-millisecond duration (not possible with `parseDuration` — minimum unit is `ms`), round up. No concern. |
-| Redis key prefix collisions across envs | The `env` discriminator in the key (`job-lock:default:my-task`) prevents collisions. Default `env = 'default'`. Users with multiple environments sharing a Redis instance set distinct `env` values. Document. |
-| `@testcontainers/redis` availability | Verify a `testcontainers` Redis module exists. If not, use `GenericContainer` with `redis:7`, expose port `6379`, and build the client from the mapped URL. Both `redis` and `ioredis` accept a `redis://host:port` URL. |
-| Cluster integration test complexity | If a cluster testcontainer is hard to set up, skip the cluster integration test and rely on unit tests for the `Cluster` path. The `IoRedisTemplate` methods are identical for `Redis` and `Cluster`; only the client type differs. Document the gap. |
+| Risk                                                                                               | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `node-redis` v4 `eval` signature differs across minors (`{ keys, arguments }` vs `{ keys, args }`) | Verify against the installed `redis@^4.0.0`. The `arguments` field is the documented shape in v4.6+. Add a unit test asserting the exact call shape; if it drifts, update the adapter. Pin `redis: "^4.0.0"` in peer deps.                                                                                                                                                                                                                                                     |
+| `ioredis` v5 `evalsha`/`eval` arity (`numkeys` as second positional arg)                           | `ioredis` v5 uses `evalsha(sha, numkeys, ...keysAndArgs)`. Verify with a unit test. The spread `[...keys, ...args]` after `numkeys` is the documented shape.                                                                                                                                                                                                                                                                                                                   |
+| `NOSCRIPT` error detection in `ioredis`                                                            | `ioredis` surfaces Redis `NOSCRIPT` as a `ReplyError` whose `message` includes `NOSCRIPT`. The `isNoScriptError` helper checks `e?.name === 'ReplyError' && /NOSCRIPT/.test(e?.message)`. Add a unit test for the fallback path.                                                                                                                                                                                                                                               |
+| `ioredis` `Cluster` mode and `EVALSHA`                                                             | In cluster mode, `EVALSHA` works as long as all keys hash to the same slot. Lock keys use a single key (`KEYS[1]`), so they always hit one slot. No cross-slot concern. Document this.                                                                                                                                                                                                                                                                                         |
+| `node-redis` `SET` options shape (`{ PX, NX }` vs positional args)                                 | v4 uses the options-object shape `client.set(key, value, { PX, NX })`. Verify with a unit test asserting the options object is passed.                                                                                                                                                                                                                                                                                                                                         |
+| `crypto.randomUUID()` availability                                                                 | Available since Node 14.17 (stable in Node 16+). No concern for Node 22+. Use `import { randomUUID } from 'node:crypto'`.                                                                                                                                                                                                                                                                                                                                                      |
+| `SET NX PX` atomicity                                                                              | Redis `SET` with `NX` and `PX` is a single atomic command (documented). No race between `SETNX` and `PEXPIRE`. No mitigation needed.                                                                                                                                                                                                                                                                                                                                           |
+| `lockAtLeastFor` unlock does not verify ownership                                                  | The `lockAtLeastFor > 0` branch of `doUnlock` uses `SET key value XX PX lockAtLeastFor` without a Lua ownership check. If the lock expired and another instance acquired it (with a different value), the `XX` with our `value` would still set the TTL. ShedLock accepts this (the holder calls `unlock` well within `lockAtMostFor`). TSLock matches ShedLock. Document the caveat in the README. A stricter Lua-based path (`GET`-then-`PEXPIRE`) is possible but diverges. |
+| `safeUpdate = false` is unsafe but supported                                                       | Document that `safeUpdate: false` skips ownership checks and is only safe when the lock name is unique per holder (no concurrent takeover). Default `true`.                                                                                                                                                                                                                                                                                                                    |
+| Redis `PX` accepts millis (integer)                                                                | `lockAtMostFor` and `lockAtLeastFor` are integer millis from `parseDuration`. `PX` expects integer millis. If a user passes a sub-millisecond duration (not possible with `parseDuration` — minimum unit is `ms`), round up. No concern.                                                                                                                                                                                                                                       |
+| Redis key prefix collisions across envs                                                            | The `env` discriminator in the key (`job-lock:default:my-task`) prevents collisions. Default `env = 'default'`. Users with multiple environments sharing a Redis instance set distinct `env` values. Document.                                                                                                                                                                                                                                                                 |
+| `@testcontainers/redis` availability                                                               | Verify a `testcontainers` Redis module exists. If not, use `GenericContainer` with `redis:7`, expose port `6379`, and build the client from the mapped URL. Both `redis` and `ioredis` accept a `redis://host:port` URL.                                                                                                                                                                                                                                                       |
+| Cluster integration test complexity                                                                | If a cluster testcontainer is hard to set up, skip the cluster integration test and rely on unit tests for the `Cluster` path. The `IoRedisTemplate` methods are identical for `Redis` and `Cluster`; only the client type differs. Document the gap.                                                                                                                                                                                                                          |
 
 ## Estimation
 

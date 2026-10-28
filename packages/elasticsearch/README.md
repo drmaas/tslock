@@ -32,10 +32,10 @@ await executor.executeWithLock(
 
 `new ElasticsearchLockProvider(client, options?)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `index` | `'shedlock'` | The Elasticsearch index used for lock documents. |
-| `fieldNames` | see below | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`. |
+| Option       | Default      | Description                                                  |
+| ------------ | ------------ | ------------------------------------------------------------ |
+| `index`      | `'shedlock'` | The Elasticsearch index used for lock documents.             |
+| `fieldNames` | see below    | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`. |
 
 Default field names: `name`, `lockUntil`, `lockedAt`, `lockedBy` (via `FieldNames.DEFAULT`).
 

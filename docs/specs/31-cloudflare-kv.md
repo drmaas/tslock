@@ -36,12 +36,12 @@ Some Workers apps already have a KV namespace and want a ShedLock-shaped skip-if
 
 ## Architecture fit
 
-| Field | Value |
-|---|---|
-| **Category** | **K — Cloudflare Workers KV (advisory)** |
-| **Package** | `@tslock/cloudflare-kv` |
-| **Peers** | `@tslock/core` |
-| **Node.js** | >= 22; Workers runtime for a `KVNamespace` binding |
+| Field        | Value                                              |
+| ------------ | -------------------------------------------------- |
+| **Category** | **K — Cloudflare Workers KV (advisory)**           |
+| **Package**  | `@tslock/cloudflare-kv`                            |
+| **Peers**    | `@tslock/core`                                     |
+| **Node.js**  | >= 22; Workers runtime for a `KVNamespace` binding |
 
 ```
 @tslock/core
@@ -149,7 +149,6 @@ A stale `GET` in step 1 can miss a live holder. Two overlapping acquires can bot
 ### unlock
 
 The lock object passes its token.
-
 1. `GET`. Missing or `token` mismatch → return (no write).
 2. If `unlockTime(config) <= now` → `DELETE`.
 3. Otherwise `PUT` the same token with `lockUntil = unlockTime(config)` and a refreshed `expirationTtl`.
@@ -164,16 +163,16 @@ On a fresh read, a late unlock after someone else acquired is a no-op. On a stal
 
 ### Errors
 
-| Situation | Result |
-|---|---|
-| Lock held on the read we actually saw | `undefined` |
-| Confirm read does not show our token | `undefined` |
-| Unlock token mismatch or missing key | resolve `void` |
-| Extend token mismatch, missing, or expired | `undefined` |
-| `acknowledgeAdvisoryLock !== true` | throw `LockException` before any KV call |
-| Invalid prefix, empty REST ids, key longer than 512 bytes | throw `LockException` |
-| Malformed JSON or a record missing finite times / token / lockedBy | throw `LockException` |
-| KV / HTTP failure, including HTTP 429 (1 write/second/key) | throw (REST non-2xx except GET/DELETE 404 becomes `LockException`) |
+| Situation                                                          | Result                                                             |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Lock held on the read we actually saw                              | `undefined`                                                        |
+| Confirm read does not show our token                               | `undefined`                                                        |
+| Unlock token mismatch or missing key                               | resolve `void`                                                     |
+| Extend token mismatch, missing, or expired                         | `undefined`                                                        |
+| `acknowledgeAdvisoryLock !== true`                                 | throw `LockException` before any KV call                           |
+| Invalid prefix, empty REST ids, key longer than 512 bytes          | throw `LockException`                                              |
+| Malformed JSON or a record missing finite times / token / lockedBy | throw `LockException`                                              |
+| KV / HTTP failure, including HTTP 429 (1 write/second/key)         | throw (REST non-2xx except GET/DELETE 404 becomes `LockException`) |
 
 GET and DELETE HTTP 404 on the REST binding are “missing”, not errors. REST `PUT` sends `expiration_ttl` when `expirationTtl` is set.
 

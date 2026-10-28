@@ -14,13 +14,13 @@ pnpm add @tslock/sql-support
 
 ## What's inside
 
-| Export | Description |
-|---|---|
-| `DatabaseProduct` | Enum of supported SQL databases (`POSTGRES`, `MYSQL`, `SQL_SERVER`, `ORACLE`, `DB2`, …). |
-| `SqlConfiguration` | Typed config object: table name, column names, `lockedByValue`, `timeZone`, `useDbTime`. |
-| `SqlStatementsSource` + `createSqlStatementsSource()` | Produces the dialect-correct `INSERT` / `UPDATE` / `EXTEND` / `UNLOCK` statements. |
-| `ServerTimeStatementsSource` variants | DB-server-clock statement sources (e.g. `PostgresServerTimeStatementsSource`). |
-| `timestamp()` | Helper for the `timeZone` option. |
+| Export                                                | Description                                                                              |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `DatabaseProduct`                                     | Enum of supported SQL databases (`POSTGRES`, `MYSQL`, `SQL_SERVER`, `ORACLE`, `DB2`, …). |
+| `SqlConfiguration`                                    | Typed config object: table name, column names, `lockedByValue`, `timeZone`, `useDbTime`. |
+| `SqlStatementsSource` + `createSqlStatementsSource()` | Produces the dialect-correct `INSERT` / `UPDATE` / `EXTEND` / `UNLOCK` statements.       |
+| `ServerTimeStatementsSource` variants                 | DB-server-clock statement sources (e.g. `PostgresServerTimeStatementsSource`).           |
+| `timestamp()`                                         | Helper for the `timeZone` option.                                                        |
 
 ## Usage (building a custom adapter)
 

@@ -8,11 +8,11 @@ This plan implements `docs/specs/25-architecture-improvements.md` (approved). It
 
 ## Resolved Open Decisions (spec §13)
 
-| Decision | Resolution |
-|---|---|
-| Keep-alive failure policy | **(b) one retry then stop** — a single immediate retry for transient errors; if the second attempt also fails, deactivate the interval and notify via `onKeepAliveFailure`. |
-| `pnpm audit` blocking vs non-blocking | **Non-blocking** initially (`continue-on-error: true`), tightened to blocking once the baseline is clean (tracked as a follow-up issue). |
-| CI integration job | **Scheduled/on-demand** (`workflow_dispatch` + weekly cron) for container-based suites; **always-on** for redis/redis-ioredis/in-memory. |
+| Decision                                              | Resolution                                                                                                                                                                                           |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keep-alive failure policy                             | **(b) one retry then stop** — a single immediate retry for transient errors; if the second attempt also fails, deactivate the interval and notify via `onKeepAliveFailure`.                          |
+| `pnpm audit` blocking vs non-blocking                 | **Non-blocking** initially (`continue-on-error: true`), tightened to blocking once the baseline is clean (tracked as a follow-up issue).                                                             |
+| CI integration job                                    | **Scheduled/on-demand** (`workflow_dispatch` + weekly cron) for container-based suites; **always-on** for redis/redis-ioredis/in-memory.                                                             |
 | `updateRecord` missing → throw vs self-heal re-insert | **Throw** (Couchbase/S3/GCS pattern) + `StorageBasedLockProvider` clears the registry on any `updateRecord` exception. Keeps single-writer semantics; loud failure instead of silent permanent skip. |
 
 ## Prerequisites
@@ -26,7 +26,6 @@ This plan implements `docs/specs/25-architecture-improvements.md` (approved). It
 ### Step 1: Core shared helpers (`@tslock/core`)
 
 **File: `packages/core/src/utils.ts`**
-
 - Memoize `getHostname()`: cache `os.hostname()` after first successful call; keep the `'unknown'` fallback.
 - Add `toTtlSeconds(ms: number): number` → `Math.floor(ms / 1000) + 1` with JSDoc: never expire early; matches ShedLock's Memcached convention.
 - Add `validateLockName(name: string): void` — rejects control chars (`/[\p{Cc}\p{Cf}]/u`) and names > 1024 UTF-8 bytes; throws `LockException`. (Called from `createLockConfig` in Step 2.)
@@ -56,7 +55,6 @@ This plan implements `docs/specs/25-architecture-improvements.md` (approved). It
 ### Step 4: Keep-alive hardening (spec R1, R3)
 
 **File: `packages/core/src/keep-alive-lock-provider.ts`**
-
 - Wrap `extendForNextPeriod` in try/catch inside the interval callback:
   1. First failure → one immediate retry (`extendForNextPeriod()` again).
   2. Second failure → deactivate + clear interval + call `onKeepAliveFailure(config, error)`.
@@ -79,7 +77,6 @@ This plan implements `docs/specs/25-architecture-improvements.md` (approved). It
 **File: `packages/redis-core/src/scripts.ts`** — add `KEEP_IF_EQUALS_SCRIPT` (Lua: `if get(KEYS[1]) == ARGV[1] then return pexpire(KEYS[1], ARGV[2]) else return 0 end`).
 
 **File: `packages/redis-core/src/internal-redis-lock-provider.ts`**
-
 - `InternalRedisLockProvider.lock()`: use `Utils.getHostname()` instead of literal `'tslock'`; use `crypto.randomUUID()` for `randomId`.
 - `RedisLock.doUnlock()`: if `lockAtLeastUntil(config) > ClockProvider.now()`:
   - `safeUpdate=true` → `redis.eval(KEEP_IF_EQUALS_SCRIPT, [key], [value, remainingMs])`.
@@ -97,7 +94,6 @@ This plan implements `docs/specs/25-architecture-improvements.md` (approved). It
 ### Step 8: Provider error-taxonomy unification (spec C1, C6, M4)
 
 Standardize config-validation errors to `LockException` with a `<Provider>Configuration:` message prefix. Files (per the spec evidence):
-
 - `packages/spanner/src/spanner-configuration.ts` (lines 36, 41, 53)
 - `packages/datastore/src/datastore-configuration.ts` (34, 39, 49)
 - `packages/firestore/src/firestore-configuration.ts` (34, 39, 49)
@@ -128,7 +124,6 @@ Add shared validation helpers in `@tslock/core` (`Utils.assertNonEmpty(value, la
 ### Step 11: Middleware hot-path & typing (spec P1, C7, C8, C9)
 
 **File: `packages/middleware-core/src/middleware-config.ts`**
-
 - `resolveMiddlewareConfig` stores **pre-resolved numbers** for global durations (resolve `lockAtMostFor`/`lockAtLeastFor` once at creation; keep the `DurationInput` fields for back-compat by resolving into a frozen `ResolvedMiddlewareConfig`).
 - `mergeRouteConfig(globalResolved, route?)` parses route-level durations only when overridden; cache per-`RouteLockConfig` object identity in a `WeakMap` (routes are created once per route-registration).
 - Add `StaticLockedBody`/`LockedBody` types (spec C7); type `defaultLockedBody`, `lockedBody`, `ResolvedRouteConfig.lockedBody` with `LockedBody`.
@@ -155,7 +150,6 @@ Add a root aggregate script `test:integration` (`pnpm -r test:integration`) and 
 ### Step 14: CI & tooling (spec S3, S4, S5, P4, M2)
 
 **`.github/workflows/ci.yml`**
-
 - `pnpm install --frozen-lockfile`.
 - Add `pnpm audit --prod` step with `continue-on-error: true` initially (non-blocking; tighten later per resolved decision).
 - Add an integration job: always-on for redis/redis-ioredis/in-memory; `workflow_dispatch` + weekly cron for container suites.
@@ -194,16 +188,16 @@ Then: independent review per the workflow (review document `docs/reviews/25-arch
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| `LockAssert.TestHelper` removal breaks internal tests | Core tests switch to real `runWithLock`; keep a deprecated shim in core only if a consumer is found (spec M1). |
-| `onUnlockError` interface change | Member is **optional** — existing implementations compile unchanged (spec §7). |
-| Redis `lockAtLeastFor` unlock behavior change affects `safeUpdate=false` users | Only changes unlock-with-`lockAtLeastFor>0` path; documented in redis README; covered by new integration contract. |
-| `updateRecord` throw changes Firestore/Datastore/Spanner callers | Loud failure replaces silent skip — intended per spec C2/F3; verify ShedLock parity during Step 9 and document. |
-| Registry clear-on-any-exception causes extra insert attempts | Harmless (insert fails with duplicate → falls through to update); correctness maintained at storage layer. |
-| Etcd TTL +1s behavior change | Safe direction (never early-expire); unit tests updated; documented. |
+| Risk                                                                                  | Mitigation                                                                                                               |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `LockAssert.TestHelper` removal breaks internal tests                                 | Core tests switch to real `runWithLock`; keep a deprecated shim in core only if a consumer is found (spec M1).           |
+| `onUnlockError` interface change                                                      | Member is **optional** — existing implementations compile unchanged (spec §7).                                           |
+| Redis `lockAtLeastFor` unlock behavior change affects `safeUpdate=false` users        | Only changes unlock-with-`lockAtLeastFor>0` path; documented in redis README; covered by new integration contract.       |
+| `updateRecord` throw changes Firestore/Datastore/Spanner callers                      | Loud failure replaces silent skip — intended per spec C2/F3; verify ShedLock parity during Step 9 and document.          |
+| Registry clear-on-any-exception causes extra insert attempts                          | Harmless (insert fails with duplicate → falls through to update); correctness maintained at storage layer.               |
+| Etcd TTL +1s behavior change                                                          | Safe direction (never early-expire); unit tests updated; documented.                                                     |
 | Middleware route-cache `WeakMap` holds stale resolutions if user mutates route config | Route configs are treated as immutable after registration (documented); `WeakMap` keyed by object identity avoids leaks. |
-| Integration tests need Docker | redis/redis-ioredis/in-memory run always-on in CI; container suites scheduled/on-demand; local run documented. |
+| Integration tests need Docker                                                         | redis/redis-ioredis/in-memory run always-on in CI; container suites scheduled/on-demand; local run documented.           |
 
 ## Estimation
 

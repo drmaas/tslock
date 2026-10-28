@@ -1,4 +1,5 @@
 ---
+
 name: tslock-sdd
 description: Spec-Driven Development workflow for substantial TSLock changes. Use this skill whenever the user asks to add a feature, add a provider, change a cross-package contract, introduce a new concept, perform an architectural or multi-file refactor, or explicitly asks for SDD, a spec, a plan, or the full TSLock development workflow. Do not use it for an isolated reproducible bug fix, a documentation-only improvement, or a test-only improvement unless the work reveals architectural scope; route those to tslock-bugfix, tslock-doc-improver, or tslock-test-improver instead.
 ---
@@ -20,20 +21,19 @@ Use this workflow when the change needs a durable design decision before impleme
 
 Choose the workflow before touching implementation files:
 
-| Change | Skill/workflow |
-|---|---|
-| New feature, new provider, new concept, public API or cross-package contract, architectural change, or substantial refactor | This skill: full SDD |
-| Isolated bug/regression with a clear reproduction and no new architecture | `tslock-bugfix` |
-| Documentation consistency, accuracy, or usability improvement | `tslock-doc-improver` |
-| Additional, corrected, or stronger test coverage without a feature change | `tslock-test-improver` |
-| Tiny typo, formatting-only change, or other obvious one-line maintenance | Fast track; still run the narrowest meaningful verification |
+| Change                                                                                                                      | Skill/workflow                                              |
+| --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| New feature, new provider, new concept, public API or cross-package contract, architectural change, or substantial refactor | This skill: full SDD                                        |
+| Isolated bug/regression with a clear reproduction and no new architecture                                                   | `tslock-bugfix`                                             |
+| Documentation consistency, accuracy, or usability improvement                                                               | `tslock-doc-improver`                                       |
+| Additional, corrected, or stronger test coverage without a feature change                                                   | `tslock-test-improver`                                      |
+| Tiny typo, formatting-only change, or other obvious one-line maintenance                                                    | Fast track; still run the narrowest meaningful verification |
 
 A refactor belongs here when it affects multiple packages, public contracts, architecture, or requires a design decision. A local mechanical refactor can use fast track. If implementation reveals that the classification was wrong, stop and hand off to the appropriate workflow rather than forcing the current one.
 
 ## Foundation reading
 
 Read these before writing a spec, in this order:
-
 1. `docs/00-vision.md`
 2. `docs/01-architecture.md`
 3. `docs/specs/00-core.md`
@@ -47,7 +47,6 @@ Use focused searches and targeted reads for large documents. Do not assume a doc
 ## Stage 1 — Interview and discovery
 
 Before implementation, establish:
-
 - the user outcome and explicit non-goals;
 - affected packages, public APIs, provider category, and dependency boundaries;
 - compatibility and migration expectations;
@@ -61,7 +60,6 @@ Ask focused questions when an answer would change the design. If the user delega
 ## Stage 2 — Specification
 
 Find the next unused two-digit `NN` shared by `docs/specs/`, `docs/plans/`, and `docs/reviews/`; check for collisions before creating files. Write `docs/specs/<NN>-<name>.md` with:
-
 - problem, goals, non-goals, and compatibility impact;
 - architecture fit and affected package/provider category;
 - public API and configuration, including defaults and validation;
@@ -75,7 +73,6 @@ A spec describes behavior and invariants, not a speculative line-by-line impleme
 ## Stage 3 — Implementation plan
 
 Write `docs/plans/<NN>-<name>.md` that follows from the spec. Include:
-
 - ordered implementation steps with dependencies;
 - exact files/packages to create or modify;
 - tests to add or update and backend/emulator prerequisites;
@@ -88,7 +85,6 @@ The plan must be actionable by a fresh implementer. If the plan and spec disagre
 ## Stage 4 — Implementation
 
 Use a fresh builder context when the environment supports subagents. Give it the spec, plan, relevant architecture docs, known review findings, and explicit verification expectations. The implementation must:
-
 - follow the package structure, peer dependency, dual ESM/CJS, strict TypeScript, and no-unrequested-abstractions conventions in `AGENTS.md`;
 - add or update unit and integration tests, using `@tslock/test-support` contracts where applicable;
 - distinguish expected contention from real errors;
@@ -115,7 +111,6 @@ Integration tests may require Docker or opt-in services; record skipped prerequi
 ## Stage 6 — Independent review
 
 Request an independent reviewer with fresh context. It should read the spec, plan, architecture, implementation, tests, and relevant historical reviews, then check:
-
 - spec, plan, and architecture alignment;
 - API and compatibility correctness;
 - concurrency, ownership, time, and error edge cases;
@@ -129,21 +124,20 @@ Create `docs/reviews/<NN>-<name>.md` with findings, severity, evidence, verifica
 
 Repeat verification and independent review until the change is done. Route findings to the lowest affected stage:
 
-| Finding | Return to |
-|---|---|
-| Architecture conflict | Block and ask the maintainer; architecture is not changed implicitly |
+| Finding                    | Return to                                                                          |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| Architecture conflict      | Block and ask the maintainer; architecture is not changed implicitly               |
 | Spec ambiguity or mismatch | Stage 2; create a new design record if the historical record must remain immutable |
-| Plan gap | Stage 3 |
-| Code or test defect | Stage 4 |
-| Verification failure | Stage 5 |
-| Missing docs or changeset | Stage 5 and documentation updates |
+| Plan gap                   | Stage 3                                                                            |
+| Code or test defect        | Stage 4                                                                            |
+| Verification failure       | Stage 5                                                                            |
+| Missing docs or changeset  | Stage 5 and documentation updates                                                  |
 
 Use at most three focused review rounds before escalating a persistent disagreement or environmental blocker. A reviewer finding is not complete until the fix is verified and the reviewer (or an equivalent fresh review) confirms it.
 
 ## Stage 8 — Documentation and handoff
 
 Confirm that the implementation, package README(s), root `README.md`, `CONTRIBUTING.md`, and `AGENTS.md` are consistent with the completed change where applicable. Confirm changesets for user-facing package changes. Report:
-
 - what changed and why;
 - spec, plan, and review paths;
 - files/packages affected;

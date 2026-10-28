@@ -14,13 +14,13 @@ This is a direct port of ShedLock's `CassandraLockProvider`.
 
 ## Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/cassandra` |
-| **Dependencies** | `@tslock/core` (peer), `cassandra-driver` (peer) |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
-| **Build** | tsup |
+| Field             | Value                                            |
+| ----------------- | ------------------------------------------------ |
+| **Name**          | `@tslock/cassandra`                              |
+| **Dependencies**  | `@tslock/core` (peer), `cassandra-driver` (peer) |
+| **Node.js**       | >= 22                                            |
+| **Module format** | Dual ESM + CJS                                   |
+| **Build**         | tsup                                             |
 
 ## Public API
 
@@ -47,19 +47,19 @@ class CassandraLockProvider implements ExtensibleLockProvider {
 
 ```typescript
 interface CassandraLockProviderOptions {
-  readonly keyspace: string;                          // required
-  readonly tableName?: string;                        // default: 'shedlock'
-  readonly columnNames?: CassandraColumnNames;       // default: see below
-  readonly lockedByValue?: string;                    // default: Utils.getHostname()
-  readonly consistencyLevel?: consistency;            // default: LOCAL_QUORUM
-  readonly serialConsistencyLevel?: consistency;     // default: LOCAL_SERIAL
+  readonly keyspace: string; // required
+  readonly tableName?: string; // default: 'shedlock'
+  readonly columnNames?: CassandraColumnNames; // default: see below
+  readonly lockedByValue?: string; // default: Utils.getHostname()
+  readonly consistencyLevel?: consistency; // default: LOCAL_QUORUM
+  readonly serialConsistencyLevel?: consistency; // default: LOCAL_SERIAL
 }
 
 interface CassandraColumnNames {
-  readonly name: string;        // default: 'name'
-  readonly lockUntil: string;  // default: 'lock_until'
-  readonly lockedAt: string;    // default: 'locked_at'
-  readonly lockedBy: string;    // default: 'locked_by'
+  readonly name: string; // default: 'name'
+  readonly lockUntil: string; // default: 'lock_until'
+  readonly lockedAt: string; // default: 'locked_at'
+  readonly lockedBy: string; // default: 'locked_by'
 }
 ```
 
@@ -181,16 +181,16 @@ IF <locked_by_col> = ? AND <lock_until_col> >= ?
 
 ### Default values
 
-| Option | Default |
-|---|---|
-| `tableName` | `'shedlock'` |
-| `columnNames.name` | `'name'` |
-| `columnNames.lockUntil` | `'lock_until'` |
-| `columnNames.lockedAt` | `'locked_at'` |
-| `columnNames.lockedBy` | `'locked_by'` |
-| `lockedByValue` | `Utils.getHostname()` |
-| `consistencyLevel` | `LOCAL_QUORUM` |
-| `serialConsistencyLevel` | `LOCAL_SERIAL` |
+| Option                   | Default               |
+| ------------------------ | --------------------- |
+| `tableName`              | `'shedlock'`          |
+| `columnNames.name`       | `'name'`              |
+| `columnNames.lockUntil`  | `'lock_until'`        |
+| `columnNames.lockedAt`   | `'locked_at'`         |
+| `columnNames.lockedBy`   | `'locked_by'`         |
+| `lockedByValue`          | `Utils.getHostname()` |
+| `consistencyLevel`       | `LOCAL_QUORUM`        |
+| `serialConsistencyLevel` | `LOCAL_SERIAL`        |
 
 ### Validation
 
@@ -272,18 +272,18 @@ packages/cassandra/
 
 ## Error Handling
 
-| Situation | Detection | Behavior |
-|---|---|---|
-| Lock held on insert | `result.rows[0]['[applied]'] === false` | `insertRecord` returns `false` |
-| Lock held on update (still valid) | `result.rows[0]['[applied]'] === false` | `updateRecord` returns `false` |
-| Lock expired or stolen on extend | `result.rows[0]['[applied]'] === false` | `extend` returns `false` |
-| Unlock precondition fails | `result.rows[0]['[applied]'] === false` | Swallow, return `void` (best-effort) |
-| Connection / network error | `cassandra-driver` errors (`NoHostAvailableError`, etc.) | Propagate |
-| Timeout error | `driverError.isTimeout === true` | Propagate |
-| Keyspace / table not found | `InvalidQueryError` with message containing `unconfigured table` or `keyspace` | Propagate (indicates misconfiguration) |
-| Invalid serial consistency | Checked in `resolveOptions` before any query | Throw `LockException` at construction time |
-| Invalid identifier (keyspace, table, column) | Checked in `resolveOptions` against `^[a-zA-Z_][a-zA-Z0-9_]*$` | Throw `LockException` at construction time |
-| LWT contention (Paxos failure) | `OperationTimedOutError` or `WriteFailureError` with `paxos` in `code` | Propagate (caller may retry) |
+| Situation                                    | Detection                                                                      | Behavior                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------ |
+| Lock held on insert                          | `result.rows[0]['[applied]'] === false`                                        | `insertRecord` returns `false`             |
+| Lock held on update (still valid)            | `result.rows[0]['[applied]'] === false`                                        | `updateRecord` returns `false`             |
+| Lock expired or stolen on extend             | `result.rows[0]['[applied]'] === false`                                        | `extend` returns `false`                   |
+| Unlock precondition fails                    | `result.rows[0]['[applied]'] === false`                                        | Swallow, return `void` (best-effort)       |
+| Connection / network error                   | `cassandra-driver` errors (`NoHostAvailableError`, etc.)                       | Propagate                                  |
+| Timeout error                                | `driverError.isTimeout === true`                                               | Propagate                                  |
+| Keyspace / table not found                   | `InvalidQueryError` with message containing `unconfigured table` or `keyspace` | Propagate (indicates misconfiguration)     |
+| Invalid serial consistency                   | Checked in `resolveOptions` before any query                                   | Throw `LockException` at construction time |
+| Invalid identifier (keyspace, table, column) | Checked in `resolveOptions` against `^[a-zA-Z_][a-zA-Z0-9_]*$`                 | Throw `LockException` at construction time |
+| LWT contention (Paxos failure)               | `OperationTimedOutError` or `WriteFailureError` with `paxos` in `code`         | Propagate (caller may retry)               |
 
 ### Error inspection
 
@@ -346,12 +346,12 @@ beforeAll(async () => {
   const client = new cassandra.Client({
     contactPoints: [`${container.getHost()}:${container.getMappedPort(9042)}`],
     localDataCenter: 'datacenter1',
-    keyspace: undefined,  // connect without keyspace so we can create one
+    keyspace: undefined, // connect without keyspace so we can create one
   });
   await client.connect();
   await client.execute(
-    "CREATE KEYSPACE IF NOT EXISTS shedlock_test " +
-    "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}"
+    'CREATE KEYSPACE IF NOT EXISTS shedlock_test ' +
+      "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}",
   );
   await createLockTable(client, { keyspace: 'shedlock_test' });
   await client.shutdown();
@@ -381,7 +381,7 @@ In addition to the shared `storageBasedLockProviderIntegrationTests`, the integr
 
 ### Single-node caveat
 
-The testcontainer runs a single-node cluster with `replication_factor = 1`. LWT on a single node is effectively a local operation — Paxos still runs but quorum is trivial. This means the integration test verifies *correctness* of the CQL and the `[applied]` handling, but does not exercise multi-node Paxos contention. Multi-node testing is out of scope for the provider test suite; it is the responsibility of the Cassandra driver's own test suite.
+The testcontainer runs a single-node cluster with `replication_factor = 1`. LWT on a single node is effectively a local operation — Paxos still runs but quorum is trivial. This means the integration test verifies _correctness_ of the CQL and the `[applied]` handling, but does not exercise multi-node Paxos contention. Multi-node testing is out of scope for the provider test suite; it is the responsibility of the Cassandra driver's own test suite.
 
 ## Non-Goals (for this package)
 

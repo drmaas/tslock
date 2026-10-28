@@ -93,15 +93,17 @@ const health = createLockHealthMonitor({ tracking });
 const provider = new KeepAliveLockProvider(tracking, undefined, health.onKeepAliveFailure);
 const executor = new DefaultLockingTaskExecutor(provider, health);
 
-http.createServer((req, res) => {
-  if (req.url === '/health/locks') {
-    res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify(health.snapshot()));
-    return;
-  }
-  res.writeHead(404);
-  res.end();
-}).listen(8080);
+http
+  .createServer((req, res) => {
+    if (req.url === '/health/locks') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(health.snapshot()));
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  })
+  .listen(8080);
 
 // CLI / operator dump
 console.log(health.formatSnapshot());
@@ -139,31 +141,31 @@ const executor = new DefaultLockingTaskExecutor(provider, listener);
 
 #### Stable snapshot shape
 
-| Field | Meaning |
-|---|---|
-| `takenAt` | Epoch millis when the snapshot was taken. |
-| `activeLocks` | Locks this process currently holds (`name`, durations, `acquiredAt`, `updatedAt`), sorted by name. |
-| `lastAcquired` / `lastSkipped` | Most recent executor acquire / skip event, if any. |
-| `recentKeepAliveFailures` | Ring buffer of keep-alive stop events (`errorType`, default capacity 16). |
-| `overdueLocks` | Active locks where `takenAt - updatedAt > lockAtMostFor` (lease should have expired or been renewed). |
+| Field                          | Meaning                                                                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `takenAt`                      | Epoch millis when the snapshot was taken.                                                             |
+| `activeLocks`                  | Locks this process currently holds (`name`, durations, `acquiredAt`, `updatedAt`), sorted by name.    |
+| `lastAcquired` / `lastSkipped` | Most recent executor acquire / skip event, if any.                                                    |
+| `recentKeepAliveFailures`      | Ring buffer of keep-alive stop events (`errorType`, default capacity 16).                             |
+| `overdueLocks`                 | Active locks where `takenAt - updatedAt > lockAtMostFor` (lease should have expired or been renewed). |
 
 ## Exports
 
-| Export | Description |
-|---|---|
+| Export                                                             | Description                                                                                                                                                                                                          |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `LockProvider`, `ExtensibleLockProvider`, `extensibleLockProvider` | Lock acquisition. `ExtensibleLockProvider` carries the `extensibleLockProvider` symbol, so it is distinct from `LockProvider`. Custom providers that support `extend` set `readonly [extensibleLockProvider]: true`. |
-| `SimpleLock`, `AbstractSimpleLock` | The lock handle (`unlock`, `extend`). |
-| `LockConfiguration`, `createLockConfig` | Immutable config + builder helper. |
-| `DefaultLockingTaskExecutor`, `TaskResult` | Wraps a task in acquire/release. |
-| `LockingTaskExecutorListener` | Callbacks for attempt, acquire, skip, task start/finish, and unlock errors. |
-| `LockAssert` | Assert code runs inside a lock context. |
-| `LockExtender` | Extend the active lock from within a task. |
-| `KeepAliveLockProvider` | Auto-renewing wrapper. |
-| `TrackingLockProviderWrapper`, `ActiveLockRecord` | Introspect currently-held locks and metadata. |
-| `createLockHealthMonitor`, `LockHealthSnapshot` | Read-only ops snapshot (active / skip / keep-alive / overdue). |
-| `StorageBasedLockProvider`, `AbstractStorageAccessor` | Base classes for provider authors. |
-| `ClockProvider`, `parseDuration`, `Utils` | Time, duration parsing, and helpers. |
-| `LockException` and subclasses | Error hierarchy. |
+| `SimpleLock`, `AbstractSimpleLock`                                 | The lock handle (`unlock`, `extend`).                                                                                                                                                                                |
+| `LockConfiguration`, `createLockConfig`                            | Immutable config + builder helper.                                                                                                                                                                                   |
+| `DefaultLockingTaskExecutor`, `TaskResult`                         | Wraps a task in acquire/release.                                                                                                                                                                                     |
+| `LockingTaskExecutorListener`                                      | Callbacks for attempt, acquire, skip, task start/finish, and unlock errors.                                                                                                                                          |
+| `LockAssert`                                                       | Assert code runs inside a lock context.                                                                                                                                                                              |
+| `LockExtender`                                                     | Extend the active lock from within a task.                                                                                                                                                                           |
+| `KeepAliveLockProvider`                                            | Auto-renewing wrapper.                                                                                                                                                                                               |
+| `TrackingLockProviderWrapper`, `ActiveLockRecord`                  | Introspect currently-held locks and metadata.                                                                                                                                                                        |
+| `createLockHealthMonitor`, `LockHealthSnapshot`                    | Read-only ops snapshot (active / skip / keep-alive / overdue).                                                                                                                                                       |
+| `StorageBasedLockProvider`, `AbstractStorageAccessor`              | Base classes for provider authors.                                                                                                                                                                                   |
+| `ClockProvider`, `parseDuration`, `Utils`                          | Time, duration parsing, and helpers.                                                                                                                                                                                 |
+| `LockException` and subclasses                                     | Error hierarchy.                                                                                                                                                                                                     |
 
 ## Requirements
 

@@ -41,12 +41,12 @@ await executor.executeWithLock(
 
 `new DynamoDBLockProvider(options)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `tableName` | — (required) | The DynamoDB table name. |
-| `client` | `new DynamoDBClient({})` | A `DynamoDBClient` instance (override for custom region/credentials). |
-| `partitionKey` | `'_id'` | The partition key attribute name. |
-| `sortKey` | `undefined` | `{ name, value }` if your table uses a composite key. |
+| Option         | Default                  | Description                                                           |
+| -------------- | ------------------------ | --------------------------------------------------------------------- |
+| `tableName`    | — (required)             | The DynamoDB table name.                                              |
+| `client`       | `new DynamoDBClient({})` | A `DynamoDBClient` instance (override for custom region/credentials). |
+| `partitionKey` | `'_id'`                  | The partition key attribute name.                                     |
+| `sortKey`      | `undefined`              | `{ name, value }` if your table uses a composite key.                 |
 
 ## Integration tests
 

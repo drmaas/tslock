@@ -8,14 +8,14 @@ The script compares the stored `lockUntil` against `params.now`; if the lock has
 
 ## Package
 
-| Field | @tslock/elasticsearch | @tslock/opensearch |
-|---|---|---|
-| **Name** | `@tslock/elasticsearch` | `@tslock/opensearch` |
-| **Driver** | `@elastic/elasticsearch` (v8+) — peer | `@opensearch-project/opensearch` — peer |
-| **Dependencies** | `@tslock/core` (peer) | `@tslock/core` (peer) |
-| **Node.js** | >= 22 | >= 22 |
-| **Module format** | Dual ESM + CJS | Dual ESM + CJS |
-| **Build** | tsup | tsup |
+| Field             | @tslock/elasticsearch                 | @tslock/opensearch                      |
+| ----------------- | ------------------------------------- | --------------------------------------- |
+| **Name**          | `@tslock/elasticsearch`               | `@tslock/opensearch`                    |
+| **Driver**        | `@elastic/elasticsearch` (v8+) — peer | `@opensearch-project/opensearch` — peer |
+| **Dependencies**  | `@tslock/core` (peer)                 | `@tslock/core` (peer)                   |
+| **Node.js**       | >= 22                                 | >= 22                                   |
+| **Module format** | Dual ESM + CJS                        | Dual ESM + CJS                          |
+| **Build**         | tsup                                  | tsup                                    |
 
 ## Public API
 
@@ -39,8 +39,8 @@ Where `Client` is `@elastic/elasticsearch`'s `Client` for ES, and `@opensearch-p
 
 ```typescript
 interface ElasticsearchLockProviderOptions {
-  index?: string;                          // default: 'shedlock'
-  fieldNames?: ElasticsearchFieldNames;    // default: FieldNames.DEFAULT (camelCase)
+  index?: string; // default: 'shedlock'
+  fieldNames?: ElasticsearchFieldNames; // default: FieldNames.DEFAULT (camelCase)
 }
 
 interface OpenSearchLockProviderOptions {
@@ -48,15 +48,16 @@ interface OpenSearchLockProviderOptions {
   fieldNames?: OpenSearchFieldNames;
 }
 
-interface ElasticsearchFieldNames {  // identical shape for OpenSearchFieldNames
+interface ElasticsearchFieldNames {
+  // identical shape for OpenSearchFieldNames
   lockUntil: string;
   lockedAt: string;
   lockedBy: string;
 }
 
 declare const FieldNames: {
-  DEFAULT: ElasticsearchFieldNames;       // { lockUntil, lockedAt, lockedBy }
-  SNAKE_CASE: ElasticsearchFieldNames;   // { lock_until, locked_at, locked_by }
+  DEFAULT: ElasticsearchFieldNames; // { lockUntil, lockedAt, lockedBy }
+  SNAKE_CASE: ElasticsearchFieldNames; // { lock_until, locked_at, locked_by }
 };
 ```
 
@@ -244,14 +245,14 @@ No condition — unlock is unconditional. If the doc does not exist, the `update
 
 ## Driver Differences
 
-| Aspect | `@elastic/elasticsearch` (v8+) | `@opensearch-project/opensearch` |
-|---|---|---|
-| Client import | `import { Client } from '@elastic/elasticsearch'` | `import { Client } from '@opensearch-project/opensearch'` |
-| Request shape | `client.update({ id, index, refresh, body })` | Same — `client.update({ id, index, refresh, body })` |
-| 409 conflict error | `ResponseError` with `meta.statusCode === 409` | `ResponseError` with `meta.statusCode === 409` |
-| 404 not-found error | `ResponseError` with `meta.statusCode === 404`, OR `result: 'not_found'` in the response body | Same |
-| `result` field | `response.result` ∈ `'created'`, `'updated'`, `'noop'`, `'not_found'` | Same |
-| Auth / TLS | Configured on the `Client` constructor by the user | Same |
+| Aspect              | `@elastic/elasticsearch` (v8+)                                                                | `@opensearch-project/opensearch`                          |
+| ------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Client import       | `import { Client } from '@elastic/elasticsearch'`                                             | `import { Client } from '@opensearch-project/opensearch'` |
+| Request shape       | `client.update({ id, index, refresh, body })`                                                 | Same — `client.update({ id, index, refresh, body })`      |
+| 409 conflict error  | `ResponseError` with `meta.statusCode === 409`                                                | `ResponseError` with `meta.statusCode === 409`            |
+| 404 not-found error | `ResponseError` with `meta.statusCode === 404`, OR `result: 'not_found'` in the response body | Same                                                      |
+| `result` field      | `response.result` ∈ `'created'`, `'updated'`, `'noop'`, `'not_found'`                         | Same                                                      |
+| Auth / TLS          | Configured on the `Client` constructor by the user                                            | Same                                                      |
 
 The `isConflictError(e)` helper inspects `e.meta?.statusCode === 409 || e.statusCode === 409` (the two drivers expose slightly different error shapes; the helper normalizes them). The `isNotFoundError(e)` helper similarly checks for `404` or `result === 'not_found'`.
 
@@ -279,26 +280,28 @@ packages/elasticsearch/                       packages/opensearch/
 
 ## Error Handling Summary
 
-| Situation | Behavior |
-|---|---|
-| Lock held by another instance | script sets `ctx.op = 'none'` → `result: 'noop'` → `undefined` |
-| First lock on a new doc | `upsert` creates the doc → `result: 'created'` → lock acquired |
-| Concurrent upserts on a new doc | 409 conflict → caught → `undefined` |
-| Connection error | Propagate driver error |
-| Index does not exist | `resource_not_found_error` (ES) / equivalent (OS) propagates — user must pre-create the index |
-| `extend()` on expired lock | script noop (`lockUntil > now` fails) → `undefined` |
-| `extend()` by a different holder | script noop (`lockedBy == hostname` fails) → `undefined` |
-| `extend()` on a non-existent doc | `result: 'not_found'` (no `upsert` for extend) → treated as `undefined` |
-| `unlock()` on a non-existent doc | `result: 'not_found'` → swallowed, no error |
-| `refresh: 'wait_for'` times out | Propagate (indicates an overloaded cluster — the caller should retry) |
+| Situation                        | Behavior                                                                                      |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| Lock held by another instance    | script sets `ctx.op = 'none'` → `result: 'noop'` → `undefined`                                |
+| First lock on a new doc          | `upsert` creates the doc → `result: 'created'` → lock acquired                                |
+| Concurrent upserts on a new doc  | 409 conflict → caught → `undefined`                                                           |
+| Connection error                 | Propagate driver error                                                                        |
+| Index does not exist             | `resource_not_found_error` (ES) / equivalent (OS) propagates — user must pre-create the index |
+| `extend()` on expired lock       | script noop (`lockUntil > now` fails) → `undefined`                                           |
+| `extend()` by a different holder | script noop (`lockedBy == hostname` fails) → `undefined`                                      |
+| `extend()` on a non-existent doc | `result: 'not_found'` (no `upsert` for extend) → treated as `undefined`                       |
+| `unlock()` on a non-existent doc | `result: 'not_found'` → swallowed, no error                                                   |
+| `refresh: 'wait_for'` times out  | Propagate (indicates an overloaded cluster — the caller should retry)                         |
 
 ## Dependencies
 
 ### @tslock/elasticsearch
+
 - **Peer**: `@tslock/core`, `@elastic/elasticsearch` (`^8.0.0`)
 - **Dev**: `typescript`, `tsup`, `vitest`, `@types/node`, `testcontainers`
 
 ### @tslock/opensearch
+
 - **Peer**: `@tslock/core`, `@opensearch-project/opensearch` (`^2.0.0`)
 - **Dev**: `typescript`, `tsup`, `vitest`, `@types/node`, `testcontainers`
 

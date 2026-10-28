@@ -1,4 +1,5 @@
 ---
+
 '@tslock/sql-support': patch
 '@tslock/sql': patch
 '@tslock/kysely': patch

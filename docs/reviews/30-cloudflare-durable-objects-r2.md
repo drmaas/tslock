@@ -10,7 +10,6 @@
 ## Summary
 
 Round-1 blockers were addressed:
-
 1. Unlock no-ops when `existing.lockedBy !== body.lockedBy`; regression test covers late unlock after foreign re-acquire.
 2. Shared contracts call only `extensibleLockProviderIntegrationTests` + `fuzzTests` (no duplicate non-extensible suite).
 3. README documents unlock ownership and clock-sync expectations.

@@ -8,14 +8,14 @@ Unlock revokes the lease (deleting the key) when `lockAtLeastFor <= 0`, or re-pu
 
 ## Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/etcd` |
-| **Driver** | `etcd3` (official etcd v3 Node.js client) — peer dependency |
-| **Dependencies** | `@tslock/core` (peer), `etcd3` (peer) |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
-| **Build** | tsup |
+| Field             | Value                                                       |
+| ----------------- | ----------------------------------------------------------- |
+| **Name**          | `@tslock/etcd`                                              |
+| **Driver**        | `etcd3` (official etcd v3 Node.js client) — peer dependency |
+| **Dependencies**  | `@tslock/core` (peer), `etcd3` (peer)                       |
+| **Node.js**       | >= 22                                                       |
+| **Module format** | Dual ESM + CJS                                              |
+| **Build**         | tsup                                                        |
 
 ## Public API
 
@@ -36,7 +36,7 @@ The constructor accepts an already-configured `Etcd3` client. The user is respon
 
 ```typescript
 interface EtcdLockProviderOptions {
-  env?: string;   // default: 'default'
+  env?: string; // default: 'default'
 }
 ```
 
@@ -61,10 +61,7 @@ Returned by `EtcdLockProvider.lock()` when acquisition succeeds. Carries the `le
 
 ```typescript
 class EtcdLockAccessor {
-  constructor(
-    client: Etcd3,
-    env: string,
-  );
+  constructor(client: Etcd3, env: string);
   lock(config: LockConfiguration): Promise<SimpleLock | undefined>;
   unlock(config: LockConfiguration, leaseId: number | bigint): Promise<void>;
 }
@@ -191,21 +188,21 @@ packages/etcd/
 
 ## Error Handling Summary
 
-| Situation | Behavior |
-|---|---|
-| Lock held by another instance | `txn.commit()` returns `{ succeeded: false, ... }` → revoke lease → return `undefined` |
-| First lock on a new key | `txn.commit()` returns `{ succeeded: true, ... }` → `EtcdLock` returned with the new lease |
-| Lock expired (lease expired in etcd) | The key was auto-deleted by etcd when the lease expired → `version === 0` → txn succeeds → new lease + put → `EtcdLock` returned |
-| `lock()` fails mid-txn (network error) | `catch` block revokes the lease (best-effort) and rethrows the original error |
-| `unlock()` with `lockAtLeastFor <= 0` | Revoke the lease → etcd deletes the key → done |
-| `unlock()` with `lockAtLeastFor > 0` | Re-put with new lease, revoke old lease → key persists until `lockAtLeastFor` seconds elapse, then auto-deleted |
-| `unlock()` on a key whose lease already expired | The `put` overwrites the (deleted) key — `version === 0` for the new put. The "old" lease revoke is a no-op (already expired). |
-| Holder crashed before `unlock` | The lease auto-expires after `lockAtMostFor` (in seconds), etcd auto-deletes the key. Next acquirer sees `version === 0` and acquires. |
-| `lease.revoke()` on an already-expired lease | etcd returns success (idempotent). No error. |
-| Connection error / etcd unavailable | `etcd3` client throws → propagate to caller |
-| `extend()` called | Throws `LockException('Extend not supported by this provider')` |
-| Orphaned lease from a failed `lock()` | The `catch` block revokes the lease. If the `catch` itself fails (e.g. network down), the lease will expire after `lockAtMostFor` seconds — no permanent orphan. |
-| `lockAtMostFor` < 1000ms (sub-second) | `Math.ceil(0.5) = 1` → lease TTL is 1 second. Document that sub-second `lockAtMostFor` is rounded up to 1 second. |
+| Situation                                       | Behavior                                                                                                                                                         |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lock held by another instance                   | `txn.commit()` returns `{ succeeded: false, ... }` → revoke lease → return `undefined`                                                                           |
+| First lock on a new key                         | `txn.commit()` returns `{ succeeded: true, ... }` → `EtcdLock` returned with the new lease                                                                       |
+| Lock expired (lease expired in etcd)            | The key was auto-deleted by etcd when the lease expired → `version === 0` → txn succeeds → new lease + put → `EtcdLock` returned                                 |
+| `lock()` fails mid-txn (network error)          | `catch` block revokes the lease (best-effort) and rethrows the original error                                                                                    |
+| `unlock()` with `lockAtLeastFor <= 0`           | Revoke the lease → etcd deletes the key → done                                                                                                                   |
+| `unlock()` with `lockAtLeastFor > 0`            | Re-put with new lease, revoke old lease → key persists until `lockAtLeastFor` seconds elapse, then auto-deleted                                                  |
+| `unlock()` on a key whose lease already expired | The `put` overwrites the (deleted) key — `version === 0` for the new put. The "old" lease revoke is a no-op (already expired).                                   |
+| Holder crashed before `unlock`                  | The lease auto-expires after `lockAtMostFor` (in seconds), etcd auto-deletes the key. Next acquirer sees `version === 0` and acquires.                           |
+| `lease.revoke()` on an already-expired lease    | etcd returns success (idempotent). No error.                                                                                                                     |
+| Connection error / etcd unavailable             | `etcd3` client throws → propagate to caller                                                                                                                      |
+| `extend()` called                               | Throws `LockException('Extend not supported by this provider')`                                                                                                  |
+| Orphaned lease from a failed `lock()`           | The `catch` block revokes the lease. If the `catch` itself fails (e.g. network down), the lease will expire after `lockAtMostFor` seconds — no permanent orphan. |
+| `lockAtMostFor` < 1000ms (sub-second)           | `Math.ceil(0.5) = 1` → lease TTL is 1 second. Document that sub-second `lockAtMostFor` is rounded up to 1 second.                                                |
 
 ## Dependencies
 

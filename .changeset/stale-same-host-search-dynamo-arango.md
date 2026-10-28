@@ -1,4 +1,5 @@
 ---
+
 '@tslock/core': patch
 '@tslock/search-core': patch
 '@tslock/dynamodb': patch

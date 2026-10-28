@@ -29,12 +29,12 @@ await executor.executeWithLock(
 
 `createNatsLockProvider(options)` is async and accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `servers` | — (required) | Comma-separated NATS server URLs. |
-| `bucketName` | `'shedlock-locks'` | The JetStream KV bucket name. |
-| `storage` | `StorageType.Memory` | KV bucket storage type (`Memory` or `File`). |
-| `connectionOptions` | `undefined` | Extra `nats.connect()` options. |
+| Option              | Default              | Description                                  |
+| ------------------- | -------------------- | -------------------------------------------- |
+| `servers`           | — (required)         | Comma-separated NATS server URLs.            |
+| `bucketName`        | `'shedlock-locks'`   | The JetStream KV bucket name.                |
+| `storage`           | `StorageType.Memory` | KV bucket storage type (`Memory` or `File`). |
+| `connectionOptions` | `undefined`          | Extra `nats.connect()` options.              |
 
 ## Integration tests
 

@@ -24,17 +24,28 @@ const lock = createNodeCronLock({
   defaultLockAtMostFor: '50s',
 });
 
-lock.schedule(cron, '* * * * *', async () => {
-  // one instance runs this body; others skip
-}, { name: 'minute-job', lockAtMostFor: '50s' });
+lock.schedule(
+  cron,
+  '* * * * *',
+  async () => {
+    // one instance runs this body; others skip
+  },
+  { name: 'minute-job', lockAtMostFor: '50s' },
+);
 ```
 
 Or wrap a callback yourself:
 
 ```typescript
-cron.schedule('* * * * *', lock.wrap(async () => {
-  // ...
-}, { name: 'minute-job' }));
+cron.schedule(
+  '* * * * *',
+  lock.wrap(
+    async () => {
+      // ...
+    },
+    { name: 'minute-job' },
+  ),
+);
 ```
 
 When the lock is held elsewhere, the wrapper skips and resolves `undefined`.

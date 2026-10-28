@@ -17,30 +17,30 @@ Follows `docs/specs/31-cloudflare-kv.md`. Issue #63.
 
 ## Files to create
 
-| Path | Purpose |
-|---|---|
-| `packages/cloudflare-kv/package.json` | Manifest |
-| `packages/cloudflare-kv/tsconfig.json` | Extends base |
-| `packages/cloudflare-kv/tsup.config.ts` | Dual ESM+CJS |
-| `packages/cloudflare-kv/src/*.ts` | Implementation |
+| Path                                    | Purpose                       |
+| --------------------------------------- | ----------------------------- |
+| `packages/cloudflare-kv/package.json`   | Manifest                      |
+| `packages/cloudflare-kv/tsconfig.json`  | Extends base                  |
+| `packages/cloudflare-kv/tsup.config.ts` | Dual ESM+CJS                  |
+| `packages/cloudflare-kv/src/*.ts`       | Implementation                |
 | `packages/cloudflare-kv/__tests__/*.ts` | Unit, contract, failure modes |
-| `packages/cloudflare-kv/README.md` | Advisory user docs |
-| `docs/specs/31-cloudflare-kv.md` | Spec |
-| `docs/plans/31-cloudflare-kv.md` | This plan |
-| `docs/reviews/31-cloudflare-kv.md` | Review after implementation |
-| `.changeset/cloudflare-kv.md` | Release note |
+| `packages/cloudflare-kv/README.md`      | Advisory user docs            |
+| `docs/specs/31-cloudflare-kv.md`        | Spec                          |
+| `docs/plans/31-cloudflare-kv.md`        | This plan                     |
+| `docs/reviews/31-cloudflare-kv.md`      | Review after implementation   |
+| `.changeset/cloudflare-kv.md`           | Release note                  |
 
 ## Files to update
 
-| Path | Change |
-|---|---|
-| `README.md` | Matrix row, caveat, failure-mode blurb |
-| `docs/00-vision.md` | Edge / KV row no longer deferred |
-| `docs/01-architecture.md` | Category K; Category J wording |
-| `docs/failure-modes.md` | Four KV failure modes |
-| `packages/cloudflare-do/README.md` | Pointer to the advisory KV package |
-| `AGENTS.md` | Category K row |
-| `pnpm-lock.yaml` | New workspace package |
+| Path                               | Change                                 |
+| ---------------------------------- | -------------------------------------- |
+| `README.md`                        | Matrix row, caveat, failure-mode blurb |
+| `docs/00-vision.md`                | Edge / KV row no longer deferred       |
+| `docs/01-architecture.md`          | Category K; Category J wording         |
+| `docs/failure-modes.md`            | Four KV failure modes                  |
+| `packages/cloudflare-do/README.md` | Pointer to the advisory KV package     |
+| `AGENTS.md`                        | Category K row                         |
+| `pnpm-lock.yaml`                   | New workspace package                  |
 
 ## Verification
 

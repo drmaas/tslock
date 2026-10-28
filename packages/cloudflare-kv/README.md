@@ -8,16 +8,16 @@ Construction requires `acknowledgeAdvisoryLock: true` so that choice is explicit
 
 ## When a duplicate run is possible
 
-| Failure | What you observe |
-|---|---|
-| Stale or cached read | Both callers miss the live record (or see an old miss) and both `PUT` their own token. |
-| Delayed delete | After `unlock()`, another location still sees the previous value and skips, or a stale copy of *your* token makes `DELETE` remove a newer holder. |
-| 60 second TTL floor | `expirationTtl` cannot be below 60. The lease you check is `lockUntil`. The key can outlive a short lease, and KV can also drop the key on its own clock once the TTL elapses. |
-| 1 write/second/key | A second `put` or `delete` inside one second throws (HTTP 429). That includes a fast unlock and keep-alive when `lockAtMostFor` is under about two seconds. |
+| Failure              | What you observe                                                                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Stale or cached read | Both callers miss the live record (or see an old miss) and both `PUT` their own token.                                                                                         |
+| Delayed delete       | After `unlock()`, another location still sees the previous value and skips, or a stale copy of _your_ token makes `DELETE` remove a newer holder.                              |
+| 60 second TTL floor  | `expirationTtl` cannot be below 60. The lease you check is `lockUntil`. The key can outlive a short lease, and KV can also drop the key on its own clock once the TTL elapses. |
+| 1 write/second/key   | A second `put` or `delete` inside one second throws (HTTP 429). That includes a fast unlock and keep-alive when `lockAtMostFor` is under about two seconds.                    |
 
 Details and the in-memory reproductions live in [Failure modes](../../docs/failure-modes.md#6-workers-kv-stale-reads-two-holders).
 
-A confirm read after `PUT` (default `confirmWrite: true`) only checks that *this* caller saw its token. It does not stop another location from doing the same.
+A confirm read after `PUT` (default `confirmWrite: true`) only checks that _this_ caller saw its token. It does not stop another location from doing the same.
 
 ## Installation
 
@@ -74,12 +74,12 @@ const provider = createCloudflareKvLockProvider({
 
 ## Configuration
 
-| Option | Default | Description |
-|---|---|---|
-| `kv` | — | `KVNamespace` binding or REST namespace (`get` / `put` / `delete`). |
-| `acknowledgeAdvisoryLock` | — | Must be `true`. |
-| `keyPrefix` | `tslock:` | Prepended to the lock name. Storage key must be 1..512 UTF-8 bytes. |
-| `confirmWrite` | `true` | Re-read after `put`. Mismatch returns “not acquired” and does not delete. |
+| Option                    | Default   | Description                                                               |
+| ------------------------- | --------- | ------------------------------------------------------------------------- |
+| `kv`                      | —         | `KVNamespace` binding or REST namespace (`get` / `put` / `delete`).       |
+| `acknowledgeAdvisoryLock` | —         | Must be `true`.                                                           |
+| `keyPrefix`               | `tslock:` | Prepended to the lock name. Storage key must be 1..512 UTF-8 bytes.       |
+| `confirmWrite`            | `true`    | Re-read after `put`. Mismatch returns “not acquired” and does not delete. |
 
 Records are JSON: `{ lockUntil, lockedAt, lockedBy, token }`. `token` is the ownership id for unlock and extend. `lockedBy` is the hostname and is not an ownership check.
 

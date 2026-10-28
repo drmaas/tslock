@@ -33,9 +33,12 @@ const otel = createOpenTelemetryLockMetrics({
 const storage = new InMemoryLockProvider();
 const executor = new DefaultLockingTaskExecutor(otel.instrument(storage), otel.listener);
 
-const result = await executor.executeWithLock(async () => {
-  // one instance runs this body
-}, createLockConfig('nightly-cleanup', '5m', '1m'));
+const result = await executor.executeWithLock(
+  async () => {
+    // one instance runs this body
+  },
+  createLockConfig('nightly-cleanup', '5m', '1m'),
+);
 ```
 
 Omit `meter` to use `metrics.getMeter('@tslock/otel')`. Call `metrics.setGlobalMeterProvider`, or start the SDK, before `createOpenTelemetryLockMetrics()`. Instruments are created in the factory. The metrics API does not attach those instruments to a provider registered later; pass `meter` from a provider that is already started when you need an explicit meter.
@@ -47,11 +50,7 @@ Instrument the storage provider. Pass `onKeepAliveFailure` as the third `KeepAli
 ```typescript
 import { KeepAliveLockProvider } from '@tslock/core';
 
-const provider = new KeepAliveLockProvider(
-  otel.instrument(storage),
-  undefined,
-  otel.onKeepAliveFailure,
-);
+const provider = new KeepAliveLockProvider(otel.instrument(storage), undefined, otel.onKeepAliveFailure);
 const executor = new DefaultLockingTaskExecutor(provider, otel.listener);
 ```
 
@@ -63,18 +62,18 @@ const executor = new DefaultLockingTaskExecutor(provider, otel.listener);
 
 Every instrument has `lock.name`, `lock.at_most_for_ms`, and `lock.at_least_for_ms`. Unlock and extend also have `outcome` (`success` or `failure`). Failures add `error.type` (the error `name`, or `NotExtended` when `extend` returns `undefined`). Error messages are not attributes. Lease attributes stay low-cardinality when each lock name uses stable durations.
 
-| Instrument | Type | When |
-|---|---|---|
-| `tslock.lock.attempt` | Counter | `onLockAttempt` |
-| `tslock.lock.acquired` | Counter | Lock acquired |
-| `tslock.lock.skipped` | Counter | Lock held elsewhere |
-| `tslock.task.duration` | Histogram (`ms`) | Task finished, value is execution time |
-| `tslock.task.active` | UpDownCounter | `+1` when the task starts, `-1` when it finishes |
-| `tslock.lock.unlocked` | Counter | `unlock()` resolved or rejected |
-| `tslock.lock.unlock.duration` | Histogram (`ms`) | `unlock()` call duration |
-| `tslock.lock.extend` | Counter | `extend()` success, `undefined`, or throw |
-| `tslock.lock.extend.duration` | Histogram (`ms`) | `extend()` call duration. Attributes use the requested durations |
-| `tslock.lock.keepalive.failure` | Counter | Keep-alive stopped because the lock was lost or the retry failed |
+| Instrument                      | Type             | When                                                             |
+| ------------------------------- | ---------------- | ---------------------------------------------------------------- |
+| `tslock.lock.attempt`           | Counter          | `onLockAttempt`                                                  |
+| `tslock.lock.acquired`          | Counter          | Lock acquired                                                    |
+| `tslock.lock.skipped`           | Counter          | Lock held elsewhere                                              |
+| `tslock.task.duration`          | Histogram (`ms`) | Task finished, value is execution time                           |
+| `tslock.task.active`            | UpDownCounter    | `+1` when the task starts, `-1` when it finishes                 |
+| `tslock.lock.unlocked`          | Counter          | `unlock()` resolved or rejected                                  |
+| `tslock.lock.unlock.duration`   | Histogram (`ms`) | `unlock()` call duration                                         |
+| `tslock.lock.extend`            | Counter          | `extend()` success, `undefined`, or throw                        |
+| `tslock.lock.extend.duration`   | Histogram (`ms`) | `extend()` call duration. Attributes use the requested durations |
+| `tslock.lock.keepalive.failure` | Counter          | Keep-alive stopped because the lock was lost or the retry failed |
 
 Duration histograms use millisecond bucket boundaries from 5ms through 5 minutes. `onUnlockError` is not a second unlock counter; the wrapper records the failed `unlock()` and the executor still reports the error to other listeners you compose yourself.
 

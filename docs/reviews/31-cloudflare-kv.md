@@ -18,20 +18,20 @@ Round 1 listed three minors. They were fixed and confirmed in round 2.
 
 ## Alignment
 
-| Area | Status |
-|---|---|
-| Spec / plan | Pass — advisory acquire/unlock/extend, token ownership, TTL floor, required `acknowledgeAdvisoryLock`, no Miniflare |
-| Architecture Category K | Pass — distinct from Category J; §7.1 states KV does not run the exactly-one fuzz contract |
-| Vision / README | Pass — matrix row, caveat, failure modes 6–9 |
-| Changeset / packaging | Pass — minor changeset; peer `@tslock/core` only; dual ESM+CJS via `scripts/tsup.cjs`; Node >= 22 |
+| Area                    | Status                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Spec / plan             | Pass — advisory acquire/unlock/extend, token ownership, TTL floor, required `acknowledgeAdvisoryLock`, no Miniflare |
+| Architecture Category K | Pass — distinct from Category J; §7.1 states KV does not run the exactly-one fuzz contract                          |
+| Vision / README         | Pass — matrix row, caveat, failure modes 6–9                                                                        |
+| Changeset / packaging   | Pass — minor changeset; peer `@tslock/core` only; dual ESM+CJS via `scripts/tsup.cjs`; Node >= 22                   |
 
 ## Findings
 
-| Severity | Finding | Evidence | Resolution |
-|---|---|---|---|
-| minor | REST 404 and successful PUT/DELETE left the body unread. | `cloudflare-kv-namespace.ts` | `release()` cancels the body on those paths. Error paths still use `httpError()`, which reads `response.text()`. |
-| minor | Architecture §7.1 still said every provider must pass the exactly-one fuzz contract. | `docs/01-architecture.md` | Paragraph added: Category K does not run `fuzzTests`. |
-| nit | Category I still said in-memory was the only extensible specialized provider. | `AGENTS.md` | Parenthetical removed. |
+| Severity | Finding                                                                              | Evidence                     | Resolution                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| minor    | REST 404 and successful PUT/DELETE left the body unread.                             | `cloudflare-kv-namespace.ts` | `release()` cancels the body on those paths. Error paths still use `httpError()`, which reads `response.text()`. |
+| minor    | Architecture §7.1 still said every provider must pass the exactly-one fuzz contract. | `docs/01-architecture.md`    | Paragraph added: Category K does not run `fuzzTests`.                                                            |
+| nit      | Category I still said in-memory was the only extensible specialized provider.        | `AGENTS.md`                  | Parenthetical removed.                                                                                           |
 
 Round 2 found no remaining issues.
 
@@ -49,12 +49,12 @@ Round 2 found no remaining issues.
 
 ## Test coverage assessment
 
-| Layer | Assessment |
-|---|---|
-| Unit + shared extensible contract | 20 tests passed, including mock-time `extensibleLockProviderIntegrationTests` |
-| Failure modes | Stale dual acquire, delayed delete, TTL floor, 429, stale unlock |
-| `fuzzTests` | Intentionally not wired |
-| Live Miniflare / Wrangler | Out of scope; real KV would not satisfy the shared exactly-one or sub-second unlock assumptions |
+| Layer                             | Assessment                                                                                      |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Unit + shared extensible contract | 20 tests passed, including mock-time `extensibleLockProviderIntegrationTests`                   |
+| Failure modes                     | Stale dual acquire, delayed delete, TTL floor, 429, stale unlock                                |
+| `fuzzTests`                       | Intentionally not wired                                                                         |
+| Live Miniflare / Wrangler         | Out of scope; real KV would not satisfy the shared exactly-one or sub-second unlock assumptions |
 
 ## Docs / changeset completeness
 

@@ -10,13 +10,13 @@ This is a direct port of ShedLock's `Neo4jLockProvider`.
 
 ## Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/neo4j` |
-| **Dependencies** | `@tslock/core` (peer), `neo4j-driver` (peer) |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
-| **Build** | tsup |
+| Field             | Value                                        |
+| ----------------- | -------------------------------------------- |
+| **Name**          | `@tslock/neo4j`                              |
+| **Dependencies**  | `@tslock/core` (peer), `neo4j-driver` (peer) |
+| **Node.js**       | >= 22                                        |
+| **Module format** | Dual ESM + CJS                               |
+| **Build**         | tsup                                         |
 
 ## Public API
 
@@ -43,17 +43,17 @@ class Neo4jLockProvider implements ExtensibleLockProvider {
 
 ```typescript
 interface Neo4jLockProviderOptions {
-  readonly label?: string;                   // default: 'ShedLock'
-  readonly columnNames?: Neo4jColumnNames;    // default: see below
-  readonly lockedByValue?: string;            // default: Utils.getHostname()
-  readonly database?: string;                 // default: undefined (uses driver default)
+  readonly label?: string; // default: 'ShedLock'
+  readonly columnNames?: Neo4jColumnNames; // default: see below
+  readonly lockedByValue?: string; // default: Utils.getHostname()
+  readonly database?: string; // default: undefined (uses driver default)
 }
 
 interface Neo4jColumnNames {
-  readonly name: string;        // default: 'name'
-  readonly lockUntil: string;  // default: 'lockUntil'
-  readonly lockedAt: string;    // default: 'lockedAt'
-  readonly lockedBy: string;    // default: 'lockedBy'
+  readonly name: string; // default: 'name'
+  readonly lockUntil: string; // default: 'lockUntil'
+  readonly lockedAt: string; // default: 'lockedAt'
+  readonly lockedBy: string; // default: 'lockedBy'
 }
 ```
 
@@ -171,15 +171,15 @@ RETURN lock
 
 ### Default values
 
-| Option | Default |
-|---|---|
-| `label` | `'ShedLock'` |
-| `columnNames.name` | `'name'` |
-| `columnNames.lockUntil` | `'lockUntil'` |
-| `columnNames.lockedAt` | `'lockedAt'` |
-| `columnNames.lockedBy` | `'lockedBy'` |
-| `lockedByValue` | `Utils.getHostname()` |
-| `database` | `undefined` (driver default) |
+| Option                  | Default                      |
+| ----------------------- | ---------------------------- |
+| `label`                 | `'ShedLock'`                 |
+| `columnNames.name`      | `'name'`                     |
+| `columnNames.lockUntil` | `'lockUntil'`                |
+| `columnNames.lockedAt`  | `'lockedAt'`                 |
+| `columnNames.lockedBy`  | `'lockedBy'`                 |
+| `lockedByValue`         | `Utils.getHostname()`        |
+| `database`              | `undefined` (driver default) |
 
 ### Validation
 
@@ -234,16 +234,16 @@ packages/neo4j/
 
 ## Error Handling
 
-| Situation | Detection | Behavior |
-|---|---|---|
-| Lock held (unique constraint violation on insert) | `Neo4jError` with `code === 'Neo.ClientError.Schema.ConstraintValidationFailed'` (or message contains `already exists with label` and the lock name) | `insertRecord` returns `false` |
-| Lock held (no node matched on update) | `summary` has zero records | `updateRecord` returns `false` |
-| Lock expired or not owned (no node matched on extend) | `summary` has zero records | `extend` returns `false` |
-| Unlock against missing node (node deleted externally) | `MATCH` matches zero nodes | No-op, returns `void` (not an error) |
-| Connection / network error | Any other `Neo4jError` | Propagate |
-| Auth error | `Neo.ClientError.Security.Unauthorized` | Propagate |
-| Database not found | `Neo.ClientError.Database.DatabaseNotFound` | Propagate |
-| Session lifecycle error | `session.close()` throws in `finally` | Propagate (the original error from the transaction is preserved if both occur; secondary errors are logged) |
+| Situation                                             | Detection                                                                                                                                            | Behavior                                                                                                    |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Lock held (unique constraint violation on insert)     | `Neo4jError` with `code === 'Neo.ClientError.Schema.ConstraintValidationFailed'` (or message contains `already exists with label` and the lock name) | `insertRecord` returns `false`                                                                              |
+| Lock held (no node matched on update)                 | `summary` has zero records                                                                                                                           | `updateRecord` returns `false`                                                                              |
+| Lock expired or not owned (no node matched on extend) | `summary` has zero records                                                                                                                           | `extend` returns `false`                                                                                    |
+| Unlock against missing node (node deleted externally) | `MATCH` matches zero nodes                                                                                                                           | No-op, returns `void` (not an error)                                                                        |
+| Connection / network error                            | Any other `Neo4jError`                                                                                                                               | Propagate                                                                                                   |
+| Auth error                                            | `Neo.ClientError.Security.Unauthorized`                                                                                                              | Propagate                                                                                                   |
+| Database not found                                    | `Neo.ClientError.Database.DatabaseNotFound`                                                                                                          | Propagate                                                                                                   |
+| Session lifecycle error                               | `session.close()` throws in `finally`                                                                                                                | Propagate (the original error from the transaction is preserved if both occur; secondary errors are logged) |
 
 ### Error inspection
 
@@ -260,7 +260,7 @@ function isConstraintViolation(error: unknown): boolean {
 }
 ```
 
-The `error.message.includes(lockName)` check avoids misclassifying a constraint violation on a *different* unique constraint that happens to share the same error code (e.g., if the user has other constraints on the same label). ShedLock's Java provider uses the same check.
+The `error.message.includes(lockName)` check avoids misclassifying a constraint violation on a _different_ unique constraint that happens to share the same error code (e.g., if the user has other constraints on the same label). ShedLock's Java provider uses the same check.
 
 ## Dependencies
 

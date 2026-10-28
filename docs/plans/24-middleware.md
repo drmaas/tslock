@@ -66,7 +66,6 @@ Framework adapter `package.json` template adds `@tslock/middleware-core: workspa
 ### Step 2: Implement `@tslock/middleware-core`
 
 **File: `src/middleware-config.ts`**
-
 - `MiddlewareConfig` interface: `lockProvider`, `lockAtMostFor?`, `lockAtLeastFor?`, `lockNamePrefix?`, `defaultLockedStatus?`, `defaultLockedBody?`, `lockNameStrategy?`
 - `RouteLockConfig` interface: `name?`, `lockAtMostFor?`, `lockAtLeastFor?`, `lockedStatus?`, `lockedBody?`
 - `resolveMiddlewareConfig(input: Partial<MiddlewareConfig> & { lockProvider: LockProvider }): MiddlewareConfig` — fills defaults, returns frozen object
@@ -74,19 +73,16 @@ Framework adapter `package.json` template adds `@tslock/middleware-core: workspa
 - Defaults: `lockAtMostFor = 30_000`, `lockAtLeastFor = 0`, `defaultLockedStatus = 503`
 
 **File: `src/lock-name-strategy.ts`**
-
 - `LockNameStrategy` type: `(method: string, path: string) => string`
 - `methodPathStrategy(method, path): string` — `"GET:/api/users"`
 - Apply `lockNamePrefix`: if set, prepend `"<prefix>:"`
 
 **File: `src/lock-metadata.ts`**
-
 - `LockMetadata` interface: `lockName`, `lockedBy`, `lockUntil`, `retryAfterSeconds`
 - `LockFailureResponse` interface: `status`, `body`, `headers`
 - `defaultLockedBody(meta: LockMetadata): object` — `{ error: "...", lockName, lockedBy, retryAfterSeconds }`
 
 **File: `src/middleware-lifecycle.ts`**
-
 - `LockRequestContext` interface: `method`, `path`
 - `LockMiddlewareLifecycle` interface: `executeWithLock(ctx, routeConfig, runHandler, sendLockedResponse)`
 - `createLockMiddlewareLifecycle(config: MiddlewareConfig): LockMiddlewareLifecycle`
@@ -102,13 +98,13 @@ Framework adapter `package.json` template adds `@tslock/middleware-core: workspa
 ### Step 3: Implement `@tslock/express`
 
 **File: `src/express-lock-factory.ts`**
-
 - `ExpressLockFactory` interface: callable `(routeConfig?) => RequestHandler` + `.lockProvider`, `.config`
 - `createExpressLock(config: MiddlewareConfig): ExpressLockFactory`
 - Internal `createMiddleware(thisFactory, routeConfig?)`:
   1. Extract `method = req.method` and `path = req.path`
   2. Call `lifecycle.executeWithLock(ctx, routeConfig, runHandler, sendLockedResponse)`
   3. `runHandler`: wraps Express's callback-based `next()` in a Promise with cleanup and timeout:
+
      ```typescript
      const runHandler = () => new Promise<void>((resolve, reject) => {
        let settled = false;
@@ -125,6 +121,7 @@ Framework adapter `package.json` template adds `@tslock/middleware-core: workspa
        next(); // Express dispatches handler synchronously within this tick
      });
      ```
+
      The `settled` flag prevents double-resolution. The `lockAtMostFor` timeout prevents handler hangs from holding the lock permanently. `finish` fires after response flushed; `close` covers client disconnects. Handler executes synchronously within `next()` so `AsyncLocalStorage.run()` context is active during handler execution.
   4. `sendLockedResponse`: `res.status(status).set(headers).json(body)`
 - Errors from `lock()`: call `next(err)`
@@ -135,7 +132,6 @@ Framework adapter `package.json` template adds `@tslock/middleware-core: workspa
 ### Step 4: Implement `@tslock/fastify`
 
 **File: `src/fastify-lock-plugin.ts`**
-
 - `FastifyLockFactory` interface: callable `(routeConfig?) => preHandler`
 - `createFastifyLockPlugin(config: MiddlewareConfig): FastifyPluginCallback`
 - Plugin function:
@@ -145,12 +141,14 @@ Framework adapter `package.json` template adds `@tslock/middleware-core: workspa
   1. Extract `method = request.method` and `path = request.routeOptions.url ?? request.url`
   2. Call `lifecycle.executeWithLock(ctx, routeConfig, runHandler, sendLockedResponse)`
   3. `runHandler`: `done()` is called immediately to allow Fastify to dispatch the route handler; the promise resolves on `reply` completion instead:
+
      ```typescript
      const runHandler = () => new Promise<void>((resolve) => {
        done(); // Fastify dispatches the route handler after this
        reply.then(() => resolve()); // reply is a thenable that resolves when response is sent
      });
      ```
+
      Fastify's `reply` is a thenable that resolves after the response is sent. If the handler throws, Fastify's error handler sends a response and `reply` still resolves. Do NOT resolve on `done()` — it fires before the handler starts, which would unlock before execution.
   4. `sendLockedResponse`: `reply.status(status).headers(headers).send(body)`
 - Fastify needs a `.d.ts` module augmentation for the `tslock` decorator:
@@ -169,7 +167,6 @@ declare module 'fastify' {
 ### Step 5: Implement `@tslock/koa`
 
 **File: `src/koa-lock-factory.ts`**
-
 - `KoaLockFactory` interface: callable `(routeConfig?) => Middleware`
 - `createKoaLock(config: MiddlewareConfig): KoaLockFactory`
 - Internal `createMiddleware(thisFactory, routeConfig?)`:
@@ -185,7 +182,6 @@ declare module 'fastify' {
 ### Step 6: Implement `@tslock/hono`
 
 **File: `src/hono-lock-factory.ts`**
-
 - `HonoLockFactory` interface: callable `(routeConfig?) => MiddlewareHandler`
 - `createHonoLock(config: MiddlewareConfig): HonoLockFactory`
 - Internal `createMiddleware(thisFactory, routeConfig?)`:
@@ -316,15 +312,15 @@ pnpm -r build           # tsup build all packages
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| `res.on('finish')` vs `res.on('close')` for unlock timing | Listen for both. `finish` fires on normal completion; `close` fires on abort. Use a flag to avoid double-unlock. |
-| Express `req.path` is route-matched path, not raw URL | This is actually desired behavior — parameterized routes get consistent lock names. Document this. |
-| Fastify `request.routeOptions.url` may not be available in all hooks | Fall back to `request.raw.url` if `routeOptions` is undefined (e.g., for 404 requests). |
-| Koa `ctx._matchedRoute` is set by `koa-router`, not built-in | Fall back to `ctx.path` if `_matchedRoute` is undefined. Document the difference. |
-| Hono `c.req.routePath` behavior differs across Hono versions | Target Hono 4.x. If unavailable, fall back to `c.req.path`. |
+| Risk                                                                    | Mitigation                                                                                                                                                                                    |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `res.on('finish')` vs `res.on('close')` for unlock timing               | Listen for both. `finish` fires on normal completion; `close` fires on abort. Use a flag to avoid double-unlock.                                                                              |
+| Express `req.path` is route-matched path, not raw URL                   | This is actually desired behavior — parameterized routes get consistent lock names. Document this.                                                                                            |
+| Fastify `request.routeOptions.url` may not be available in all hooks    | Fall back to `request.raw.url` if `routeOptions` is undefined (e.g., for 404 requests).                                                                                                       |
+| Koa `ctx._matchedRoute` is set by `koa-router`, not built-in            | Fall back to `ctx.path` if `_matchedRoute` is undefined. Document the difference.                                                                                                             |
+| Hono `c.req.routePath` behavior differs across Hono versions            | Target Hono 4.x. If unavailable, fall back to `c.req.path`.                                                                                                                                   |
 | `DefaultLockingTaskExecutor` lifecycle vs middleware lifecycle mismatch | The executor's task model (sync callback → Promise<T>) doesn't map perfectly to middleware's continuation-passing style. For Express, wrap `next()` in a Promise resolved on response finish. |
-| Unlock during error handling | If the handler AND unlock throw, preserve handler error, log unlock error. |
+| Unlock during error handling                                            | If the handler AND unlock throw, preserve handler error, log unlock error.                                                                                                                    |
 
 ## Estimation
 

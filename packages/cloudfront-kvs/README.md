@@ -26,33 +26,30 @@ const provider = createCloudFrontKvsLockProvider({
 });
 const executor = new DefaultLockingTaskExecutor(provider);
 
-await executor.executeWithLock(
-  () => myScheduledTask(),
-  createLockConfig('my-task', '5m', '1m'),
-);
+await executor.executeWithLock(() => myScheduledTask(), createLockConfig('my-task', '5m', '1m'));
 ```
 
 Configure the client for SigV4A as required by the CloudFront KeyValueStore API.
 
 ## Configuration
 
-| Option | Default | Description |
-|---|---|---|
-| `client` | — (required) | `CloudFrontKeyValueStoreClient` owned by the caller. |
-| `kvsArn` | — (required) | KeyValueStore ARN. |
-| `keyPrefix` | `'tslock/'` | Prefix applied to every lock key. |
-| `maxEtagRetries` | `3` | Retries when another writer changes the store ETag. |
+| Option           | Default      | Description                                          |
+| ---------------- | ------------ | ---------------------------------------------------- |
+| `client`         | — (required) | `CloudFrontKeyValueStoreClient` owned by the caller. |
+| `kvsArn`         | — (required) | KeyValueStore ARN.                                   |
+| `keyPrefix`      | `'tslock/'`  | Prefix applied to every lock key.                    |
+| `maxEtagRetries` | `3`          | Retries when another writer changes the store ETag.  |
 
 ## Edge limits
 
-| Limit | Value |
-|---|---|
-| Max store size | 5 MB |
-| Max key size | 512 bytes |
-| Max value size | 1 KB |
-| Batch `UpdateKeys` | 50 keys or 3 MB |
-| Functions | Read-only |
-| This provider | Control-plane reads/writes |
+| Limit              | Value                      |
+| ------------------ | -------------------------- |
+| Max store size     | 5 MB                       |
+| Max key size       | 512 bytes                  |
+| Max value size     | 1 KB                       |
+| Batch `UpdateKeys` | 50 keys or 3 MB            |
+| Functions          | Read-only                  |
+| This provider      | Control-plane reads/writes |
 
 Store-wide ETag means concurrent updates to **different** keys can still conflict. Prefer low-frequency scheduled locks; use separate stores if you need higher write parallelism. Function readers may lag control-plane publishes — do not assume immediate edge visibility.
 
@@ -69,11 +66,11 @@ TSLOCK_CLOUDFRONT_KVS_INTEGRATION=1 CLOUDFRONT_KVS_ARN=arn:aws:cloudfront::…:k
 
 ## Exports
 
-| Export | Description |
-|---|---|
-| `createCloudFrontKvsLockProvider`, `CloudFrontKvsLockProvider` | Factory + class |
-| `resolveCloudFrontKvsConfiguration` | Config resolver |
-| `CloudFrontKvsLock` | `SimpleLock` implementation |
+| Export                                                         | Description                 |
+| -------------------------------------------------------------- | --------------------------- |
+| `createCloudFrontKvsLockProvider`, `CloudFrontKvsLockProvider` | Factory + class             |
+| `resolveCloudFrontKvsConfiguration`                            | Config resolver             |
+| `CloudFrontKvsLock`                                            | `SimpleLock` implementation |
 
 ## Requirements
 

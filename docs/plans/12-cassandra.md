@@ -84,9 +84,7 @@ export function validateIdentifier(value: string, label: string): void {
 
 export function validateSerialConsistency(level: consistency): void {
   if (level !== consistency.serial && level !== consistency.localSerial) {
-    throw new LockException(
-      `serialConsistencyLevel must be SERIAL or LOCAL_SERIAL for LWT, got ${level}`
-    );
+    throw new LockException(`serialConsistencyLevel must be SERIAL or LOCAL_SERIAL for LWT, got ${level}`);
   }
 }
 ```
@@ -96,7 +94,6 @@ These run at construction time, not per call, so the cost is paid once.
 ### Step 3: Define configuration types
 
 **File:** `src/cassandra-lock-provider.ts`
-
 - `CassandraColumnNames` interface (4 readonly string fields, snake_case defaults).
 - `CassandraLockProviderOptions` interface (`keyspace` required; `tableName`, `columnNames`, `lockedByValue`, `consistencyLevel`, `serialConsistencyLevel` optional).
 - `DEFAULT_TABLE_NAME = 'shedlock'`.
@@ -155,13 +152,7 @@ Note the `<keyspace>.<table>` qualification — required because the client may 
 
 ```typescript
 import { consistency } from 'cassandra-driver';
-import {
-  AbstractStorageAccessor,
-  ClockProvider,
-  LockConfiguration,
-  lockAtMostUntil,
-  unlockTime,
-} from '@tslock/core';
+import { AbstractStorageAccessor, ClockProvider, LockConfiguration, lockAtMostUntil, unlockTime } from '@tslock/core';
 
 class CassandraStorageAccessor extends AbstractStorageAccessor {
   constructor(
@@ -259,7 +250,7 @@ export async function createLockTable(
   client: Client,
   options: { keyspace: string; tableName?: string; columnNames?: CassandraColumnNames },
 ): Promise<void> {
-  const opts = resolveOptionsForSchema(options);  // subset of resolveOptions, no consistency
+  const opts = resolveOptionsForSchema(options); // subset of resolveOptions, no consistency
   const cql = buildCreateTableCql(opts);
   await client.execute(cql);
 }
@@ -277,13 +268,15 @@ class CassandraLockProvider implements ExtensibleLockProvider {
   private readonly delegate: StorageBasedLockProvider;
 
   constructor(client: Client, options: CassandraLockProviderOptions) {
-    this.delegate = new StorageBasedLockProvider(
-      new CassandraStorageAccessor(client, resolveOptions(options)),
-    );
+    this.delegate = new StorageBasedLockProvider(new CassandraStorageAccessor(client, resolveOptions(options)));
   }
 
-  lock(config) { return this.delegate.lock(config); }
-  clearCache(name) { this.delegate.clearCache(name); }
+  lock(config) {
+    return this.delegate.lock(config);
+  }
+  clearCache(name) {
+    this.delegate.clearCache(name);
+  }
 }
 ```
 
@@ -315,7 +308,6 @@ Do **not** export `CassandraStorageAccessor`, `ResolvedOptions`, or the CQL buil
 **File:** `__tests__/unit/cassandra-storage-accessor.test.ts`
 
 Use a mocked `Client` (`vi.fn()` for `execute`). The mock returns a fake `ResultSet` with `rows: [{ '[applied]': true }]` or `rows: [{ '[applied]': false }]`, or throws a configured error.
-
 - `insertRecord` `[applied] = true` → `client.execute` called with insert CQL + 4 params (name, Date, Date, hostname), returns `true`.
 - `insertRecord` `[applied] = false` → returns `false`.
 - `insertRecord` throws → propagates.
@@ -362,10 +354,10 @@ describe('CassandraLockProvider integration', () => {
       contactPoints: [`${container.getHost()}:${container.getMappedPort(9042)}`],
       localDataCenter: 'datacenter1',
     });
-    await waitForCassandra(adminClient);  // poll DESCRIBE KEYSPACES until it succeeds
+    await waitForCassandra(adminClient); // poll DESCRIBE KEYSPACES until it succeeds
     await adminClient.execute(
-      "CREATE KEYSPACE IF NOT EXISTS shedlock_test " +
-      "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}"
+      'CREATE KEYSPACE IF NOT EXISTS shedlock_test ' +
+        "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}",
     );
     await createLockTable(adminClient, { keyspace: 'shedlock_test' });
     await adminClient.shutdown();
@@ -396,11 +388,13 @@ describe('CassandraLockProvider integration', () => {
       const lock = await provider.lock(config('lwt-dup', '1m'));
       expect(lock).toBeDefined();
       const result = await lockClient.execute(
-        "INSERT INTO shedlock_test.shedlock (name, lock_until, locked_at, locked_by) " +
-        "VALUES (?, ?, ?, ?) IF NOT EXISTS",
+        'INSERT INTO shedlock_test.shedlock (name, lock_until, locked_at, locked_by) ' +
+          'VALUES (?, ?, ?, ?) IF NOT EXISTS',
         ['lwt-dup', new Date(), new Date(), 'other'],
-        { consistency: cassandra.types.consistencies.localQuorum,
-          serialConsistency: cassandra.types.consistencies.localSerial },
+        {
+          consistency: cassandra.types.consistencies.localQuorum,
+          serialConsistency: cassandra.types.consistencies.localSerial,
+        },
       );
       expect(result.rows[0]['[applied]']).toBe(false);
       await lock!.unlock();
@@ -408,10 +402,12 @@ describe('CassandraLockProvider integration', () => {
 
     it('rejects extend from a different lockedBy', async () => {
       const owner = new CassandraLockProvider(lockClient, {
-        keyspace: 'shedlock_test', lockedByValue: 'node-A',
+        keyspace: 'shedlock_test',
+        lockedByValue: 'node-A',
       });
       const intruder = new CassandraLockProvider(lockClient, {
-        keyspace: 'shedlock_test', lockedByValue: 'node-B',
+        keyspace: 'shedlock_test',
+        lockedByValue: 'node-B',
       });
       const lock = await owner.lock(config('extend-foreign', '1m'));
       const extended = await lock!.extend('1m', 0);
@@ -427,7 +423,7 @@ async function waitForCassandra(client: cassandra.Client): Promise<void> {
       await client.execute('DESCRIBE KEYSPACES');
       return;
     } catch {
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 2000));
     }
   }
   throw new Error('Cassandra did not become ready within 120s');
@@ -454,20 +450,20 @@ All must pass. Integration tests are gated behind a separate Vitest config.
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| **Cassandra container slow / flaky startup** | Generous `withStartupTimeout(180_000)` + polling `DESCRIBE KEYSPACES` rather than waiting on a log line. Mark suite `test.slow`. |
-| **`cassandra-driver` v4 type resolution** | `cassandra-driver` ships its own types — no `@types/*` needed. Verify `consistency` enum import works in ESM (`import { consistency } from 'cassandra-driver'`). |
-| **LWT performance under contention** | Document: LWT uses Paxos, which is 2-4x slower than regular writes. For scheduled-task locks (low contention, infrequent), this is fine. For high-frequency locking, consider a different provider. |
-| **`[applied]` column name** | Cassandra returns `[applied]` as the first column of every LWT result row. The driver exposes it as `result.rows[0]['[applied]']`. Test this explicitly against a real Cassandra instance to confirm the driver does not rename the column. |
-| **Time representation** | Use `new Date(epochMillis)` for `timestamp` columns. The driver round-trips `Date` ↔ `timestamp` faithfully. Test that a round-tripped timestamp equals the original epoch millis. |
-| **Timezone drift between client and server** | Cassandra `timestamp` is always stored as UTC milliseconds. `new Date(epochMillis)` is UTC-based. No timezone issues. |
-| **Identifier injection** | Validate keyspace, table, and column names against `^[a-zA-Z_][a-zA-Z0-9_]*$` at construction time. CQL has no parameterization for identifiers — they must be interpolated. |
-| **`serialConsistencyLevel` misconfiguration** | `validateSerialConsistency` throws at construction if a non-serial level is supplied. Prevents silent incorrectness. |
-| **`consistencyLevel` too low for LWT** | Default `LOCAL_QUORUM` is correct for the non-serial portion. Document that lowering it (e.g., to `ONE`) weakens the LWT guarantee. |
-| **Multi-DC clusters** | Document: `LOCAL_SERIAL` (default) is correct for single-DC. For cross-DC consistency, set `serialConsistencyLevel: consistency.serial`. |
-| **Paxos contention throws** | `OperationTimedOutError` / `WriteFailureError` propagate. The caller decides whether to retry. Document this in the spec. |
-| **`lockedBy` mismatch on extend after restart** | Document: users should set `lockedByValue` explicitly if hostname could change between lock acquisition and extension. |
+| Risk                                            | Mitigation                                                                                                                                                                                                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cassandra container slow / flaky startup**    | Generous `withStartupTimeout(180_000)` + polling `DESCRIBE KEYSPACES` rather than waiting on a log line. Mark suite `test.slow`.                                                                                                            |
+| **`cassandra-driver` v4 type resolution**       | `cassandra-driver` ships its own types — no `@types/*` needed. Verify `consistency` enum import works in ESM (`import { consistency } from 'cassandra-driver'`).                                                                            |
+| **LWT performance under contention**            | Document: LWT uses Paxos, which is 2-4x slower than regular writes. For scheduled-task locks (low contention, infrequent), this is fine. For high-frequency locking, consider a different provider.                                         |
+| **`[applied]` column name**                     | Cassandra returns `[applied]` as the first column of every LWT result row. The driver exposes it as `result.rows[0]['[applied]']`. Test this explicitly against a real Cassandra instance to confirm the driver does not rename the column. |
+| **Time representation**                         | Use `new Date(epochMillis)` for `timestamp` columns. The driver round-trips `Date` ↔ `timestamp` faithfully. Test that a round-tripped timestamp equals the original epoch millis.                                                          |
+| **Timezone drift between client and server**    | Cassandra `timestamp` is always stored as UTC milliseconds. `new Date(epochMillis)` is UTC-based. No timezone issues.                                                                                                                       |
+| **Identifier injection**                        | Validate keyspace, table, and column names against `^[a-zA-Z_][a-zA-Z0-9_]*$` at construction time. CQL has no parameterization for identifiers — they must be interpolated.                                                                |
+| **`serialConsistencyLevel` misconfiguration**   | `validateSerialConsistency` throws at construction if a non-serial level is supplied. Prevents silent incorrectness.                                                                                                                        |
+| **`consistencyLevel` too low for LWT**          | Default `LOCAL_QUORUM` is correct for the non-serial portion. Document that lowering it (e.g., to `ONE`) weakens the LWT guarantee.                                                                                                         |
+| **Multi-DC clusters**                           | Document: `LOCAL_SERIAL` (default) is correct for single-DC. For cross-DC consistency, set `serialConsistencyLevel: consistency.serial`.                                                                                                    |
+| **Paxos contention throws**                     | `OperationTimedOutError` / `WriteFailureError` propagate. The caller decides whether to retry. Document this in the spec.                                                                                                                   |
+| **`lockedBy` mismatch on extend after restart** | Document: users should set `lockedByValue` explicitly if hostname could change between lock acquisition and extension.                                                                                                                      |
 
 ## Estimation
 

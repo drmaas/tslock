@@ -32,13 +32,13 @@ await executor.executeWithLock(
 
 `createDatastoreProvider(config)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `datastore` | — (required) | A `Datastore` instance. |
-| `entityName` | `'shedlock'` | The kind used for lock entities. |
-| `fieldNames` | see below | Override any of `lockUntil`, `lockedAt`, `lockedBy`. |
-| `lockedByValue` | `os.hostname()` | Identifier written to `lockedBy`. |
-| `useDate` | `false` | Store the time fields as `Date` values instead of strings. |
+| Option          | Default         | Description                                                |
+| --------------- | --------------- | ---------------------------------------------------------- |
+| `datastore`     | — (required)    | A `Datastore` instance.                                    |
+| `entityName`    | `'shedlock'`    | The kind used for lock entities.                           |
+| `fieldNames`    | see below       | Override any of `lockUntil`, `lockedAt`, `lockedBy`.       |
+| `lockedByValue` | `os.hostname()` | Identifier written to `lockedBy`.                          |
+| `useDate`       | `false`         | Store the time fields as `Date` values instead of strings. |
 
 Default field names: `lockUntil`, `lockedAt`, `lockedBy`. The entity key is the lock name.
 

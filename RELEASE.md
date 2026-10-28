@@ -18,11 +18,11 @@ All `@tslock/*` packages share one version (lockstep via Changesets `fixed: [["@
 
 Pushes and PRs created with `GITHUB_TOKEN` do not trigger other workflows. After opening the release PR, `release.yml` dispatches `ci.yml` via `workflow_dispatch` on `release/vX.Y.Z` so lockfile/verify/integration/pack still run. Main branch rulesets currently list **no** required status check contexts and have **no** tag rulesets (tag creation from the publish job is allowed).
 
-| Intent | What to do |
-| --- | --- |
-| Normal release | Pending changesets already say `patch` / `minor` / `major`. Run the workflow with any `bump` and `force_changeset=false`. Changesets picks the highest bump in the fixed group; the `bump` input is advisory only. |
-| Empty queue or forced bump | No pending changesets, or you want an explicit bump: set `bump` and either leave `force_changeset=false` (empty queue writes the bump) or set `force_changeset=true` to always write that bump. |
-| Breaking API | Add a `major` changeset in a PR, **or** dispatch with `bump=major` and `force_changeset=true`. |
+| Intent                     | What to do                                                                                                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Normal release             | Pending changesets already say `patch` / `minor` / `major`. Run the workflow with any `bump` and `force_changeset=false`. Changesets picks the highest bump in the fixed group; the `bump` input is advisory only. |
+| Empty queue or forced bump | No pending changesets, or you want an explicit bump: set `bump` and either leave `force_changeset=false` (empty queue writes the bump) or set `force_changeset=true` to always write that bump.                    |
+| Breaking API               | Add a `major` changeset in a PR, **or** dispatch with `bump=major` and `force_changeset=true`.                                                                                                                     |
 
 ## One-time npm trusted-publisher setup (owner, local 2FA)
 

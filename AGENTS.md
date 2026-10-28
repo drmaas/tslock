@@ -33,7 +33,6 @@ The `NN-` prefix on spec/plan/review files is a 2-digit number that matches acro
 ## Read these first
 
 Before implementing anything, read in this order:
-
 1. `docs/00-vision.md` — what TSLock is and isn't, provider matrix, resolved design decisions.
 2. `docs/01-architecture.md` — monorepo structure, core abstractions with TS types, `AsyncLocalStorage`-based `LockAssert`/`LockExtender`, provider categories (A/B/C/D/E/F/G/H/I), test architecture.
 3. `docs/specs/00-core.md` — the core abstractions spec. Everything else depends on this.
@@ -43,59 +42,58 @@ Before implementing anything, read in this order:
 
 ## Key design decisions (do not deviate without asking)
 
-| Decision | Choice |
-|---|---|
-| Monorepo | pnpm workspaces |
-| Package scope | `@tslock/*` |
-| Module format | Dual ESM + CJS (tsup) |
-| Node.js minimum | 22+ for published packages; workspace and CI pin Node 26 via `.nvmrc` |
-| Test framework | Vitest |
-| Config API | Plain typed objects + `parseDuration()` — no builder classes |
-| Concurrency model | `AsyncLocalStorage` (replaces Java's `ThreadLocal`) |
-| Lock operations | All async (`Promise<SimpleLock | undefined>`) |
-| SQL packages | `@tslock/sql-support` (shared) + `@tslock/sql` + `@tslock/kysely` + `@tslock/drizzle` |
-| Redis packages | `@tslock/redis-core` (shared) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` |
-| Ignite | Deferred to v2 (immature Node.js driver) — 23 providers for v1 |
+| Decision               | Choice                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Monorepo               | pnpm workspaces                                                                                                                                                                                                                                                                                                                                                                |
+| Package scope          | `@tslock/*`                                                                                                                                                                                                                                                                                                                                                                    |
+| Module format          | Dual ESM + CJS (tsup)                                                                                                                                                                                                                                                                                                                                                          |
+| Node.js minimum        | 22+ for published packages; workspace and CI pin Node 26 via `.nvmrc`                                                                                                                                                                                                                                                                                                          |
+| Test framework         | Vitest                                                                                                                                                                                                                                                                                                                                                                         |
+| Config API             | Plain typed objects + `parseDuration()` — no builder classes                                                                                                                                                                                                                                                                                                                   |
+| Concurrency model      | `AsyncLocalStorage` (replaces Java's `ThreadLocal`)                                                                                                                                                                                                                                                                                                                            |
+| Lock operations        | All async (`Promise<SimpleLock                                                                                                                                                                                                                                                                                                                                                 | undefined>`) |
+| SQL packages           | `@tslock/sql-support` (shared) + `@tslock/sql` + `@tslock/kysely` + `@tslock/drizzle`                                                                                                                                                                                                                                                                                          |
+| Redis packages         | `@tslock/redis-core` (shared) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis`                                                                                                                                                                                                                                                                                         |
+| Ignite                 | Deferred to v2 (immature Node.js driver) — 23 providers for v1                                                                                                                                                                                                                                                                                                                 |
 | Framework integrations | HTTP adapters live in middleware-core plus Express, Fastify, Koa, and Hono. NestJS module and `@SchedulerLock` live in `@tslock/nestjs` (`docs/specs/28-nestjs.md`). Scheduler adapters (`@tslock/scheduler-core`, `@tslock/node-cron`, `@tslock/bree`, `@tslock/aws-lambda`) live in `docs/specs/29-scheduler-adapters.md`. Core stays framework-agnostic and scheduler-free. |
-| Metrics | `@tslock/otel` records OpenTelemetry metrics from `LockingTaskExecutorListener`, instrumented locks, and the keep-alive failure callback. Prometheus stays user-wired. |
-| Linting | Biome |
+| Metrics                | `@tslock/otel` records OpenTelemetry metrics from `LockingTaskExecutorListener`, instrumented locks, and the keep-alive failure callback. Prometheus stays user-wired.                                                                                                                                                                                                         |
+| Linting                | Biome                                                                                                                                                                                                                                                                                                                                                                          |
 
 ## Provider categories
 
 Providers fall into categories that determine their implementation pattern:
 
-| Category | Pattern | Providers |
-|---|---|---|
-| **A — StorageBasedLockProvider** | `StorageAccessor` (insert/update/unlock/extend) + `StorageBasedLockProvider` | SQL, Neo4j, Couchbase, Spanner, Firestore, Datastore, S3, GCS, Cassandra |
-| **B — Direct LockProvider** | Custom mechanism, implements `LockProvider` directly | Mongo, DynamoDB, ES/OpenSearch, ArangoDB, CloudFront KVS |
-| **C — Redis** | `SET NX PX` + Lua scripts, shared `InternalRedisLockProvider` | Redis, Redis-ioredis (also Valkey / ElastiCache / MemoryDB) |
-| **D — Hazelcast** | IMap entry-level lock + get-check-put + TTL | Hazelcast |
-| **E — ZooKeeper** | PERSISTENT znodes + version CAS | ZooKeeper |
-| **F — Etcd** | Lease + txn (version == 0) | Etcd |
-| **G — Memcached** | `add` (fails if exists) + `replace` | Memcached |
-| **H — NATS JetStream** | KeyValue bucket + create/update with revision | NATS |
-| **I — InMemory** | `Map<string, LockRecord>` | InMemory |
-| **J — Cloudflare Durable Objects** | DO storage + fetch protocol | Cloudflare DO (strongly consistent) |
-| **K — Cloudflare Workers KV** | KV `get`/`put`/`delete` + ownership token, no CAS | Cloudflare KV (advisory; stale reads can double-acquire) |
+| Category                           | Pattern                                                                      | Providers                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **A — StorageBasedLockProvider**   | `StorageAccessor` (insert/update/unlock/extend) + `StorageBasedLockProvider` | SQL, Neo4j, Couchbase, Spanner, Firestore, Datastore, S3, GCS, Cassandra |
+| **B — Direct LockProvider**        | Custom mechanism, implements `LockProvider` directly                         | Mongo, DynamoDB, ES/OpenSearch, ArangoDB, CloudFront KVS                 |
+| **C — Redis**                      | `SET NX PX` + Lua scripts, shared `InternalRedisLockProvider`                | Redis, Redis-ioredis (also Valkey / ElastiCache / MemoryDB)              |
+| **D — Hazelcast**                  | IMap entry-level lock + get-check-put + TTL                                  | Hazelcast                                                                |
+| **E — ZooKeeper**                  | PERSISTENT znodes + version CAS                                              | ZooKeeper                                                                |
+| **F — Etcd**                       | Lease + txn (version == 0)                                                   | Etcd                                                                     |
+| **G — Memcached**                  | `add` (fails if exists) + `replace`                                          | Memcached                                                                |
+| **H — NATS JetStream**             | KeyValue bucket + create/update with revision                                | NATS                                                                     |
+| **I — InMemory**                   | `Map<string, LockRecord>`                                                    | InMemory                                                                 |
+| **J — Cloudflare Durable Objects** | DO storage + fetch protocol                                                  | Cloudflare DO (strongly consistent)                                      |
+| **K — Cloudflare Workers KV**      | KV `get`/`put`/`delete` + ownership token, no CAS                            | Cloudflare KV (advisory; stale reads can double-acquire)                 |
 
 ## Development Workflow
 
 Classify the requested work before editing. The executable, detailed workflows live in [`.opencode/skills/`](./.opencode/skills/) so agent-driven and human-driven work follow the same repository policy.
 
-| Contribution | Agent skill | Use when | Do not use when |
-|---|---|---|---|
-| Bug fix | `tslock-bugfix` | Reproducible bug, regression, race, or incorrect behavior | New feature/design, docs-only, or test-only work |
-| Feature/provider | `tslock-sdd` | New behavior, provider, concept, public/cross-package contract, or substantial refactor | Isolated bug, docs-only, or test-only work |
-| Documentation | `tslock-doc-improver` | Reconcile or improve READMEs, examples, links, contributor docs, newcomer guides (`docs/02-migration-from-shedlock.md`, `docs/03-comparison.md`), specs/plans references, or API descriptions | Runtime defect or new architecture is the primary problem |
-| Tests | `tslock-test-improver` | Coverage, assertions, integration, fuzz, shared contracts, or test infrastructure | Production bug or new feature design is the primary problem |
-| Refactor | `tslock-sdd` if substantial; fast track if local/mechanical | Architecture, public contracts, or multiple packages are affected | Trivial rename or mechanical cleanup |
+| Contribution     | Agent skill                                                 | Use when                                                                                                                                                                                      | Do not use when                                             |
+| ---------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Bug fix          | `tslock-bugfix`                                             | Reproducible bug, regression, race, or incorrect behavior                                                                                                                                     | New feature/design, docs-only, or test-only work            |
+| Feature/provider | `tslock-sdd`                                                | New behavior, provider, concept, public/cross-package contract, or substantial refactor                                                                                                       | Isolated bug, docs-only, or test-only work                  |
+| Documentation    | `tslock-doc-improver`                                       | Reconcile or improve READMEs, examples, links, contributor docs, newcomer guides (`docs/02-migration-from-shedlock.md`, `docs/03-comparison.md`), specs/plans references, or API descriptions | Runtime defect or new architecture is the primary problem   |
+| Tests            | `tslock-test-improver`                                      | Coverage, assertions, integration, fuzz, shared contracts, or test infrastructure                                                                                                             | Production bug or new feature design is the primary problem |
+| Refactor         | `tslock-sdd` if substantial; fast track if local/mechanical | Architecture, public contracts, or multiple packages are affected                                                                                                                             | Trivial rename or mechanical cleanup                        |
 
 A tiny typo, formatting-only change, or obvious local mechanical edit can use the fast track. It still needs the narrowest meaningful verification. If a fast-track change reveals a new design, cross-package impact, or a production defect, stop and switch to the matching skill.
 
 ### Full SDD workflow
 
 Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) for substantial changes. It runs these stages sequentially:
-
 1. **Interview and discovery** — resolve scope, constraints, compatibility, edge cases, and tests.
 2. **Spec** — create immutable `docs/specs/<NN>-<name>.md` with behavior, API, errors, invariants, and test expectations.
 3. **Plan** — create immutable `docs/plans/<NN>-<name>.md` with ordered files, implementation steps, verification, and docs.
@@ -110,7 +108,6 @@ The focused skills apply the same verify/review/repeat discipline without creati
 ## Implementation conventions
 
 When implementing a provider package:
-
 1. **Package structure:** `src/index.ts` (exports), `src/<provider>-configuration.ts` (config + resolver), `src/<provider>-storage-accessor.ts` (or direct provider), `src/<provider>-lock-provider.ts` (factory), `__tests__/` (unit + integration).
 
 2. **Peer dependencies:** `@tslock/core` (required) + the canonical driver (required). Never bundle the driver — users install the version they need.
@@ -130,7 +127,6 @@ When implementing a provider package:
 ## Review findings to address during implementation
 
 The reviews in `docs/reviews/` identified issues to fix. Key ones:
-
 - **S3 (09) — NEEDS REVISION:** `updateRecord` returns `false` on 404, preventing `LockRecordRegistry` cache clear. Should throw to self-heal (matching Couchbase). Same issue in GCS (10) and Spanner (06).
 - **Firestore (07):** `unlock` missing `lockUntil >= now` check (ShedLock's `updateOwn` checks both `lockedBy` AND `lockUntil`). Datastore (08) correctly omits it (ShedLock's Datastore `updateOwn` only checks `lockedBy`).
 - **ArangoDB (11):** `extend` is non-transactional with no CAS — TOCTOU race. Use `ifMatch: existing._rev` or wrap in a stream transaction. Also: `exclusiveCollections` is Enterprise-only — implement `writeCollections` fallback for Community Edition.

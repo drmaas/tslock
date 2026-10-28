@@ -17,22 +17,22 @@ Follows `docs/specs/29-cloudfront-kvs.md`. Issue #47.
 
 ## Files to create
 
-| Path | Purpose |
-|---|---|
-| `packages/cloudfront-kvs/package.json` | Package manifest + peers |
-| `packages/cloudfront-kvs/tsconfig.json` | Extends base |
-| `packages/cloudfront-kvs/tsup.config.ts` | Dual ESM+CJS |
-| `packages/cloudfront-kvs/vitest.config.ts` | Unit |
-| `packages/cloudfront-kvs/vitest.integration.config.ts` | Opt-in integration |
-| `packages/cloudfront-kvs/src/index.ts` | Public exports |
-| `packages/cloudfront-kvs/src/cloudfront-kvs-configuration.ts` | Config |
-| `packages/cloudfront-kvs/src/cloudfront-kvs-errors.ts` | Error helpers |
-| `packages/cloudfront-kvs/src/lock-record.ts` | Value codec |
-| `packages/cloudfront-kvs/src/cloudfront-kvs-lock.ts` | SimpleLock |
-| `packages/cloudfront-kvs/src/cloudfront-kvs-lock-provider.ts` | Provider |
-| `packages/cloudfront-kvs/__tests__/...` | Unit + integration |
-| `packages/cloudfront-kvs/README.md` | User docs |
-| `.changeset/cloudfront-kvs.md` | Release note |
+| Path                                                          | Purpose                  |
+| ------------------------------------------------------------- | ------------------------ |
+| `packages/cloudfront-kvs/package.json`                        | Package manifest + peers |
+| `packages/cloudfront-kvs/tsconfig.json`                       | Extends base             |
+| `packages/cloudfront-kvs/tsup.config.ts`                      | Dual ESM+CJS             |
+| `packages/cloudfront-kvs/vitest.config.ts`                    | Unit                     |
+| `packages/cloudfront-kvs/vitest.integration.config.ts`        | Opt-in integration       |
+| `packages/cloudfront-kvs/src/index.ts`                        | Public exports           |
+| `packages/cloudfront-kvs/src/cloudfront-kvs-configuration.ts` | Config                   |
+| `packages/cloudfront-kvs/src/cloudfront-kvs-errors.ts`        | Error helpers            |
+| `packages/cloudfront-kvs/src/lock-record.ts`                  | Value codec              |
+| `packages/cloudfront-kvs/src/cloudfront-kvs-lock.ts`          | SimpleLock               |
+| `packages/cloudfront-kvs/src/cloudfront-kvs-lock-provider.ts` | Provider                 |
+| `packages/cloudfront-kvs/__tests__/...`                       | Unit + integration       |
+| `packages/cloudfront-kvs/README.md`                           | User docs                |
+| `.changeset/cloudfront-kvs.md`                                | Release note             |
 
 ## Verification
 

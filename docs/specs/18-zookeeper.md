@@ -8,14 +8,14 @@ This is the ShedLock `ZooKeeperLockProvider` algorithm. It deliberately uses PER
 
 ## Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/zookeeper` |
-| **Driver** | `zookeeper` (node-zookeeper, a.k.a. the `zk` npm package) — peer dependency |
-| **Dependencies** | `@tslock/core` (peer), `zookeeper` (peer) |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
-| **Build** | tsup |
+| Field             | Value                                                                       |
+| ----------------- | --------------------------------------------------------------------------- |
+| **Name**          | `@tslock/zookeeper`                                                         |
+| **Driver**        | `zookeeper` (node-zookeeper, a.k.a. the `zk` npm package) — peer dependency |
+| **Dependencies**  | `@tslock/core` (peer), `zookeeper` (peer)                                   |
+| **Node.js**       | >= 22                                                                       |
+| **Module format** | Dual ESM + CJS                                                              |
+| **Build**         | tsup                                                                        |
 
 ## Public API
 
@@ -36,7 +36,7 @@ The constructor accepts an already-connected `ZooKeeper` client (from the `zooke
 
 ```typescript
 interface ZooKeeperLockProviderOptions {
-  basePath?: string;   // default: '/shedlock'
+  basePath?: string; // default: '/shedlock'
 }
 ```
 
@@ -167,20 +167,20 @@ packages/zookeeper/
 
 ## Error Handling Summary
 
-| Situation | Behavior |
-|---|---|
-| Lock held by another instance | `getData` returns valid znode, `existingLockUntil > now` → return `undefined` |
-| First lock on a new name | `getData` throws `NoNodeException` → `create` PERSISTENT znode → `ZooKeeperLock` returned |
-| Lock expired, CAS wins | `existingLockUntil <= now` → `setData(path, data, stat.version)` succeeds → `ZooKeeperLock` returned |
-| Lock expired, CAS loses | `setData` throws `BadVersionException` (concurrent `setData`/`create` bumped the version) → return `undefined` |
-| Lost the create race | `create` throws `NodeExistsException` (concurrent acquirer created the znode) → return `undefined` |
-| Connection lost / session expired | `ZooKeeper` client throws (`CONNECTION_LOSS`, `SESSION_EXPIRED`, etc.) → propagate to caller |
-| Holder crashed before `unlock` | The znode persists with the old `lockAtMostUntil` value. The next acquirer reads it, sees it as expired (after `lockAtMostUntil`), and CASes in. No session-liveness coupling. |
-| `unlock` on a manually-deleted znode | `setData` throws `NoNodeException` → propagate (configuration error — the znode should not be manually deleted) |
-| `extend()` called | Throws `LockException('Extend not supported by this provider')` |
-| Invalid `basePath` (e.g. contains illegal characters) | ZooKeeper throws `BAD_ARGUMENTS` or `INVALID_PATH` → propagate |
-| Base path does not exist | `create` with `creatingParentsIfNeeded: true` creates the base path automatically. `getData` for the lock znode returns `NoNodeException` (the lock znode itself does not exist). |
-| `basePath` with trailing slash | Option resolver strips trailing `/` to avoid `//lockName` paths. |
+| Situation                                             | Behavior                                                                                                                                                                          |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lock held by another instance                         | `getData` returns valid znode, `existingLockUntil > now` → return `undefined`                                                                                                     |
+| First lock on a new name                              | `getData` throws `NoNodeException` → `create` PERSISTENT znode → `ZooKeeperLock` returned                                                                                         |
+| Lock expired, CAS wins                                | `existingLockUntil <= now` → `setData(path, data, stat.version)` succeeds → `ZooKeeperLock` returned                                                                              |
+| Lock expired, CAS loses                               | `setData` throws `BadVersionException` (concurrent `setData`/`create` bumped the version) → return `undefined`                                                                    |
+| Lost the create race                                  | `create` throws `NodeExistsException` (concurrent acquirer created the znode) → return `undefined`                                                                                |
+| Connection lost / session expired                     | `ZooKeeper` client throws (`CONNECTION_LOSS`, `SESSION_EXPIRED`, etc.) → propagate to caller                                                                                      |
+| Holder crashed before `unlock`                        | The znode persists with the old `lockAtMostUntil` value. The next acquirer reads it, sees it as expired (after `lockAtMostUntil`), and CASes in. No session-liveness coupling.    |
+| `unlock` on a manually-deleted znode                  | `setData` throws `NoNodeException` → propagate (configuration error — the znode should not be manually deleted)                                                                   |
+| `extend()` called                                     | Throws `LockException('Extend not supported by this provider')`                                                                                                                   |
+| Invalid `basePath` (e.g. contains illegal characters) | ZooKeeper throws `BAD_ARGUMENTS` or `INVALID_PATH` → propagate                                                                                                                    |
+| Base path does not exist                              | `create` with `creatingParentsIfNeeded: true` creates the base path automatically. `getData` for the lock znode returns `NoNodeException` (the lock znode itself does not exist). |
+| `basePath` with trailing slash                        | Option resolver strips trailing `/` to avoid `//lockName` paths.                                                                                                                  |
 
 ## Dependencies
 
@@ -199,7 +199,7 @@ From `src/index.ts`:
 
 - No client lifecycle: the user creates, connects, and closes the `ZooKeeper` client. The provider does not parse connection strings, manage sessions, or wait for connection establishment.
 - No EPHEMERAL znodes: locks are time-based (PERSISTENT znode whose data is `lockAtMostUntil`), not session-based. EPHEMERAL would couple lock validity to the holder's session, which is the wrong semantic for ShedLock (a crashed holder's lock should remain valid until `lockAtMostUntil`, not be released immediately on session expiry).
-- No EPHEMERAL_SEQUENTIAL znodes: the classic ZooKeeper lock recipe (sequential ephemeral + watch) is a *blocking* lock — it queues waiters. TSLock is *skip-if-held*, so the simpler PERSISTENT + CAS pattern is correct.
+- No EPHEMERAL_SEQUENTIAL znodes: the classic ZooKeeper lock recipe (sequential ephemeral + watch) is a _blocking_ lock — it queues waiters. TSLock is _skip-if-held_, so the simpler PERSISTENT + CAS pattern is correct.
 - No extend: the znode data is the `lockAtMostUntil` timestamp. Extending would be a `setData` with the new `lockAtMostUntil`, but ShedLock's ZooKeeper provider does not implement it — neither does TSLock.
 - No watches: the skip-if-held semantic does not need to wait for the lock to be released. A waiter would use a watch, but TSLock does not wait.
 - No ACL / auth management: the user configures the `ZooKeeper` client with the appropriate ACL / auth. The provider creates znodes with the client's default ACL (`OPEN_ACL_UNSAFE` by default in the `zookeeper` npm package).

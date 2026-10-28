@@ -3,7 +3,6 @@
 ## Scope
 
 Independent review of issue #44 on branch `cursor/lock-health-snapshot-06be` against:
-
 - `docs/specs/29-lock-health-snapshot.md`
 - `docs/plans/29-lock-health-snapshot.md`
 - `docs/01-architecture.md` (TrackingLockProviderWrapper / health note)
@@ -85,21 +84,20 @@ No comments in new production code. Dual ESM+CJS via existing core `tsup`. Expor
 
 ## What matches
 
-| Area | Status |
-|---|---|
-| Spec API shapes (`ActiveLockRecord`, snapshot, monitor, factory) | Match |
-| Tracking acquire / unlock / extend metadata | Match |
-| Overdue formula, sort-by-name, freeze + JSON | Match |
-| Listener no-ops + `onKeepAliveFailure` | Match |
-| Factory rejects `maxKeepAliveFailures < 1` | Match |
-| README HTTP + CLI examples; keep-alive wraps tracking | Match |
-| Non-goals (no unlock API, no new package, no compose helper, no otel instruments) | Honored |
-| Issue #44 acceptance (stable shape, tracking extension, health example, tests, changeset) | Met |
+| Area                                                                                      | Status  |
+| ----------------------------------------------------------------------------------------- | ------- |
+| Spec API shapes (`ActiveLockRecord`, snapshot, monitor, factory)                          | Match   |
+| Tracking acquire / unlock / extend metadata                                               | Match   |
+| Overdue formula, sort-by-name, freeze + JSON                                              | Match   |
+| Listener no-ops + `onKeepAliveFailure`                                                    | Match   |
+| Factory rejects `maxKeepAliveFailures < 1`                                                | Match   |
+| README HTTP + CLI examples; keep-alive wraps tracking                                     | Match   |
+| Non-goals (no unlock API, no new package, no compose helper, no otel instruments)         | Honored |
+| Issue #44 acceptance (stable shape, tracking extension, health example, tests, changeset) | Met     |
 
 ## Verification status
 
 Revieweder ran (this environment):
-
 - `pnpm --filter @tslock/core typecheck` — pass
 - `pnpm --filter @tslock/core test` — pass (12 files, 87 tests)
 - `pnpm --filter @tslock/core build` — pass (existing package.json `types`-condition tsup warning unchanged)

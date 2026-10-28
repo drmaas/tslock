@@ -1,6 +1,6 @@
 # Failure modes: when double-execution is possible
 
-TSLock provides **at-most-once execution under its model**. That model is time-based and assumes **synchronized wall clocks**. This guide documents when the guarantee fails — and what TSLock does *not* claim.
+TSLock provides **at-most-once execution under its model**. That model is time-based and assumes **synchronized wall clocks**. This guide documents when the guarantee fails — and what TSLock does _not_ claim.
 
 It is intentional that this document does not invent stronger promises than ShedLock's design.
 
@@ -12,12 +12,12 @@ A lock is a record whose `lockUntil` is roughly `now + lockAtMostFor` at acquisi
 
 ## Guarantees (honest)
 
-| Claim | Meaning |
-|---|---|
-| At-most-once *while the storage lease is live* | Concurrent `lock()` against an unexpired backend record should skip. Holding a local `SimpleLock` object is not proof of exclusivity after expiry or eviction. |
-| Crash safety via expiry | If a holder dies without unlocking, the lock becomes acquirable after `lockAtMostFor` (backend permitting). |
-| Not exactly-once | Skipped runs are not retried. Overlapping runs are possible under the failures below. |
-| Not a distributed transaction | Holding a lock does not fence storage writes by itself. |
+| Claim                                          | Meaning                                                                                                                                                        |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| At-most-once _while the storage lease is live_ | Concurrent `lock()` against an unexpired backend record should skip. Holding a local `SimpleLock` object is not proof of exclusivity after expiry or eviction. |
+| Crash safety via expiry                        | If a holder dies without unlocking, the lock becomes acquirable after `lockAtMostFor` (backend permitting).                                                    |
+| Not exactly-once                               | Skipped runs are not retried. Overlapping runs are possible under the failures below.                                                                          |
+| Not a distributed transaction                  | Holding a lock does not fence storage writes by itself.                                                                                                        |
 
 ## Failure modes
 
@@ -31,7 +31,7 @@ B's clock = T_a + skew
 If skew > remaining TTL → B acquires → double execution
 ```
 
-`lockAtLeastFor` only reduces *immediate* re-acquisition after a short unlock; it does not protect a long-running holder against large skew.
+`lockAtLeastFor` only reduces _immediate_ re-acquisition after a short unlock; it does not protect a long-running holder against large skew.
 
 **Mitigation:** run NTP (or chrony) on every node; keep skew far smaller than your shortest `lockAtMostFor`; prefer durable backends over caches for critical jobs.
 
@@ -39,7 +39,7 @@ If skew > remaining TTL → B acquires → double execution
 
 If a task runs longer than `lockAtMostFor` without extending (or keep-alive renewing), the lock expires while the task continues. Another instance can start the same job.
 
-This is the same *mechanical* outcome as severe skew: wall time crossed `lockUntil` while the first holder still believes it owns the critical section.
+This is the same _mechanical_ outcome as severe skew: wall time crossed `lockUntil` while the first holder still believes it owns the critical section.
 
 **Mitigation:** set `lockAtMostFor` generously; for long jobs use `KeepAliveLockProvider` or `LockExtender.extendActiveLock`; make task bodies idempotent.
 
@@ -47,7 +47,7 @@ This is the same *mechanical* outcome as severe skew: wall time crossed `lockUnt
 
 Memcached is an LRU cache, not a durable lock store. Under memory pressure it may drop the lock key **before** TTL expiry. Another instance can `add` the key while the original holder is still running.
 
-`lockAtMostFor` is then an *upper* bound on intended hold time, not a floor. See [`@tslock/memcached`](../packages/memcached/README.md) and the provider spec.
+`lockAtMostFor` is then an _upper_ bound on intended hold time, not a floor. See [`@tslock/memcached`](../packages/memcached/README.md) and the provider spec.
 
 **Mitigation:** dedicated memcached sized so lock keys are never evicted; or use Redis, SQL, etcd, ZooKeeper, etc. for critical locks.
 
@@ -71,7 +71,7 @@ Do not treat "I still have a `SimpleLock` object" as proof that the storage leas
 
 [`@tslock/cloudflare-kv`](../packages/cloudflare-kv/README.md) is an advisory provider. Workers KV has no compare-and-swap. Reads, including “this key is missing”, are cached at the edge for about 60 seconds, and same-location visibility of a write is not guaranteed.
 
-Two isolates can both `GET` a miss, both `PUT` their own ownership token, and both observe that token on a follow-up read. Both `lock()` calls return a `SimpleLock`. A confirm read only proves that *this* caller saw its token.
+Two isolates can both `GET` a miss, both `PUT` their own ownership token, and both observe that token on a follow-up read. Both `lock()` calls return a `SimpleLock`. A confirm read only proves that _this_ caller saw its token.
 
 **Mitigation:** use [`@tslock/cloudflare-do`](../packages/cloudflare-do/README.md) when overlapping execution is unacceptable. If you stay on KV, make the task idempotent and pass `acknowledgeAdvisoryLock: true` knowingly.
 
@@ -79,7 +79,7 @@ Two isolates can both `GET` a miss, both `PUT` their own ownership token, and bo
 
 `unlock()` deletes the key when `lockAtLeastFor` has already elapsed, or writes a shorter `lockUntil` otherwise. Another location can keep serving the previous value until its cache expires, so a second acquire skips while the key is already gone at the writer (`phantom hold`).
 
-The inverse is worse: a holder whose cache still shows *its own* token will `DELETE` or `PUT` unconditionally. That write can remove a newer holder who acquired after a stale read. KV deletes are not conditional.
+The inverse is worse: a holder whose cache still shows _its own_ token will `DELETE` or `PUT` unconditionally. That write can remove a newer holder who acquired after a stale read. KV deletes are not conditional.
 
 ### 8. Workers KV 60 second expiration floor
 
@@ -95,22 +95,22 @@ KV returns HTTP 429 when the same key is written more than once per second. Acqu
 
 [`packages/in-memory/__tests__/failure-modes.test.ts`](../packages/in-memory/__tests__/failure-modes.test.ts) uses `@tslock/in-memory` plus `ClockProvider` / helpers from `@tslock/test-support` to **simulate** these outcomes in one process:
 
-| Scenario | Simulation | Asserted behavior |
-|---|---|---|
-| Skew / overrun | Advance the shared clock past `lockUntil` while the first lock object is not unlocked | Second `lock()` succeeds |
-| Early eviction | Delete the in-memory map entry mid-hold (Memcached-shaped loss) | Second `lock()` succeeds |
-| Crashed / failed keep-alive | Stop renewals and expire, or delete the map entry then tick renewals | Second `lock()` succeeds after expiry; `onKeepAliveFailure` fires when extend finds no lease or the deadline has passed; `unlock()` after that loss leaves the new deadline unchanged |
-| `lockAtLeastFor` small drift | Unlock with a minimum hold, advance less than `lockAtLeastFor` | Second `lock()` still skipped |
+| Scenario                     | Simulation                                                                            | Asserted behavior                                                                                                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skew / overrun               | Advance the shared clock past `lockUntil` while the first lock object is not unlocked | Second `lock()` succeeds                                                                                                                                                              |
+| Early eviction               | Delete the in-memory map entry mid-hold (Memcached-shaped loss)                       | Second `lock()` succeeds                                                                                                                                                              |
+| Crashed / failed keep-alive  | Stop renewals and expire, or delete the map entry then tick renewals                  | Second `lock()` succeeds after expiry; `onKeepAliveFailure` fires when extend finds no lease or the deadline has passed; `unlock()` after that loss leaves the new deadline unchanged |
+| `lockAtLeastFor` small drift | Unlock with a minimum hold, advance less than `lockAtLeastFor`                        | Second `lock()` still skipped                                                                                                                                                         |
 
 [`packages/cloudflare-kv/__tests__/failure-modes.test.ts`](../packages/cloudflare-kv/__tests__/failure-modes.test.ts) uses a `MutableClock` plus in-memory KV fakes (including a per-location cache) for the Workers KV rows:
 
-| Scenario | Simulation | Asserted behavior |
-|---|---|---|
-| Stale reads / two holders | Two caches that still remember a miss | Both `lock()` calls return a lock |
-| Delayed delete | Reader cache keeps the pre-delete value | Next `lock()` skips until that cache entry is dropped |
-| 60 second TTL floor | 5 second lease, clock advanced past `lockUntil` | `expirationTtl >= 60`, key still present, second `lock()` succeeds |
-| 1 write/second/key | Fake throws 429 on the second write | `unlock()` rejects; the key remains |
-| Stale unlock | Writer cache still shows its own token after a newer acquire | `DELETE` clears the newer holder; a third acquire succeeds |
+| Scenario                  | Simulation                                                   | Asserted behavior                                                  |
+| ------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Stale reads / two holders | Two caches that still remember a miss                        | Both `lock()` calls return a lock                                  |
+| Delayed delete            | Reader cache keeps the pre-delete value                      | Next `lock()` skips until that cache entry is dropped              |
+| 60 second TTL floor       | 5 second lease, clock advanced past `lockUntil`              | `expirationTtl >= 60`, key still present, second `lock()` succeeds |
+| 1 write/second/key        | Fake throws 429 on the second write                          | `unlock()` rejects; the key remains                                |
+| Stale unlock              | Writer cache still shows its own token after a newer acquire | `DELETE` clears the newer holder; a third acquire succeeds         |
 
 Advancing one shared `ClockProvider` is **isomorphic** to another node being ahead of the writer's clock by more than the remaining TTL. It does not claim to reproduce multi-host NTP chaos, real Memcached LRU, or Cloudflare’s edge cache — only the lock-protocol consequences documented above. The KV tests model a cached miss and a cached hit; they do not open a network connection to Cloudflare.
 

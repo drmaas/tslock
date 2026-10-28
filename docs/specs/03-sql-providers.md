@@ -3,7 +3,6 @@
 ## Overview
 
 This document specifies three SQL provider packages that implement `StorageBasedLockProvider` against SQL databases. All three share the `@tslock/sql-support` infrastructure (`DatabaseProduct`, `SqlConfiguration`, `SqlStatementsSource`) for SQL statement generation and parameter computation. They differ only in how they execute SQL and translate parameters:
-
 - **`@tslock/sql`** — thin `SqlConnection` adapters for raw Node.js drivers (`pg`, `mysql2`, `mssql`). The user installs only the driver they need (peer deps). The `SqlStorageAccessor` executes raw SQL strings via the adapter.
 - **`@tslock/kysely`** — uses Kysely's type-safe query execution (`db.executeQuery()` with compiled raw SQL). Peer dep: `kysely`.
 - **`@tslock/drizzle`** — uses Drizzle ORM's `sql` template tag and `db.execute()` / `db.run()`. Peer dep: `drizzle-orm`.
@@ -12,11 +11,11 @@ All three use `StorageBasedLockProvider` from `@tslock/core` and implement `Stor
 
 ## Package Summary
 
-| Package | Peer Deps | Supports | Mechanism |
-|---|---|---|---|
-| `@tslock/sql` | `pg`, `mysql2`, `mssql` (install one) | PostgreSQL, CockroachDB, MySQL, MariaDB, SQL Server | Raw driver adapters |
-| `@tslock/kysely` | `kysely` | PostgreSQL, MySQL, SQLite (Kysely dialects) | `db.executeQuery()` |
-| `@tslock/drizzle` | `drizzle-orm` | PostgreSQL, MySQL, SQLite (Drizzle dialects) | `db.execute()` / `db.run()` |
+| Package           | Peer Deps                             | Supports                                            | Mechanism                   |
+| ----------------- | ------------------------------------- | --------------------------------------------------- | --------------------------- |
+| `@tslock/sql`     | `pg`, `mysql2`, `mssql` (install one) | PostgreSQL, CockroachDB, MySQL, MariaDB, SQL Server | Raw driver adapters         |
+| `@tslock/kysely`  | `kysely`                              | PostgreSQL, MySQL, SQLite (Kysely dialects)         | `db.executeQuery()`         |
+| `@tslock/drizzle` | `drizzle-orm`                         | PostgreSQL, MySQL, SQLite (Drizzle dialects)        | `db.execute()` / `db.run()` |
 
 All three also depend on `@tslock/core` and `@tslock/sql-support` (peer).
 
@@ -26,13 +25,13 @@ All three also depend on `@tslock/core` and `@tslock/sql-support` (peer).
 
 ### 1.1 Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/sql` |
-| **Dependencies** | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
-| **Peer deps** | `pg` or `mysql2` or `mssql` (user installs one) |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
+| Field             | Value                                               |
+| ----------------- | --------------------------------------------------- |
+| **Name**          | `@tslock/sql`                                       |
+| **Dependencies**  | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
+| **Peer deps**     | `pg` or `mysql2` or `mssql` (user installs one)     |
+| **Node.js**       | >= 22                                               |
+| **Module format** | Dual ESM + CJS                                      |
 
 ### 1.2 SqlConnection Interface
 
@@ -65,8 +64,8 @@ Three adapter classes ship in `@tslock/sql`. Each wraps a driver pool/connection
 class PgConnection implements SqlConnection {
   constructor(pool: import('pg').Pool);
   query(sql: string, params: Record<string, unknown>): Promise<QueryResult>;
-  isDuplicateKeyError(error: unknown): boolean;  // error.code === '23505'
-  getDatabaseProduct(): DatabaseProduct;          // POSTGRES
+  isDuplicateKeyError(error: unknown): boolean; // error.code === '23505'
+  getDatabaseProduct(): DatabaseProduct; // POSTGRES
 }
 ```
 
@@ -80,8 +79,8 @@ class PgConnection implements SqlConnection {
 class Mysql2Connection implements SqlConnection {
   constructor(pool: import('mysql2/promise').Pool);
   query(sql: string, params: Record<string, unknown>): Promise<QueryResult>;
-  isDuplicateKeyError(error: unknown): boolean;  // error.errno === 1062
-  getDatabaseProduct(): DatabaseProduct;          // MYSQL (or MARIA_DB if detected)
+  isDuplicateKeyError(error: unknown): boolean; // error.errno === 1062
+  getDatabaseProduct(): DatabaseProduct; // MYSQL (or MARIA_DB if detected)
 }
 ```
 
@@ -97,8 +96,8 @@ class Mysql2Connection implements SqlConnection {
 class MssqlConnection implements SqlConnection {
   constructor(pool: import('mssql').ConnectionPool);
   query(sql: string, params: Record<string, unknown>): Promise<QueryResult>;
-  isDuplicateKeyError(error: unknown): boolean;  // error.number === 2627 or 2601
-  getDatabaseProduct(): DatabaseProduct;          // SQL_SERVER
+  isDuplicateKeyError(error: unknown): boolean; // error.number === 2627 or 2601
+  getDatabaseProduct(): DatabaseProduct; // SQL_SERVER
 }
 ```
 
@@ -110,10 +109,7 @@ class MssqlConnection implements SqlConnection {
 
 ```typescript
 class SqlStorageAccessor extends AbstractStorageAccessor {
-  constructor(
-    connection: SqlConnection,
-    statementsSource: SqlStatementsSource,
-  );
+  constructor(connection: SqlConnection, statementsSource: SqlStatementsSource);
 
   insertRecord(config: LockConfiguration): Promise<boolean>;
   updateRecord(config: LockConfiguration): Promise<boolean>;
@@ -167,10 +163,7 @@ async extend(config): Promise<boolean> {
 
 ```typescript
 class SqlLockProvider extends StorageBasedLockProvider {
-  constructor(
-    connection: SqlConnection,
-    config: SqlConfiguration,
-  );
+  constructor(connection: SqlConnection, config: SqlConfiguration);
 }
 ```
 
@@ -198,14 +191,13 @@ import { createLockConfig, LockingTaskExecutor } from '@tslock/core';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const connection = new PgConnection(pool);
-const provider = new SqlLockProvider(
-  connection,
-  new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES }),
-);
+const provider = new SqlLockProvider(connection, new SqlConfiguration({ databaseProduct: DatabaseProduct.POSTGRES }));
 
 const executor = new DefaultLockingTaskExecutor(provider);
 await executor.executeWithLock(
-  async () => { /* scheduled task */ },
+  async () => {
+    /* scheduled task */
+  },
   createLockConfig('my-task', 30 * 60 * 1000, 5 * 1000),
 );
 ```
@@ -246,23 +238,19 @@ packages/sql/
 
 ### 2.1 Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/kysely` |
-| **Dependencies** | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
-| **Peer deps** | `kysely` |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
+| Field             | Value                                               |
+| ----------------- | --------------------------------------------------- |
+| **Name**          | `@tslock/kysely`                                    |
+| **Dependencies**  | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
+| **Peer deps**     | `kysely`                                            |
+| **Node.js**       | >= 22                                               |
+| **Module format** | Dual ESM + CJS                                      |
 
 ### 2.2 KyselyStorageAccessor
 
 ```typescript
 class KyselyStorageAccessor extends AbstractStorageAccessor {
-  constructor(
-    db: import('kysely').Kysely<unknown>,
-    statementsSource: SqlStatementsSource,
-    dialect: KyselyDialect,
-  );
+  constructor(db: import('kysely').Kysely<unknown>, statementsSource: SqlStatementsSource, dialect: KyselyDialect);
 
   insertRecord(config: LockConfiguration): Promise<boolean>;
   updateRecord(config: LockConfiguration): Promise<boolean>;
@@ -321,11 +309,7 @@ async insertRecord(config): Promise<boolean> {
 
 ```typescript
 class KyselyLockProvider extends StorageBasedLockProvider {
-  constructor(
-    db: import('kysely').Kysely<unknown>,
-    config: SqlConfiguration,
-    dialect: KyselyDialect,
-  );
+  constructor(db: import('kysely').Kysely<unknown>, config: SqlConfiguration, dialect: KyselyDialect);
 }
 ```
 
@@ -390,23 +374,19 @@ packages/kysely/
 
 ### 3.1 Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/drizzle` |
-| **Dependencies** | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
-| **Peer deps** | `drizzle-orm` |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
+| Field             | Value                                               |
+| ----------------- | --------------------------------------------------- |
+| **Name**          | `@tslock/drizzle`                                   |
+| **Dependencies**  | `@tslock/core` (peer), `@tslock/sql-support` (peer) |
+| **Peer deps**     | `drizzle-orm`                                       |
+| **Node.js**       | >= 22                                               |
+| **Module format** | Dual ESM + CJS                                      |
 
 ### 3.2 DrizzleStorageAccessor
 
 ```typescript
 class DrizzleStorageAccessor extends AbstractStorageAccessor {
-  constructor(
-    db: DrizzleDatabase,
-    statementsSource: SqlStatementsSource,
-    dialect: DrizzleDialect,
-  );
+  constructor(db: DrizzleDatabase, statementsSource: SqlStatementsSource, dialect: DrizzleDialect);
 
   insertRecord(config: LockConfiguration): Promise<boolean>;
   updateRecord(config: LockConfiguration): Promise<boolean>;
@@ -417,7 +397,8 @@ class DrizzleStorageAccessor extends AbstractStorageAccessor {
 
 **Types:**
 ```typescript
-type DrizzleDatabase = import('drizzle-orm/node-postgres').NodePgDatabase
+type DrizzleDatabase =
+  | import('drizzle-orm/node-postgres').NodePgDatabase
   | import('drizzle-orm/mysql2').DrizzleMysqlDatabase
   | import('drizzle-orm/better-sqlite3').BetterSQLite3Database
   | import('drizzle-orm/libsql').LibSQLDatabase;
@@ -430,10 +411,7 @@ type DrizzleDialect = 'postgresql' | 'mysql' | 'sqlite';
 ```typescript
 import { sql } from 'drizzle-orm';
 
-function buildDrizzleQuery(
-  rawSql: string,
-  params: Record<string, unknown>,
-): import('drizzle-orm').SQL {
+function buildDrizzleQuery(rawSql: string, params: Record<string, unknown>): import('drizzle-orm').SQL {
   const segments = rawSql.split(/:(\w+)/);
   const chunks: import('drizzle-orm').SQL[] = [];
   for (let i = 0; i < segments.length; i += 2) {
@@ -482,11 +460,7 @@ async insertRecord(config): Promise<boolean> {
 
 ```typescript
 class DrizzleLockProvider extends StorageBasedLockProvider {
-  constructor(
-    db: DrizzleDatabase,
-    config: SqlConfiguration,
-    dialect: DrizzleDialect,
-  );
+  constructor(db: DrizzleDatabase, config: SqlConfiguration, dialect: DrizzleDialect);
 }
 ```
 
@@ -552,48 +526,52 @@ All three providers execute the same SQL statement strings from `SqlStatementsSo
 3. How affected rows are read from the result.
 4. How duplicate key errors are detected.
 
-| Provider | Param style | Execution API | Affected rows | Duplicate key detection |
-|---|---|---|---|---|
-| `@tslock/sql` (pg) | `$1, $2, ...` | `pool.query(sql, values)` | `result.rowCount` | `error.code === '23505'` |
-| `@tslock/sql` (mysql2) | `?` | `pool.query(sql, values)` | `result.affectedRows` | `error.errno === 1062` |
-| `@tslock/sql` (mssql) | `@name` | `request.input(name, value).query(sql)` | `result.rowsAffected[0]` | `error.number === 2627 \|\| 2601` |
-| `@tslock/kysely` (pg) | `$1, $2, ...` | `db.executeQuery(sql.raw(...).compile(db))` | `result.numAffectedRows` (bigint) | `error.code === '23505'` |
-| `@tslock/kysely` (mysql) | `?` | same | same | `error.errno === 1062` |
-| `@tslock/kysely` (sqlite) | `?` | same | same | message contains `UNIQUE constraint failed` |
-| `@tslock/drizzle` (pg) | `sql.param()` | `db.execute(query)` | `result.rowsAffected` | `error.code === '23505'` |
-| `@tslock/drizzle` (mysql) | `sql.param()` | `db.execute(query)` | `result[0].affectedRows` | `error.errno === 1062` |
-| `@tslock/drizzle` (sqlite) | `sql.param()` | `db.run(query)` | `result.changes` | message contains `UNIQUE constraint failed` |
+| Provider                   | Param style   | Execution API                               | Affected rows                     | Duplicate key detection                     |
+| -------------------------- | ------------- | ------------------------------------------- | --------------------------------- | ------------------------------------------- |
+| `@tslock/sql` (pg)         | `$1, $2, ...` | `pool.query(sql, values)`                   | `result.rowCount`                 | `error.code === '23505'`                    |
+| `@tslock/sql` (mysql2)     | `?`           | `pool.query(sql, values)`                   | `result.affectedRows`             | `error.errno === 1062`                      |
+| `@tslock/sql` (mssql)      | `@name`       | `request.input(name, value).query(sql)`     | `result.rowsAffected[0]`          | `error.number === 2627 \|\| 2601`           |
+| `@tslock/kysely` (pg)      | `$1, $2, ...` | `db.executeQuery(sql.raw(...).compile(db))` | `result.numAffectedRows` (bigint) | `error.code === '23505'`                    |
+| `@tslock/kysely` (mysql)   | `?`           | same                                        | same                              | `error.errno === 1062`                      |
+| `@tslock/kysely` (sqlite)  | `?`           | same                                        | same                              | message contains `UNIQUE constraint failed` |
+| `@tslock/drizzle` (pg)     | `sql.param()` | `db.execute(query)`                         | `result.rowsAffected`             | `error.code === '23505'`                    |
+| `@tslock/drizzle` (mysql)  | `sql.param()` | `db.execute(query)`                         | `result[0].affectedRows`          | `error.errno === 1062`                      |
+| `@tslock/drizzle` (sqlite) | `sql.param()` | `db.run(query)`                             | `result.changes`                  | message contains `UNIQUE constraint failed` |
 
 ## Error Handling Summary
 
-| Situation | Behavior |
-|---|---|
-| Lock record already exists (insert) | `insertRecord` returns `false` (caught duplicate key or 0 affected rows) |
-| Update matches 0 rows (lock held by other) | `updateRecord` returns `false` |
-| Extend matches 0 rows (lock expired or held by other) | `extend` returns `false` |
-| Unlock matches 0 rows | `unlock` returns `void` (no error — best-effort) |
-| Connection error during any operation | Propagate the error (throw) |
-| Non-duplicate-key constraint violation | Propagate the error (throw) |
-| `affectedRows` not available in result | Treat as `0` (return `false`) — log a warning |
-| Driver not installed (peer dep missing) | `import` throws at adapter construction time — user sees clear error |
+| Situation                                             | Behavior                                                                 |
+| ----------------------------------------------------- | ------------------------------------------------------------------------ |
+| Lock record already exists (insert)                   | `insertRecord` returns `false` (caught duplicate key or 0 affected rows) |
+| Update matches 0 rows (lock held by other)            | `updateRecord` returns `false`                                           |
+| Extend matches 0 rows (lock expired or held by other) | `extend` returns `false`                                                 |
+| Unlock matches 0 rows                                 | `unlock` returns `void` (no error — best-effort)                         |
+| Connection error during any operation                 | Propagate the error (throw)                                              |
+| Non-duplicate-key constraint violation                | Propagate the error (throw)                                              |
+| `affectedRows` not available in result                | Treat as `0` (return `false`) — log a warning                            |
+| Driver not installed (peer dep missing)               | `import` throws at adapter construction time — user sees clear error     |
 
 ## Dependencies
 
 ### @tslock/sql
+
 - **Peer**: `@tslock/core`, `@tslock/sql-support`, `pg` (optional), `mysql2` (optional), `mssql` (optional)
 - **Dev**: `typescript`, `tsup`, `vitest`, `@types/node`, `pg`, `mysql2`, `mssql`, `testcontainers`
 
 ### @tslock/kysely
+
 - **Peer**: `@tslock/core`, `@tslock/sql-support`, `kysely`
 - **Dev**: `typescript`, `tsup`, `vitest`, `@types/node`, `kysely`, `pg`, `mysql2`, `better-sqlite3`, `testcontainers`
 
 ### @tslock/drizzle
+
 - **Peer**: `@tslock/core`, `@tslock/sql-support`, `drizzle-orm`
 - **Dev**: `typescript`, `tsup`, `vitest`, `@types/node`, `drizzle-orm`, `pg`, `mysql2`, `better-sqlite3`, `testcontainers`
 
 ## Exports
 
 ### @tslock/sql exports
+
 - `SqlConnection`, `QueryResult` (interfaces)
 - `PgConnection`, `Mysql2Connection`, `MssqlConnection` (classes)
 - `SqlStorageAccessor` (class)
@@ -601,12 +579,14 @@ All three providers execute the same SQL statement strings from `SqlStatementsSo
 - `translateToPositional`, `translateToNamed` (utility functions, exported for advanced use)
 
 ### @tslock/kysely exports
+
 - `KyselyStorageAccessor` (class)
 - `KyselyLockProvider` (class)
 - `KyselyDialect` (type)
 - `KyselyDialectInfo` (interface)
 
 ### @tslock/drizzle exports
+
 - `DrizzleStorageAccessor` (class)
 - `DrizzleLockProvider` (class)
 - `DrizzleDialect` (type)

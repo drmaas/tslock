@@ -70,7 +70,6 @@ export default defineConfig({
 ### Step 2: Define DynamoDBLockProviderOptions + validation
 
 **File:** `src/dynamodb-lock-provider-options.ts`
-
 - Interface with `client?`, `tableName`, `partitionKey?`, `sortKey?`.
 - Validate in a `validateOptions(opts)` function called from the provider constructor:
   - `tableName` non-empty string (else throw `LockException`).
@@ -81,7 +80,6 @@ export default defineConfig({
 ### Step 3: Implement DynamoDBAccessor
 
 **File:** `src/dynamodb-accessor.ts`
-
 - Imports from `@aws-sdk/client-dynamodb`: `DynamoDBClient`, `UpdateItemCommand`, `ConditionalCheckFailedException`.
 - Constructor: `(client, tableName, partitionKey, sortKey?)`.
 - `private buildKey(name)`: returns `{ [partitionKey]: { S: name } }` or with sortKey added.
@@ -103,7 +101,6 @@ export default defineConfig({
 ### Step 4: Implement DynamoDBLock
 
 **File:** `src/dynamodb-lock.ts`
-
 - `class DynamoDBLock extends AbstractSimpleLock`:
   - `constructor(private readonly accessor: DynamoDBAccessor, config: LockConfiguration)` — pass `config` to `super(config)`.
   - `protected async doUnlock()` → `await this.accessor.unlock(this.config)`
@@ -112,7 +109,6 @@ export default defineConfig({
 ### Step 5: Implement DynamoDBLockProvider
 
 **File:** `src/dynamodb-lock-provider.ts`
-
 - `import { DynamoDBClient } from '@aws-sdk/client-dynamodb'`
 - `class DynamoDBLockProvider implements ExtensibleLockProvider`:
   - `private readonly accessor: DynamoDBAccessor`
@@ -137,7 +133,6 @@ Do NOT export `DynamoDBAccessor` or `DynamoDBLock`.
 **File:** `__tests__/dynamodb-lock-provider.test.ts`
 
 Mock the `DynamoDBClient`: `const send = vi.fn(); const client = { send } as unknown as DynamoDBClient;`. Use `new DynamoDBLockProvider({ client, tableName: 'shedlock-test' })`.
-
 - `lock()`:
   - `send` resolves → `DynamoDBLock` returned. Assert `UpdateItemCommand` constructor args: `TableName`, `Key`, `UpdateExpression`, `ConditionExpression`, `ExpressionAttributeValues` with `{ S: ... }` literals.
   - `send` rejects with `new ConditionalCheckFailedException(...)` → `undefined`.
@@ -157,8 +152,8 @@ Mock the `DynamoDBClient`: `const send = vi.fn(); const client = { send } as unk
 ### Step 8: Write integration tests (LocalStack via testcontainers)
 
 **File:** `__tests__/integration/dynamodb-lock-provider.integration.test.ts`
-
 - Start LocalStack:
+
   ```typescript
   import { LocalstackContainer } from '@testcontainers/localstack';
   const container = await new LocalstackContainer('localstack/localstack:3.0.0').start();
@@ -196,17 +191,17 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| LocalStack DynamoDB behavior differs from real DynamoDB on `ConditionExpression` edge cases | LocalStack's DynamoDB implementation is mature for the operations we use (`UpdateItem` + conditions). Add a CI job (optional) that runs integration tests against real DynamoDB in a test account. |
-| `ConditionalCheckFailedException` import path changes across SDK v3 versions | Import from `@aws-sdk/client-dynamodb` (top-level, stable). Pin `^3.0.0` in `peerDependencies`. Add a unit test that constructs the error class to catch import regressions. |
-| ISO string comparison correctness in DynamoDB | ISO-8601 with 3-digit millis (`Utils.toIsoString`) sorts lexicographically == chronologically. Add a unit test asserting string comparison matches numeric comparison for a range of timestamps across second/minute/hour boundaries. |
-| `marshall` vs manual `{ S: ... }` literals | Use manual `{ S: ... }` literals — keeps the dep surface to `@aws-sdk/client-dynamodb` only (no `@aws-sdk/util-dynamodb` peer dep). |
-| Unlock on a non-existent item creates a stray record | Add `ConditionExpression: 'attribute_exists(${partitionKey})'` to unlock; swallow `ConditionalCheckFailedException`. Unit test verifies no item is created when unlock is called on a missing key. |
-| Sort-key support: easy to forget in `Key` construction for one operation | Single `buildKey(name)` helper used by all three operations (lock/extend/unlock). Integration test suite #2 exercises the composite-key path. |
-| Eventual consistency of DynamoDB reads | The provider does not read — it only writes with conditions. `UpdateItem` is strongly consistent for the condition check. No concern. |
-| Default `DynamoDBClient()` construction without credentials fails in non-AWS environments | Tests always pass an explicit `client`. Document that production users should pass a configured `client`. If `client` is omitted, the SDK throws a clear credential error. |
-| `attribute_not_exists(lockUntil)` semantics: missing attribute returns false for `<=`, true for `attribute_not_exists` | Verified against DynamoDB docs. The `OR` short-circuit handles this. Unit test: first lock on a non-existent item succeeds. |
+| Risk                                                                                                                   | Mitigation                                                                                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LocalStack DynamoDB behavior differs from real DynamoDB on `ConditionExpression` edge cases                            | LocalStack's DynamoDB implementation is mature for the operations we use (`UpdateItem` + conditions). Add a CI job (optional) that runs integration tests against real DynamoDB in a test account.                                    |
+| `ConditionalCheckFailedException` import path changes across SDK v3 versions                                           | Import from `@aws-sdk/client-dynamodb` (top-level, stable). Pin `^3.0.0` in `peerDependencies`. Add a unit test that constructs the error class to catch import regressions.                                                          |
+| ISO string comparison correctness in DynamoDB                                                                          | ISO-8601 with 3-digit millis (`Utils.toIsoString`) sorts lexicographically == chronologically. Add a unit test asserting string comparison matches numeric comparison for a range of timestamps across second/minute/hour boundaries. |
+| `marshall` vs manual `{ S: ... }` literals                                                                             | Use manual `{ S: ... }` literals — keeps the dep surface to `@aws-sdk/client-dynamodb` only (no `@aws-sdk/util-dynamodb` peer dep).                                                                                                   |
+| Unlock on a non-existent item creates a stray record                                                                   | Add `ConditionExpression: 'attribute_exists(${partitionKey})'` to unlock; swallow `ConditionalCheckFailedException`. Unit test verifies no item is created when unlock is called on a missing key.                                    |
+| Sort-key support: easy to forget in `Key` construction for one operation                                               | Single `buildKey(name)` helper used by all three operations (lock/extend/unlock). Integration test suite #2 exercises the composite-key path.                                                                                         |
+| Eventual consistency of DynamoDB reads                                                                                 | The provider does not read — it only writes with conditions. `UpdateItem` is strongly consistent for the condition check. No concern.                                                                                                 |
+| Default `DynamoDBClient()` construction without credentials fails in non-AWS environments                              | Tests always pass an explicit `client`. Document that production users should pass a configured `client`. If `client` is omitted, the SDK throws a clear credential error.                                                            |
+| `attribute_not_exists(lockUntil)` semantics: missing attribute returns false for `<=`, true for `attribute_not_exists` | Verified against DynamoDB docs. The `OR` short-circuit handles this. Unit test: first lock on a non-existent item succeeds.                                                                                                           |
 
 ## Estimation
 

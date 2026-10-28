@@ -55,7 +55,6 @@ packages/nats/
 ### Step 2: Implement long-utils
 
 **File:** `src/long-utils.ts`
-
 - `function longToBytes(epochMillis: number): Buffer`:
   - `const buf = Buffer.alloc(8); buf.writeBigInt64BE(BigInt(epochMillis), 0); return buf;`
 - `function bytesToLong(buf: Uint8Array): number`:
@@ -65,14 +64,12 @@ packages/nats/
 ### Step 3: Define NatsLockProviderOptions
 
 **File:** `src/nats-configuration.ts`
-
 - Interface: `servers: string` (required), `bucketName?: string` (default `'shedlock-locks'`), `storage?: StorageType` (default `StorageType.Memory`), `connectionOptions?: ConnectionOptions`.
 - Import `StorageType`, `ConnectionOptions` from `nats` as types.
 
 ### Step 4: Implement NatsLock
 
 **File:** `src/nats-lock.ts`
-
 - `import { AbstractSimpleLock, ClockProvider, LockConfiguration, SimpleLock, lockAtLeastUntil, lockAtMostUntil } from '@tslock/core'`
 - `import type { KV } from 'nats'`
 - `import { bytesToLong, longToBytes } from './long-utils.js'`
@@ -94,7 +91,6 @@ packages/nats/
 ### Step 5: Implement NatsLockProvider + factory + conflict helper
 
 **File:** `src/nats-lock-provider.ts`
-
 - `import { connect, StorageType } from 'nats'` (factory only)
 - `import type { KV } from 'nats'`
 - `import { ClockProvider, LockConfiguration, LockProvider, SimpleLock, lockAtMostUntil } from '@tslock/core'`
@@ -143,7 +139,6 @@ Do NOT export `NatsLock`, `longToBytes`, `bytesToLong`, or `isNatsConflictError`
 Mock the `KV` object: `const kv = { get: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() }`. Use `new NatsLockProvider(kv)`.
 
 **File:** `__tests__/long-utils.test.ts`
-
 - `longToBytes(0)` → 8 zero bytes.
 - `longToBytes(1544185837810)` → known 8-byte big-endian buffer.
 - `bytesToLong(longToBytes(x)) === x` round-trip for several values (0, 1, 1e12, 1.7e12).
@@ -171,8 +166,8 @@ Mock the `KV` object: `const kv = { get: vi.fn(), create: vi.fn(), update: vi.fn
 ### Step 8: Write integration tests (testcontainers NATS)
 
 **File:** `__tests__/integration/nats-lock-provider.integration.test.ts`
-
 - Use `testcontainers` NATS image with JetStream enabled:
+
   ```typescript
   import { GenericContainer } from 'testcontainers';
   const container = await new GenericContainer('nats:2.10')
@@ -204,17 +199,17 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| `nats` JetStream KV `create`/`update` conflict error code | Verify the exact error code (10071 for "KV update conflict" / key-exists) against the `nats` client source. `isNatsConflictError` checks both `e.code` and the message string for resilience. Unit-test both paths (conflict → `undefined`, non-conflict → rethrow). |
-| `nats` client v2 API drift | The `jetstream().views.kv(name, { storage })` API is stable in nats.js v2. Pin `peerDependencies: { nats: "^2.0.0" }`. |
-| `Number(buf.readBigInt64BE(0))` precision loss for very large values | Epoch millis are ~1.7e12, far below 2^53 (~9e15). No precision loss. Document the range assumption in the spec. |
-| `lockUntil > lockAtMostUntil` skip-unlock logic | Unit test: set `lockAtMostUntil = T`, mock `kv.get` to return a value decoding to `T + 1`, assert `delete`/`update` not called. |
-| `lockAtLeastFor` honored correctly | Unit + integration tests: lock with `lockAtLeastFor=5s`, unlock immediately, assert `kv.update` called with value decoding to `~ now + 5s`. |
-| KV bucket auto-create requires JetStream | If JetStream is not enabled on the NATS server, `js.views.kv()` throws. Document that JetStream must be enabled. Integration test container starts with `-js`. |
-| Memory storage loses locks on server restart | Documented as a property of `StorageType.Memory` (the default). Users who need durability configure `StorageType.File`. |
-| Testcontainer NATS image with JetStream | Use `nats:2.10` with `.withCommand(['-js'])`. Verify JetStream is enabled in the integration test before running the contract. |
-| `kv.get` returns `Uint8Array` vs `Buffer` | `nats` returns `Uint8Array` for KV entry values. `bytesToLong` wraps with `Buffer.from(buf)` before `readBigInt64BE`, which handles both `Uint8Array` and `Buffer` inputs. Unit test with both. |
+| Risk                                                                 | Mitigation                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nats` JetStream KV `create`/`update` conflict error code            | Verify the exact error code (10071 for "KV update conflict" / key-exists) against the `nats` client source. `isNatsConflictError` checks both `e.code` and the message string for resilience. Unit-test both paths (conflict → `undefined`, non-conflict → rethrow). |
+| `nats` client v2 API drift                                           | The `jetstream().views.kv(name, { storage })` API is stable in nats.js v2. Pin `peerDependencies: { nats: "^2.0.0" }`.                                                                                                                                               |
+| `Number(buf.readBigInt64BE(0))` precision loss for very large values | Epoch millis are ~1.7e12, far below 2^53 (~9e15). No precision loss. Document the range assumption in the spec.                                                                                                                                                      |
+| `lockUntil > lockAtMostUntil` skip-unlock logic                      | Unit test: set `lockAtMostUntil = T`, mock `kv.get` to return a value decoding to `T + 1`, assert `delete`/`update` not called.                                                                                                                                      |
+| `lockAtLeastFor` honored correctly                                   | Unit + integration tests: lock with `lockAtLeastFor=5s`, unlock immediately, assert `kv.update` called with value decoding to `~ now + 5s`.                                                                                                                          |
+| KV bucket auto-create requires JetStream                             | If JetStream is not enabled on the NATS server, `js.views.kv()` throws. Document that JetStream must be enabled. Integration test container starts with `-js`.                                                                                                       |
+| Memory storage loses locks on server restart                         | Documented as a property of `StorageType.Memory` (the default). Users who need durability configure `StorageType.File`.                                                                                                                                              |
+| Testcontainer NATS image with JetStream                              | Use `nats:2.10` with `.withCommand(['-js'])`. Verify JetStream is enabled in the integration test before running the contract.                                                                                                                                       |
+| `kv.get` returns `Uint8Array` vs `Buffer`                            | `nats` returns `Uint8Array` for KV entry values. `bytesToLong` wraps with `Buffer.from(buf)` before `readBigInt64BE`, which handles both `Uint8Array` and `Buffer` inputs. Unit test with both.                                                                      |
 
 ## Estimation
 

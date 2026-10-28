@@ -10,11 +10,11 @@ TSLock ensures that a scheduled task executes on **at most one** instance at a t
 
 ## Guides
 
-| Guide | Content |
-|---|---|
-| [Migrate from ShedLock](./docs/02-migration-from-shedlock.md) | One-page JVM → TypeScript migration (API map, durations, providers, Nest `@SchedulerLock`) |
-| [TSLock vs Redlock / BullMQ](./docs/03-comparison.md) | Correctness and model differences: skip-not-queue, clocks, Redis ≠ Redlock |
-| [Failure modes](./docs/failure-modes.md) | When double-execution is possible (clock skew, overrun, Memcached eviction, keep-alive, Workers KV) |
+| Guide                                                         | Content                                                                                             |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [Migrate from ShedLock](./docs/02-migration-from-shedlock.md) | One-page JVM → TypeScript migration (API map, durations, providers, Nest `@SchedulerLock`)          |
+| [TSLock vs Redlock / BullMQ](./docs/03-comparison.md)         | Correctness and model differences: skip-not-queue, clocks, Redis ≠ Redlock                          |
+| [Failure modes](./docs/failure-modes.md)                      | When double-execution is possible (clock skew, overrun, Memcached eviction, keep-alive, Workers KV) |
 
 ## Why?
 
@@ -22,12 +22,12 @@ When you run multiple instances of a Node.js/TypeScript application — in Kuber
 
 ## Key properties
 
-| Property | Description |
-|---|---|
-| **At-most-once execution** | If the lock is held, the task is skipped entirely. |
-| **Time-based locks** | Locks expire after `lockAtMostFor` — no orphaned locks if a node crashes. |
-| **Minimum hold time** | `lockAtLeastFor` prevents re-execution from clock drift on short tasks. |
-| **Non-blocking** | Lock acquisition is a check-and-skip, never a wait. |
+| Property                        | Description                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| **At-most-once execution**      | If the lock is held, the task is skipped entirely.                           |
+| **Time-based locks**            | Locks expire after `lockAtMostFor` — no orphaned locks if a node crashes.    |
+| **Minimum hold time**           | `lockAtLeastFor` prevents re-execution from clock drift on short tasks.      |
+| **Non-blocking**                | Lock acquisition is a check-and-skip, never a wait.                          |
 | **Assumes synchronized clocks** | Lock validity depends on wall-clock time; nodes must have NTP-synced clocks. |
 
 ## What TSLock is NOT
@@ -54,10 +54,7 @@ const provider = createNodeRedisLockProvider(redisClient);
 const executor = new DefaultLockingTaskExecutor(provider);
 
 // Wrap your scheduled task:
-await executor.executeWithLock(
-  () => myScheduledTask(),
-  createLockConfig('my-task', '5m', '1m'),
-);
+await executor.executeWithLock(() => myScheduledTask(), createLockConfig('my-task', '5m', '1m'));
 ```
 
 ## Lock names
@@ -68,11 +65,11 @@ Lock names must be non-empty, contain no control characters, and be at most 1024
 
 `lockAtMostFor` and `lockAtLeastFor` accept:
 
-| Format | Example | Meaning |
-|---|---|---|
-| Human string | `'5m'`, `'30s'`, `'1h'`, `'1d'` | 5 minutes, 30 seconds, 1 hour, 1 day |
-| Milliseconds (number) | `30000` | 30 seconds |
-| Duration object | `{ minutes: 5 }` | 5 minutes |
+| Format                | Example                         | Meaning                              |
+| --------------------- | ------------------------------- | ------------------------------------ |
+| Human string          | `'5m'`, `'30s'`, `'1h'`, `'1d'` | 5 minutes, 30 seconds, 1 hour, 1 day |
+| Milliseconds (number) | `30000`                         | 30 seconds                           |
+| Duration object       | `{ minutes: 5 }`                | 5 minutes                            |
 
 ## Packages
 
@@ -80,107 +77,107 @@ TSLock is a pnpm-workspaces monorepo. Install the core plus one or more provider
 
 ### Core & infra
 
-| Package | Description | README |
-|---|---|---|
-| `@tslock/core` | Lock model, executor, `LockAssert`, `LockExtender`, `KeepAliveLockProvider`. Zero runtime deps. | [README](./packages/core/README.md) |
-| `@tslock/sql-support` | Shared SQL infra (`DatabaseProduct`, `SqlConfiguration`, statements). | [README](./packages/sql-support/README.md) |
-| `@tslock/redis-core` | Shared Redis locking logic (`InternalRedisLockProvider`, Lua scripts). | [README](./packages/redis-core/README.md) |
-| `@tslock/search-core` | Shared Elasticsearch/OpenSearch lock accessor, Painless scripts, field names, and HTTP status helpers. | [README](./packages/search-core/README.md) |
-| `@tslock/test-support` | Shared integration test contracts + fuzz tests (dev-only). | [README](./packages/test-support/README.md) |
-| `@tslock/in-memory` | In-memory provider — testing/local only, **not** for production. | [README](./packages/in-memory/README.md) |
+| Package                | Description                                                                                            | README                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| `@tslock/core`         | Lock model, executor, `LockAssert`, `LockExtender`, `KeepAliveLockProvider`. Zero runtime deps.        | [README](./packages/core/README.md)         |
+| `@tslock/sql-support`  | Shared SQL infra (`DatabaseProduct`, `SqlConfiguration`, statements).                                  | [README](./packages/sql-support/README.md)  |
+| `@tslock/redis-core`   | Shared Redis locking logic (`InternalRedisLockProvider`, Lua scripts).                                 | [README](./packages/redis-core/README.md)   |
+| `@tslock/search-core`  | Shared Elasticsearch/OpenSearch lock accessor, Painless scripts, field names, and HTTP status helpers. | [README](./packages/search-core/README.md)  |
+| `@tslock/test-support` | Shared integration test contracts + fuzz tests (dev-only).                                             | [README](./packages/test-support/README.md) |
+| `@tslock/in-memory`    | In-memory provider — testing/local only, **not** for production.                                       | [README](./packages/in-memory/README.md)    |
 
 ### Observability
 
-| Package | Description | README |
-|---|---|---|
+| Package        | Description                                                                      | README                              |
+| -------------- | -------------------------------------------------------------------------------- | ----------------------------------- |
 | `@tslock/otel` | OpenTelemetry metrics for acquire, skip, unlock, extend, and keep-alive failure. | [README](./packages/otel/README.md) |
 
 ### SQL providers
 
-| Package | Driver | README |
-|---|---|---|
-| `@tslock/sql` | `pg` / `mysql2` / `mssql` | [README](./packages/sql/README.md) |
-| `@tslock/kysely` | `kysely` | [README](./packages/kysely/README.md) |
-| `@tslock/drizzle` | `drizzle-orm` | [README](./packages/drizzle/README.md) |
+| Package           | Driver                    | README                                 |
+| ----------------- | ------------------------- | -------------------------------------- |
+| `@tslock/sql`     | `pg` / `mysql2` / `mssql` | [README](./packages/sql/README.md)     |
+| `@tslock/kysely`  | `kysely`                  | [README](./packages/kysely/README.md)  |
+| `@tslock/drizzle` | `drizzle-orm`             | [README](./packages/drizzle/README.md) |
 
 ### Storage-based providers
 
-| Package | Driver | README |
-|---|---|---|
-| `@tslock/neo4j` | `neo4j-driver` | [README](./packages/neo4j/README.md) |
-| `@tslock/couchbase` | `couchbase` | [README](./packages/couchbase/README.md) |
-| `@tslock/spanner` | `@google-cloud/spanner` | [README](./packages/spanner/README.md) |
+| Package             | Driver                    | README                                   |
+| ------------------- | ------------------------- | ---------------------------------------- |
+| `@tslock/neo4j`     | `neo4j-driver`            | [README](./packages/neo4j/README.md)     |
+| `@tslock/couchbase` | `couchbase`               | [README](./packages/couchbase/README.md) |
+| `@tslock/spanner`   | `@google-cloud/spanner`   | [README](./packages/spanner/README.md)   |
 | `@tslock/firestore` | `@google-cloud/firestore` | [README](./packages/firestore/README.md) |
 | `@tslock/datastore` | `@google-cloud/datastore` | [README](./packages/datastore/README.md) |
-| `@tslock/s3` | `@aws-sdk/client-s3` | [README](./packages/s3/README.md) |
-| `@tslock/gcs` | `@google-cloud/storage` | [README](./packages/gcs/README.md) |
-| `@tslock/cassandra` | `cassandra-driver` | [README](./packages/cassandra/README.md) |
+| `@tslock/s3`        | `@aws-sdk/client-s3`      | [README](./packages/s3/README.md)        |
+| `@tslock/gcs`       | `@google-cloud/storage`   | [README](./packages/gcs/README.md)       |
+| `@tslock/cassandra` | `cassandra-driver`        | [README](./packages/cassandra/README.md) |
 
 ### Direct providers
 
-| Package | Driver | README |
-|---|---|---|
-| `@tslock/mongo` | `mongodb` | [README](./packages/mongo/README.md) |
-| `@tslock/dynamodb` | `@aws-sdk/client-dynamodb` | [README](./packages/dynamodb/README.md) |
-| `@tslock/elasticsearch` | `@elastic/elasticsearch` | [README](./packages/elasticsearch/README.md) |
-| `@tslock/opensearch` | `@opensearch-project/opensearch` | [README](./packages/opensearch/README.md) |
-| `@tslock/arangodb` | `arangojs` | [README](./packages/arangodb/README.md) |
+| Package                  | Driver                                                 | README                                        |
+| ------------------------ | ------------------------------------------------------ | --------------------------------------------- |
+| `@tslock/mongo`          | `mongodb`                                              | [README](./packages/mongo/README.md)          |
+| `@tslock/dynamodb`       | `@aws-sdk/client-dynamodb`                             | [README](./packages/dynamodb/README.md)       |
+| `@tslock/elasticsearch`  | `@elastic/elasticsearch`                               | [README](./packages/elasticsearch/README.md)  |
+| `@tslock/opensearch`     | `@opensearch-project/opensearch`                       | [README](./packages/opensearch/README.md)     |
+| `@tslock/arangodb`       | `arangojs`                                             | [README](./packages/arangodb/README.md)       |
 | `@tslock/cloudfront-kvs` | `@aws-sdk/client-cloudfront-keyvaluestore` (not Redis) | [README](./packages/cloudfront-kvs/README.md) |
 
 ### Redis providers
 
-| Package | Driver | README |
-|---|---|---|
-| `@tslock/redis` | `redis` (node-redis) — also Valkey / ElastiCache / MemoryDB | [README](./packages/redis/README.md) |
-| `@tslock/redis-ioredis` | `ioredis` — also Valkey / ElastiCache / MemoryDB | [README](./packages/redis-ioredis/README.md) |
+| Package                 | Driver                                                      | README                                       |
+| ----------------------- | ----------------------------------------------------------- | -------------------------------------------- |
+| `@tslock/redis`         | `redis` (node-redis) — also Valkey / ElastiCache / MemoryDB | [README](./packages/redis/README.md)         |
+| `@tslock/redis-ioredis` | `ioredis` — also Valkey / ElastiCache / MemoryDB            | [README](./packages/redis-ioredis/README.md) |
 
 ### Specialized providers
 
-| Package | Driver | README |
-|---|---|---|
-| `@tslock/hazelcast` | `hazelcast-client` | [README](./packages/hazelcast/README.md) |
-| `@tslock/zookeeper` | `zookeeper` (node-zookeeper) | [README](./packages/zookeeper/README.md) |
-| `@tslock/etcd` | `etcd3` | [README](./packages/etcd/README.md) |
-| `@tslock/memcached` | `memjs` | [README](./packages/memcached/README.md) |
-| `@tslock/nats` | `nats` (JetStream KV) | [README](./packages/nats/README.md) |
-| `@tslock/cloudflare-do` | Cloudflare Durable Objects (strongly consistent) | [README](./packages/cloudflare-do/README.md) |
+| Package                 | Driver                                                      | README                                       |
+| ----------------------- | ----------------------------------------------------------- | -------------------------------------------- |
+| `@tslock/hazelcast`     | `hazelcast-client`                                          | [README](./packages/hazelcast/README.md)     |
+| `@tslock/zookeeper`     | `zookeeper` (node-zookeeper)                                | [README](./packages/zookeeper/README.md)     |
+| `@tslock/etcd`          | `etcd3`                                                     | [README](./packages/etcd/README.md)          |
+| `@tslock/memcached`     | `memjs`                                                     | [README](./packages/memcached/README.md)     |
+| `@tslock/nats`          | `nats` (JetStream KV)                                       | [README](./packages/nats/README.md)          |
+| `@tslock/cloudflare-do` | Cloudflare Durable Objects (strongly consistent)            | [README](./packages/cloudflare-do/README.md) |
 | `@tslock/cloudflare-kv` | Cloudflare Workers KV (**advisory** — not mutual exclusion) | [README](./packages/cloudflare-kv/README.md) |
 
 **Deferred:** Apache Ignite (immature Node thin client). **Not Redis:** CloudFront KeyValueStore is `@tslock/cloudfront-kvs`, not the Redis packages.
 
 ### Middleware integrations
 
-| Package | Framework | Spec |
-|---|---|---|
-| `@tslock/middleware-core` | Shared middleware lifecycle and configuration | [README](./packages/middleware-core/README.md) |
-| `@tslock/express` | Express 4.x / 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
-| `@tslock/fastify` | Fastify 5.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
-| `@tslock/koa` | Koa 2.x / 3.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
-| `@tslock/hono` | Hono 4.x | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
-| `@tslock/nestjs` | NestJS 10 / 11 module and `@SchedulerLock` | [README](./packages/nestjs/README.md) |
+| Package                   | Framework                                     | Spec                                                         |
+| ------------------------- | --------------------------------------------- | ------------------------------------------------------------ |
+| `@tslock/middleware-core` | Shared middleware lifecycle and configuration | [README](./packages/middleware-core/README.md)               |
+| `@tslock/express`         | Express 4.x / 5.x                             | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/fastify`         | Fastify 5.x                                   | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/koa`             | Koa 2.x / 3.x                                 | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/hono`            | Hono 4.x                                      | [docs/specs/24-middleware.md](./docs/specs/24-middleware.md) |
+| `@tslock/nestjs`          | NestJS 10 / 11 module and `@SchedulerLock`    | [README](./packages/nestjs/README.md)                        |
 
 ### Scheduler adapters
 
-| Package | Host | Spec |
-|---|---|---|
-| `@tslock/scheduler-core` | Shared wrap lifecycle for scheduled callbacks | [README](./packages/scheduler-core/README.md) |
-| `@tslock/node-cron` | `node-cron` ^3 / ^4 | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
-| `@tslock/bree` | Bree ^9 job workers | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
-| `@tslock/aws-lambda` | AWS Lambda / EventBridge handlers | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
+| Package                  | Host                                          | Spec                                                                         |
+| ------------------------ | --------------------------------------------- | ---------------------------------------------------------------------------- |
+| `@tslock/scheduler-core` | Shared wrap lifecycle for scheduled callbacks | [README](./packages/scheduler-core/README.md)                                |
+| `@tslock/node-cron`      | `node-cron` ^3 / ^4                           | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
+| `@tslock/bree`           | Bree ^9 job workers                           | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
+| `@tslock/aws-lambda`     | AWS Lambda / EventBridge handlers             | [docs/specs/29-scheduler-adapters.md](./docs/specs/29-scheduler-adapters.md) |
 
 ## Core abstractions
 
-| Abstraction | Description |
-|---|---|
-| `LockProvider` | `lock(config) → Promise<SimpleLock \| undefined>` — returns `undefined` if lock not acquired. |
-| `SimpleLock` | `unlock()` / `extend(lockAtMostFor, lockAtLeastFor)` — one-shot, single-use. |
-| `LockConfiguration` | Immutable: `name`, `lockAtMostFor`, `lockAtLeastFor`, `createdAt`. |
-| `LockingTaskExecutor` | Wraps a task in lock acquire/release. Emits listener events. |
-| `LockAssert` | Assert code runs within a lock context (via `AsyncLocalStorage`). |
-| `LockExtender` | Manually extend the active lock from within the task. |
-| `KeepAliveLockProvider` | Wraps an `ExtensibleLockProvider` + scheduler, auto-renews every `lockAtMostFor/2`. |
-| `TrackingLockProviderWrapper` | Introspect active locks. |
-| `createLockHealthMonitor` | Read-only ops snapshot (active locks, last acquire/skip, keep-alive failures, overdue leases). |
+| Abstraction                   | Description                                                                                    |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| `LockProvider`                | `lock(config) → Promise<SimpleLock \| undefined>` — returns `undefined` if lock not acquired.  |
+| `SimpleLock`                  | `unlock()` / `extend(lockAtMostFor, lockAtLeastFor)` — one-shot, single-use.                   |
+| `LockConfiguration`           | Immutable: `name`, `lockAtMostFor`, `lockAtLeastFor`, `createdAt`.                             |
+| `LockingTaskExecutor`         | Wraps a task in lock acquire/release. Emits listener events.                                   |
+| `LockAssert`                  | Assert code runs within a lock context (via `AsyncLocalStorage`).                              |
+| `LockExtender`                | Manually extend the active lock from within the task.                                          |
+| `KeepAliveLockProvider`       | Wraps an `ExtensibleLockProvider` + scheduler, auto-renews every `lockAtMostFor/2`.            |
+| `TrackingLockProviderWrapper` | Introspect active locks.                                                                       |
+| `createLockHealthMonitor`     | Read-only ops snapshot (active locks, last acquire/skip, keep-alive failures, overdue leases). |
 
 ## Lock extension
 
@@ -216,7 +213,10 @@ Wrap a `LockProvider` with a tenant-keyed map:
 const providers = new Map<string, LockProvider>();
 function getProvider(tenant: string): LockProvider {
   let p = providers.get(tenant);
-  if (!p) { p = createNodeRedisLockProvider(redisClient, { env: tenant }); providers.set(tenant, p); }
+  if (!p) {
+    p = createNodeRedisLockProvider(redisClient, { env: tenant });
+    providers.set(tenant, p);
+  }
   return p;
 }
 ```
@@ -276,20 +276,19 @@ CI runs `pnpm check && pnpm typecheck && pnpm test && pnpm build` on every push.
 
 When using an agent, choose the repository-local skill that matches the primary change:
 
-| Contribution | Skill | Use it for | Not for |
-|---|---|---|---|
-| Bug fix | [`tslock-bugfix`](./.opencode/skills/tslock-bugfix/SKILL.md) | Reproduce, fix, verify, review, and repeat for a defect or regression | New features, docs-only, or test-only work |
-| Feature/provider | [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) | Spec → plan → implement → verify → review for new behavior or substantial changes | Isolated bugs, docs-only, or test-only work |
-| Documentation | [`tslock-doc-improver`](./.opencode/skills/tslock-doc-improver/SKILL.md) | Compare docs with specs, plans, reviews, and code, then reconcile them | Runtime bug fixes or new design work |
-| Tests | [`tslock-test-improver`](./.opencode/skills/tslock-test-improver/SKILL.md) | Review coverage, add meaningful tests, verify, review, and repeat | Production fixes or feature design |
-| Refactor | `tslock-sdd` for substantial changes; fast track for local mechanical edits | Architecture, public contracts, or multiple packages | Trivial cleanup |
+| Contribution     | Skill                                                                       | Use it for                                                                        | Not for                                     |
+| ---------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------- |
+| Bug fix          | [`tslock-bugfix`](./.opencode/skills/tslock-bugfix/SKILL.md)                | Reproduce, fix, verify, review, and repeat for a defect or regression             | New features, docs-only, or test-only work  |
+| Feature/provider | [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md)                      | Spec → plan → implement → verify → review for new behavior or substantial changes | Isolated bugs, docs-only, or test-only work |
+| Documentation    | [`tslock-doc-improver`](./.opencode/skills/tslock-doc-improver/SKILL.md)    | Compare docs with specs, plans, reviews, and code, then reconcile them            | Runtime bug fixes or new design work        |
+| Tests            | [`tslock-test-improver`](./.opencode/skills/tslock-test-improver/SKILL.md)  | Review coverage, add meaningful tests, verify, review, and repeat                 | Production fixes or feature design          |
+| Refactor         | `tslock-sdd` for substantial changes; fast track for local mechanical edits | Architecture, public contracts, or multiple packages                              | Trivial cleanup                             |
 
 These are OpenCode skills; contributors working without an agent can follow the same routing in [`CONTRIBUTING.md`](./CONTRIBUTING.md). The canonical names are `tslock-sdd`, `tslock-bugfix`, `tslock-doc-improver`, and `tslock-test-improver`.
 
 ### Adding a new provider
 
 Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) or follow the equivalent process manually:
-
 1. Open an issue to claim the provider and confirm it is in scope.
 2. Read `docs/00-vision.md`, `docs/01-architecture.md`, and an existing provider's spec/plan/review as a template.
 3. Create immutable `docs/specs/<NN>-<name>.md` and `docs/plans/<NN>-<name>.md`.
@@ -315,16 +314,16 @@ tslock/
 
 All design docs are in [`docs/`](./docs). Contributor workflow routing is documented in [`CONTRIBUTING.md`](./CONTRIBUTING.md), and the executable agent workflows are in [`.opencode/skills/`](./.opencode/skills/). Newcomer-oriented guides are also linked under [Guides](#guides).
 
-| Doc | Content |
-|---|---|
-| [`docs/00-vision.md`](./docs/00-vision.md) | Product vision, scope, provider matrix, design decisions |
-| [`docs/01-architecture.md`](./docs/01-architecture.md) | Monorepo structure, core abstractions, provider categories, test architecture |
-| [`docs/02-migration-from-shedlock.md`](./docs/02-migration-from-shedlock.md) | ShedLock → TSLock migration guide |
-| [`docs/03-comparison.md`](./docs/03-comparison.md) | Comparison vs Redlock and BullMQ-style locks |
-| [`docs/failure-modes.md`](./docs/failure-modes.md) | Failure modes: when double-execution is possible |
-| [`docs/specs/`](./docs/specs/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up specifications (30 docs) |
-| [`docs/plans/`](./docs/plans/) | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up implementation plans (30 docs) |
-| [`docs/reviews/`](./docs/reviews/) | Independent reviews of each spec/plan combo, including NestJS, OpenTelemetry, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (31 docs) |
+| Doc                                                                          | Content                                                                                                                                                                                         |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docs/00-vision.md`](./docs/00-vision.md)                                   | Product vision, scope, provider matrix, design decisions                                                                                                                                        |
+| [`docs/01-architecture.md`](./docs/01-architecture.md)                       | Monorepo structure, core abstractions, provider categories, test architecture                                                                                                                   |
+| [`docs/02-migration-from-shedlock.md`](./docs/02-migration-from-shedlock.md) | ShedLock → TSLock migration guide                                                                                                                                                               |
+| [`docs/03-comparison.md`](./docs/03-comparison.md)                           | Comparison vs Redlock and BullMQ-style locks                                                                                                                                                    |
+| [`docs/failure-modes.md`](./docs/failure-modes.md)                           | Failure modes: when double-execution is possible                                                                                                                                                |
+| [`docs/specs/`](./docs/specs/)                                               | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up specifications (30 docs)                                                      |
+| [`docs/plans/`](./docs/plans/)                                               | Per-provider, middleware, NestJS, OpenTelemetry, architecture-hardening, build-policy, and verification-follow-up implementation plans (30 docs)                                                |
+| [`docs/reviews/`](./docs/reviews/)                                           | Independent reviews of each spec/plan combo, including NestJS, OpenTelemetry, architecture hardening, build policy, verification follow-up, and a supplemental middleware-code review (31 docs) |
 
 ## Project status
 
@@ -336,17 +335,17 @@ Releases are **admin only**. Steps for the Actions workflow, npm trusted publish
 
 ## Tech stack
 
-| Aspect | Choice |
-|---|---|
-| Language | TypeScript 5.x |
-| Module format | Dual ESM + CJS (tsup) |
-| Node.js | >= 22 |
-| Monorepo | pnpm workspaces |
-| Test framework | Vitest |
-| Integration tests | LocalStack + emulators + testcontainers |
-| Linting / formatting | Biome |
-| Package scope | `@tslock/*` |
-| License | Apache 2.0 |
+| Aspect               | Choice                                  |
+| -------------------- | --------------------------------------- |
+| Language             | TypeScript 5.x                          |
+| Module format        | Dual ESM + CJS (tsup)                   |
+| Node.js              | >= 22                                   |
+| Monorepo             | pnpm workspaces                         |
+| Test framework       | Vitest                                  |
+| Integration tests    | LocalStack + emulators + testcontainers |
+| Linting / formatting | Biome                                   |
+| Package scope        | `@tslock/*`                             |
+| License              | Apache 2.0                              |
 
 ## Contributing
 

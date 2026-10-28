@@ -20,8 +20,8 @@ The middleware design follows the shared-core + thin-adapters pattern establishe
 **Problem 2: Express `next()` promise-wrapping is dangerously underspecified.** Express's `next()` is callback-based and returns `void`. The spec and plan say "wrap `next()` in a Promise" but neither details how. The obvious approach — `new Promise(resolve => { next(); resolve(); })` — resolves IMMEDIATELY after `next()` returns, which is when the synchronous chain of middleware/handlers returns. For a synchronous handler `(req, res) => { res.json({...}) }`, `next()` dispatches the handler synchronously, the handler calls `res.json()`, `next()` returns, and the promise resolves BEFORE `res.json()` has flushed headers to the socket. The executor's `finally` block would then call `lock.unlock()` BEFORE the client receives the response — defeating the purpose (another instance could acquire the lock and respond while the first instance's response is still in-flight).
 
 The plan's approach — `next()` plus listen for `res.on('finish')`/`res.on('close')` to resolve — is correct in concept. But:
-
 - **No implementation detail is provided.** How does the middleware reconcile the fact that `next()` must be called to dispatch the handler, but the promise must not resolve until `finish` fires? The handler cannot be dispatched within the same event-loop tick as the lock acquisition without both happening within the `AsyncLocalStorage.run()` context — which requires that the handler's synchronous execution happens INSIDE the `runHandler` callback. This imposes a specific promise shape:
+
   ```ts
   const runHandler = () => new Promise<void>((resolve, reject) => {
     const onFinish = () => { cleanup(); resolve(); };
@@ -32,6 +32,7 @@ The plan's approach — `next()` plus listen for `res.on('finish')`/`res.on('clo
     next(); // Express calls the handler SYNCHRONOUSLY within this tick
   });
   ```
+
   This shape is subtle: the handler runs synchronously within `next()` (so `LockAssert` works), but the promise doesn't resolve until the response is flushed. The spec and plan should include this implementation detail.
 
 - **Express 4.x vs 5.x async handler behavior is unaddressed.** Express 4.x does NOT catch unhandled promise rejections from async handlers (it crashes the process). Express 5.x does. A user with Express 4.x and an async handler that throws after calling `res.json()` would crash before `finish` fires, the promise never resolves, and the lock stays held until `lockAtMostFor` expires. The spec should document this and recommend Express 5.x or `express-async-errors` for async handlers.
@@ -92,19 +93,26 @@ The plan's approach (call `next()` inside the `runHandler` closure, which is the
 **Fix:** Add a concrete code sketch or pseudocode for the Express `runHandler` with cleanup and timeout. Example:
 
 ```ts
-const runHandler = () => new Promise<void>((resolve, reject) => {
-  let settled = false;
-  const finish = () => { if (!settled) { settled = true; cleanup(); resolve(); } };
-  const timeout = setTimeout(() => finish(), config.lockAtMostFor);
-  const cleanup = () => {
-    clearTimeout(timeout);
-    res.off('finish', finish);
-    res.off('close', finish);
-  };
-  res.on('finish', finish);
-  res.on('close', finish);
-  next();
-});
+const runHandler = () =>
+  new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const finish = () => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        resolve();
+      }
+    };
+    const timeout = setTimeout(() => finish(), config.lockAtMostFor);
+    const cleanup = () => {
+      clearTimeout(timeout);
+      res.off('finish', finish);
+      res.off('close', finish);
+    };
+    res.on('finish', finish);
+    res.on('close', finish);
+    next();
+  });
 ```
 
 **2. Fastify `done` callback as `runHandler` may unlock too early (HIGH).** The plan says `runHandler: await new Promise(resolve => done(resolve))`. Fastify's `done` callback signals the preHandler hook is complete — NOT that the handler has finished executing. The preHandler fires BEFORE the route handler. If `done()` resolves the promise, the executor's `finally` would unlock BEFORE the handler even starts, defeating the lock. **Fix:** The Fastify `runHandler` must await the handler's completion. Options: (a) use `reply.then(() => resolve())` (Fastify's reply is a thenable that resolves after the response is sent), or (b) listen for `reply.raw.on('finish')`, or (c) for Fastify 5.x, wrap the handler in a promise that resolves when the response lifecycle completes. The spec mentions `reply.then()` as an option; the plan should commit to this approach and drop the `done`-based resolution.
@@ -148,20 +156,20 @@ This is consistent. Lock-held is not a storage error; it's a normal operational 
 
 ## Issues Found
 
-| # | Severity | Area | Description |
-|---|---|---|---|
-| 1 | **CRITICAL** | Express `runHandler` spec | The promise-wrapping of Express `next()` is underspecified. The plan says "listens for `finish`/`close`" but provides no code sketch, cleanup logic, timeout, or error-path handling. Without a concrete spec, the implementation will be guesswork and likely buggy. |
-| 2 | **CRITICAL** | Fastify `runHandler` plan | The plan resolves the runHandler promise on `done()`, which fires BEFORE the handler starts. This means unlock happens before execution — the lock is useless. Must resolve on `reply` completion, not `done`. |
-| 3 | **HIGH** | Executor vs adapter unlock | The spec's per-framework "response-on-finish hook" phrasing implies the adapter unlocks, but `DefaultLockingTaskExecutor` unlocks in its `finally` block. No adapter implements a separate unlock (correctly, as the plan shows), but the spec language is misleading. Rewrite to clearly state: unlock is always via the executor; the adapter's job is to make the runHandler promise resolve at the right time. |
-| 4 | **HIGH** | Handler hang (no timeout) | If a handler never sends a response and doesn't throw, neither `finish` nor `close` fires (connection stays open). The `runHandler` promise hangs forever, holding the lock until `lockAtMostFor` expiration. The Express adapter needs a timeout that rejects the promise after `lockAtMostFor` ms. |
-| 5 | **MEDIUM** | `lockedBody` type inconsistency | `MiddlewareConfig.defaultLockedBody` is typed `unknown`, but the spec introduces `LockedBodyProvider: (meta: LockMetadata) => unknown` and then says "let me simplify." The final public API doesn't reconcile these. Either remove `LockedBodyProvider` or commit to supporting both `unknown` and `(meta) => unknown`. |
-| 6 | **MEDIUM** | `LockAssert`/`LockExtender` context untested | The spec claims LockAssert works inside handlers but doesn't specify a test for it. The plan includes "LockAssert integration" in the test plan but no concrete test shape. This is the riskiest part of the Express adapter (callback-based middleware wrapped in `AsyncLocalStorage.run()`). |
-| 7 | **MEDIUM** | No reentrancy integration test | Neither spec nor plan includes a test for nested middleware with the same lock name. The spec describes reentrancy behavior but doesn't require testing it. |
-| 8 | **MEDIUM** | Hono `c.req.routePath` availability | Available only after route matching. Global middleware (`app.use('*', tslock())`) may not have it. The fallback to `c.req.path` is correct, but the spec should document when `routePath` is populated. Also: the current Hono 4.x API has `routePath(c)` as a function import from `hono/helpers` — confirm `c.req.routePath` is the canonical property or use the function. |
-| 9 | **LOW** | Koa `_matchedRoute` dependency | `_matchedRoute` is `koa-router`-specific. Koa users without `koa-router` get raw path-based lock names (per-resource-ID instead of per-endpoint). The spec should make this distinction more prominent. |
-| 10 | **LOW** | Express 4.x async handler crash | Express 4.x doesn't catch unhandled rejections from async handlers. The spec should document this and recommend Express 5.x or `express-async-errors`. |
-| 11 | **LOW** | `MiddlwareLockResult` typo | Line 68 of the spec: `MiddlwareLockResult` — missing `e` (should be `MiddlewareLockResult`). |
-| 12 | **LOW** | `LockingTaskExecutorListener` not exposed | Users who want to count locked-vs-skipped requests via the listener can't. Adding optional `listener?: LockingTaskExecutorListener` to `MiddlewareConfig` would be a natural extension point. Future work. |
+| #   | Severity     | Area                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                        |
+| --- | ------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **CRITICAL** | Express `runHandler` spec                    | The promise-wrapping of Express `next()` is underspecified. The plan says "listens for `finish`/`close`" but provides no code sketch, cleanup logic, timeout, or error-path handling. Without a concrete spec, the implementation will be guesswork and likely buggy.                                                                                                                                              |
+| 2   | **CRITICAL** | Fastify `runHandler` plan                    | The plan resolves the runHandler promise on `done()`, which fires BEFORE the handler starts. This means unlock happens before execution — the lock is useless. Must resolve on `reply` completion, not `done`.                                                                                                                                                                                                     |
+| 3   | **HIGH**     | Executor vs adapter unlock                   | The spec's per-framework "response-on-finish hook" phrasing implies the adapter unlocks, but `DefaultLockingTaskExecutor` unlocks in its `finally` block. No adapter implements a separate unlock (correctly, as the plan shows), but the spec language is misleading. Rewrite to clearly state: unlock is always via the executor; the adapter's job is to make the runHandler promise resolve at the right time. |
+| 4   | **HIGH**     | Handler hang (no timeout)                    | If a handler never sends a response and doesn't throw, neither `finish` nor `close` fires (connection stays open). The `runHandler` promise hangs forever, holding the lock until `lockAtMostFor` expiration. The Express adapter needs a timeout that rejects the promise after `lockAtMostFor` ms.                                                                                                               |
+| 5   | **MEDIUM**   | `lockedBody` type inconsistency              | `MiddlewareConfig.defaultLockedBody` is typed `unknown`, but the spec introduces `LockedBodyProvider: (meta: LockMetadata) => unknown` and then says "let me simplify." The final public API doesn't reconcile these. Either remove `LockedBodyProvider` or commit to supporting both `unknown` and `(meta) => unknown`.                                                                                           |
+| 6   | **MEDIUM**   | `LockAssert`/`LockExtender` context untested | The spec claims LockAssert works inside handlers but doesn't specify a test for it. The plan includes "LockAssert integration" in the test plan but no concrete test shape. This is the riskiest part of the Express adapter (callback-based middleware wrapped in `AsyncLocalStorage.run()`).                                                                                                                     |
+| 7   | **MEDIUM**   | No reentrancy integration test               | Neither spec nor plan includes a test for nested middleware with the same lock name. The spec describes reentrancy behavior but doesn't require testing it.                                                                                                                                                                                                                                                        |
+| 8   | **MEDIUM**   | Hono `c.req.routePath` availability          | Available only after route matching. Global middleware (`app.use('*', tslock())`) may not have it. The fallback to `c.req.path` is correct, but the spec should document when `routePath` is populated. Also: the current Hono 4.x API has `routePath(c)` as a function import from `hono/helpers` — confirm `c.req.routePath` is the canonical property or use the function.                                      |
+| 9   | **LOW**      | Koa `_matchedRoute` dependency               | `_matchedRoute` is `koa-router`-specific. Koa users without `koa-router` get raw path-based lock names (per-resource-ID instead of per-endpoint). The spec should make this distinction more prominent.                                                                                                                                                                                                            |
+| 10  | **LOW**      | Express 4.x async handler crash              | Express 4.x doesn't catch unhandled rejections from async handlers. The spec should document this and recommend Express 5.x or `express-async-errors`.                                                                                                                                                                                                                                                             |
+| 11  | **LOW**      | `MiddlwareLockResult` typo                   | Line 68 of the spec: `MiddlwareLockResult` — missing `e` (should be `MiddlewareLockResult`).                                                                                                                                                                                                                                                                                                                       |
+| 12  | **LOW**      | `LockingTaskExecutorListener` not exposed    | Users who want to count locked-vs-skipped requests via the listener can't. Adding optional `listener?: LockingTaskExecutorListener` to `MiddlewareConfig` would be a natural extension point. Future work.                                                                                                                                                                                                         |
 
 ## Recommendations
 
@@ -190,7 +198,6 @@ This is consistent. Lock-held is not a storage error; it's a normal operational 
 ## Verdict: NEEDS REVISION
 
 The design architecture (shared-core + thin adapters) is correct and follows established TSLock patterns. The lock name derivation, config merging, error handling, and edge cases are well-specified. However, two CRITICAL issues must be addressed before implementation:
-
 1. **The Express `runHandler` promise-wrapping is dangerously underspecified** — a one-liner description of the most complex part of the most important adapter.
 2. **The Fastify plan resolves `runHandler` on `done()` instead of `reply` completion** — the lock would be released before the handler executes.
 

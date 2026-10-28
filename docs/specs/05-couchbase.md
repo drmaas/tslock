@@ -12,13 +12,13 @@ This is a direct port of ShedLock's `CouchbaseLockProvider`.
 
 ## Package
 
-| Field | Value |
-|---|---|
-| **Name** | `@tslock/couchbase` |
-| **Dependencies** | `@tslock/core` (peer), `couchbase` (peer) |
-| **Node.js** | >= 22 |
-| **Module format** | Dual ESM + CJS |
-| **Build** | tsup |
+| Field             | Value                                     |
+| ----------------- | ----------------------------------------- |
+| **Name**          | `@tslock/couchbase`                       |
+| **Dependencies**  | `@tslock/core` (peer), `couchbase` (peer) |
+| **Node.js**       | >= 22                                     |
+| **Module format** | Dual ESM + CJS                            |
+| **Build**         | tsup                                      |
 
 ## Public API
 
@@ -45,16 +45,16 @@ class CouchbaseLockProvider implements ExtensibleLockProvider {
 
 ```typescript
 interface CouchbaseLockProviderOptions {
-  readonly documentIdPrefix?: string;        // default: 'shedlock:'
+  readonly documentIdPrefix?: string; // default: 'shedlock:'
   readonly columnNames?: CouchbaseColumnNames; // default: see below
-  readonly lockedByValue?: string;            // default: Utils.getHostname()
+  readonly lockedByValue?: string; // default: Utils.getHostname()
 }
 
 interface CouchbaseColumnNames {
-  readonly name: string;        // default: 'name'
-  readonly lockUntil: string;  // default: 'lockUntil'
-  readonly lockedAt: string;    // default: 'lockedAt'
-  readonly lockedBy: string;    // default: 'lockedBy'
+  readonly name: string; // default: 'name'
+  readonly lockUntil: string; // default: 'lockUntil'
+  readonly lockedAt: string; // default: 'lockedAt'
+  readonly lockedBy: string; // default: 'lockedBy'
 }
 ```
 
@@ -65,10 +65,7 @@ interface CouchbaseColumnNames {
 ### 3. Exported Helpers
 
 ```typescript
-export function buildDocumentId(
-  name: string,
-  options?: { documentIdPrefix?: string },
-): string;
+export function buildDocumentId(name: string, options?: { documentIdPrefix?: string }): string;
 ```
 
 Returns `prefix + name`. Useful for tests and for users who want to inspect/delete lock documents directly.
@@ -190,14 +187,14 @@ await collection.replace(documentId, document, { cas: getResult.cas });
 
 ### Default values
 
-| Option | Default |
-|---|---|
-| `documentIdPrefix` | `'shedlock:'` |
-| `columnNames.name` | `'name'` |
-| `columnNames.lockUntil` | `'lockUntil'` |
-| `columnNames.lockedAt` | `'lockedAt'` |
-| `columnNames.lockedBy` | `'lockedBy'` |
-| `lockedByValue` | `Utils.getHostname()` |
+| Option                  | Default               |
+| ----------------------- | --------------------- |
+| `documentIdPrefix`      | `'shedlock:'`         |
+| `columnNames.name`      | `'name'`              |
+| `columnNames.lockUntil` | `'lockUntil'`         |
+| `columnNames.lockedAt`  | `'lockedAt'`          |
+| `columnNames.lockedBy`  | `'lockedBy'`          |
+| `lockedByValue`         | `Utils.getHostname()` |
 
 ### Validation
 
@@ -259,34 +256,29 @@ packages/couchbase/
 
 ## Error Handling
 
-| Situation | Detection | Behavior |
-|---|---|---|
-| Lock held on insert (`insertRecord`) | `DocumentExistsException` | Return `false` |
-| Lock held on update (`updateRecord`) — `lockUntil > now` | Content check on `get` result | Return `false` |
-| Lock held on update — concurrent modification | `CasMismatchException` on `replace` | Return `false` |
-| Lock document not found on `get` (`updateRecord`) | `DocumentNotFoundError` | Propagate (triggers `StorageBasedLockProvider` cache clear) |
-| Lock not owned on `extend` (`lockedBy` mismatch) | Content check on `get` result | Return `false` |
-| Lock expired on `extend` (`lockUntil <= now`) | Content check on `get` result | Return `false` |
-| Concurrent modification on `extend` | `CasMismatchException` on `replace` | Return `false` |
-| Lock document not found on `extend` (`get`) | `DocumentNotFoundError` | Return `false` |
-| Unlock — document not found | `DocumentNotFoundError` on `get` | No-op (swallowed) |
-| Unlock — concurrent modification | `CasMismatchException` on `replace` | Swallowed and logged (best-effort) |
-| Connection / network error | Any other `CouchbaseError` subclass | Propagate |
-| Auth error | `AuthenticationFailureError` | Propagate |
-| Timeout error | `TimeoutError` | Propagate |
-| Document ID too long | Length > 250 bytes (checked before any SDK call) | Throw `LockException` |
+| Situation                                                | Detection                                        | Behavior                                                    |
+| -------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| Lock held on insert (`insertRecord`)                     | `DocumentExistsException`                        | Return `false`                                              |
+| Lock held on update (`updateRecord`) — `lockUntil > now` | Content check on `get` result                    | Return `false`                                              |
+| Lock held on update — concurrent modification            | `CasMismatchException` on `replace`              | Return `false`                                              |
+| Lock document not found on `get` (`updateRecord`)        | `DocumentNotFoundError`                          | Propagate (triggers `StorageBasedLockProvider` cache clear) |
+| Lock not owned on `extend` (`lockedBy` mismatch)         | Content check on `get` result                    | Return `false`                                              |
+| Lock expired on `extend` (`lockUntil <= now`)            | Content check on `get` result                    | Return `false`                                              |
+| Concurrent modification on `extend`                      | `CasMismatchException` on `replace`              | Return `false`                                              |
+| Lock document not found on `extend` (`get`)              | `DocumentNotFoundError`                          | Return `false`                                              |
+| Unlock — document not found                              | `DocumentNotFoundError` on `get`                 | No-op (swallowed)                                           |
+| Unlock — concurrent modification                         | `CasMismatchException` on `replace`              | Swallowed and logged (best-effort)                          |
+| Connection / network error                               | Any other `CouchbaseError` subclass              | Propagate                                                   |
+| Auth error                                               | `AuthenticationFailureError`                     | Propagate                                                   |
+| Timeout error                                            | `TimeoutError`                                   | Propagate                                                   |
+| Document ID too long                                     | Length > 250 bytes (checked before any SDK call) | Throw `LockException`                                       |
 
 ### Error inspection
 
 The `couchbase` SDK throws typed errors. Import them from the package for `instanceof` checks:
 
 ```typescript
-import {
-  DocumentExistsException,
-  CasMismatchException,
-  DocumentNotFoundError,
-  CouchbaseError,
-} from 'couchbase';
+import { DocumentExistsException, CasMismatchException, DocumentNotFoundError, CouchbaseError } from 'couchbase';
 
 function isDocumentExists(error: unknown): boolean {
   return error instanceof DocumentExistsException;

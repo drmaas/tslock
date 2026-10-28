@@ -1,4 +1,5 @@
 ---
+
 name: tslock-doc-improver
 description: Documentation-improvement workflow for TSLock. Use this skill whenever the user asks to improve, correct, reconcile, audit, or update documentation, READMEs, CONTRIBUTING.md, AGENTS.md, specs, plans, reviews, examples, links, commands, or API descriptions. Compare docs with specs, plans, reviews, and code; update docs and code only when necessary to restore an explicitly intended contract; verify and independently review, repeating until done. Do not use it for a feature, bug fix, or test-only change whose primary goal is elsewhere.
 ---
@@ -19,7 +20,6 @@ Treat documentation as an executable contract for contributors and users. The go
 ## 2. Audit for quality and consistency
 
 Check the relevant material for:
-
 - inaccurate API names, package names, version requirements, counts, commands, paths, and links;
 - contradictions between README, CONTRIBUTING, AGENTS, package docs, specs, plans, reviews, code, tests, and CI;
 - examples that cannot compile or no longer reflect exports/configuration;

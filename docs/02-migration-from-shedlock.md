@@ -8,26 +8,26 @@ Prefer this guide for day-to-day migration. For the full provider matrix and des
 
 ## What stays the same
 
-| Concept | Behavior |
-|---|---|
-| **At most one instance runs the task** | Another instance that loses the race **skips** — it does not wait or enqueue. |
-| **`lockAtMostFor`** | Upper bound / crash safety net. After this duration the lock may be taken by someone else. |
-| **`lockAtLeastFor`** | Minimum hold time; reduces double-runs from clock skew on short tasks. |
-| **Familiar types** | `LockProvider`, `SimpleLock`, `LockConfiguration`, `LockingTaskExecutor`, `LockAssert`, `LockExtender`, `KeepAliveLockProvider`. |
-| **Storage backends** | Same categories as ShedLock (SQL, Redis, Mongo, DynamoDB, …). Ignite is deferred in TSLock. |
+| Concept                                | Behavior                                                                                                                         |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **At most one instance runs the task** | Another instance that loses the race **skips** — it does not wait or enqueue.                                                    |
+| **`lockAtMostFor`**                    | Upper bound / crash safety net. After this duration the lock may be taken by someone else.                                       |
+| **`lockAtLeastFor`**                   | Minimum hold time; reduces double-runs from clock skew on short tasks.                                                           |
+| **Familiar types**                     | `LockProvider`, `SimpleLock`, `LockConfiguration`, `LockingTaskExecutor`, `LockAssert`, `LockExtender`, `KeepAliveLockProvider`. |
+| **Storage backends**                   | Same categories as ShedLock (SQL, Redis, Mongo, DynamoDB, …). Ignite is deferred in TSLock.                                      |
 
 ## What you must change
 
-| Aspect | ShedLock (Java) | TSLock (TypeScript) |
-|---|---|---|
-| Concurrency | `ThreadLocal` | `AsyncLocalStorage` |
-| Lock API | Often sync (`Optional<SimpleLock>`) | Always async (`Promise<SimpleLock \| undefined>`) |
-| Task shape | `Runnable` / `Callable` | `() => Promise<T>` |
-| Durations | `Duration`, ISO-8601 (`PT30S`) | `'30s'`, millis number, or `{ seconds: 30 }` — **not** `PT…` strings |
-| Config | Builders / Spring beans common | Plain objects + `createLockConfig(name, lockAtMostFor, lockAtLeastFor?)` |
-| Packages | Maven modules | npm `@tslock/*` (install core + one provider + its driver) |
-| Annotations | Spring `@SchedulerLock` | API-first; NestJS has [`@SchedulerLock`](../packages/nestjs/README.md) in `@tslock/nestjs` |
-| Metrics | Micrometer | [`@tslock/otel`](../packages/otel/README.md); Prometheus is user-wired |
+| Aspect      | ShedLock (Java)                     | TSLock (TypeScript)                                                                        |
+| ----------- | ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| Concurrency | `ThreadLocal`                       | `AsyncLocalStorage`                                                                        |
+| Lock API    | Often sync (`Optional<SimpleLock>`) | Always async (`Promise<SimpleLock \| undefined>`)                                          |
+| Task shape  | `Runnable` / `Callable`             | `() => Promise<T>`                                                                         |
+| Durations   | `Duration`, ISO-8601 (`PT30S`)      | `'30s'`, millis number, or `{ seconds: 30 }` — **not** `PT…` strings                       |
+| Config      | Builders / Spring beans common      | Plain objects + `createLockConfig(name, lockAtMostFor, lockAtLeastFor?)`                   |
+| Packages    | Maven modules                       | npm `@tslock/*` (install core + one provider + its driver)                                 |
+| Annotations | Spring `@SchedulerLock`             | API-first; NestJS has [`@SchedulerLock`](../packages/nestjs/README.md) in `@tslock/nestjs` |
+| Metrics     | Micrometer                          | [`@tslock/otel`](../packages/otel/README.md); Prometheus is user-wired                     |
 
 ## Mental model (do not lose this)
 
@@ -57,10 +57,7 @@ import { createNodeRedisLockProvider } from '@tslock/redis';
 const provider = createNodeRedisLockProvider(redisClient);
 const executor = new DefaultLockingTaskExecutor(provider);
 
-const result = await executor.executeWithLock(
-  () => doWork(),
-  createLockConfig('nightly-cleanup', '5m', '1m'),
-);
+const result = await executor.executeWithLock(() => doWork(), createLockConfig('nightly-cleanup', '5m', '1m'));
 
 if (!result.wasExecuted) {
   // another instance held the lock — this tick was skipped
@@ -96,16 +93,16 @@ Without Nest, keep using `DefaultLockingTaskExecutor` around your existing sched
 
 ## Provider package map (common cases)
 
-| ShedLock | TSLock package | Notes |
-|---|---|---|
-| JDBC / R2DBC | `@tslock/sql` + `@tslock/sql-support` | Node drivers are async; JDBC/R2DBC collapse into one package (`pg` / `mysql2` / `mssql`). |
-| jOOQ | `@tslock/kysely` | |
-| (no Java analog) | `@tslock/drizzle` | Extra SQL option. |
-| Jedis / Lettuce Redis | `@tslock/redis` or `@tslock/redis-ioredis` | Single-instance `SET NX PX` + Lua — **not** Redlock. Shared logic in `@tslock/redis-core`. |
-| MongoDB | `@tslock/mongo` | |
-| DynamoDB | `@tslock/dynamodb` | |
-| Other storage providers | See [README packages](../README.md#packages) and [`00-vision.md`](./00-vision.md) §6 | Same category patterns (A–I) as architecture docs. |
-| Ignite | — | Deferred (immature Node driver). |
+| ShedLock                | TSLock package                                                                       | Notes                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| JDBC / R2DBC            | `@tslock/sql` + `@tslock/sql-support`                                                | Node drivers are async; JDBC/R2DBC collapse into one package (`pg` / `mysql2` / `mssql`).  |
+| jOOQ                    | `@tslock/kysely`                                                                     |                                                                                            |
+| (no Java analog)        | `@tslock/drizzle`                                                                    | Extra SQL option.                                                                          |
+| Jedis / Lettuce Redis   | `@tslock/redis` or `@tslock/redis-ioredis`                                           | Single-instance `SET NX PX` + Lua — **not** Redlock. Shared logic in `@tslock/redis-core`. |
+| MongoDB                 | `@tslock/mongo`                                                                      |                                                                                            |
+| DynamoDB                | `@tslock/dynamodb`                                                                   |                                                                                            |
+| Other storage providers | See [README packages](../README.md#packages) and [`00-vision.md`](./00-vision.md) §6 | Same category patterns (A–I) as architecture docs.                                         |
+| Ignite                  | —                                                                                    | Deferred (immature Node driver).                                                           |
 
 Each provider README has setup SQL/indexes, config, and a copy-paste example. Install the **driver as a peer** yourself; TSLock does not bundle it.
 

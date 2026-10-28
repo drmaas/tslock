@@ -36,10 +36,7 @@ const provider = new KyselyLockProvider(
 
 const executor = new DefaultLockingTaskExecutor(provider);
 
-await executor.executeWithLock(
-  () => runBatchJob(),
-  createLockConfig({ name: 'batch-job', lockAtMostFor: '30m' }),
-);
+await executor.executeWithLock(() => runBatchJob(), createLockConfig({ name: 'batch-job', lockAtMostFor: '30m' }));
 ```
 
 The second argument is the dialect name: `'postgresql' | 'mysql' | 'sqlite'`. The third is a standard `SqlConfiguration` — see [`@tslock/sql-support`](../sql-support/README.md#configuration) for all options (table name, column overrides, `useDbTime`, etc.).

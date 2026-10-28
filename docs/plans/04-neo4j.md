@@ -72,7 +72,6 @@ packages/neo4j/
 ### Step 2: Define configuration types
 
 **File:** `src/neo4j-lock-provider.ts`
-
 - `Neo4jColumnNames` interface (4 readonly string fields).
 - `Neo4jLockProviderOptions` interface (`label`, `columnNames`, `lockedByValue`, `database` — all optional).
 - `DEFAULT_LABEL = 'ShedLock'`.
@@ -93,7 +92,7 @@ function buildExtendCypher(opts: ResolvedOptions): string;
 function buildCreateConstraintCypher(opts: ResolvedOptions): string;
 ```
 
-Statements are built by interpolating the label and column names directly into the Cypher string (these are configuration values, not user input, so string interpolation is safe — but they must be validated to match `[A-Za-z_][A-Za-z0-9_]*` to prevent Cypher injection from misconfiguration). All *values* are passed as `$parameter` placeholders, never interpolated.
+Statements are built by interpolating the label and column names directly into the Cypher string (these are configuration values, not user input, so string interpolation is safe — but they must be validated to match `[A-Za-z_][A-Za-z0-9_]*` to prevent Cypher injection from misconfiguration). All _values_ are passed as `$parameter` placeholders, never interpolated.
 
 Example output for default options:
 ```cypher
@@ -167,13 +166,15 @@ class Neo4jLockProvider implements ExtensibleLockProvider {
   private readonly delegate: StorageBasedLockProvider;
 
   constructor(driver: Driver, options?: Neo4jLockProviderOptions) {
-    this.delegate = new StorageBasedLockProvider(
-      new Neo4jStorageAccessor(driver, resolveOptions(options)),
-    );
+    this.delegate = new StorageBasedLockProvider(new Neo4jStorageAccessor(driver, resolveOptions(options)));
   }
 
-  lock(config) { return this.delegate.lock(config); }
-  clearCache(name) { this.delegate.clearCache(name); }
+  lock(config) {
+    return this.delegate.lock(config);
+  }
+  clearCache(name) {
+    this.delegate.clearCache(name);
+  }
 }
 ```
 
@@ -213,11 +214,10 @@ Do **not** export `Neo4jStorageAccessor` (internal) or `ResolvedOptions` (intern
 **File:** `__tests__/unit/neo4j-storage-accessor.test.ts`
 
 Use a mocked `Driver` (`vi.fn()` returning a fake `Session` whose `writeTransaction` invokes the supplied callback with a fake `Transaction` that records `tx.run(cypher, params)` calls and returns a configurable `Result`).
-
 - `insertRecord` success → `tx.run` called with insert Cypher + correct params, returns `true`.
 - `insertRecord` constraint violation → `tx.run` throws `Neo4jError` with `code = 'Neo.ClientError.Schema.ConstraintValidationFailed'` and matching message → `insertRecord` returns `false`.
 - `insertRecord` with non-constraint error → propagates.
-- `insertRecord` with constraint error for a *different* lock name → propagates (must not be swallowed).
+- `insertRecord` with constraint error for a _different_ lock name → propagates (must not be swallowed).
 - `updateRecord` returns one record → `true`; returns zero records → `false`.
 - `updateRecord` parameters include `$now`, `$lockUntil`, `$lockedAt`, `$lockedBy` correctly.
 - `unlock` calls `tx.run` with unlock Cypher, does not inspect result.
@@ -262,10 +262,7 @@ describe('Neo4jLockProvider integration', () => {
     if (container) await container.stop();
   });
 
-  storageBasedLockProviderIntegrationTests(
-    async () => new Neo4jLockProvider(driver),
-    { timeMode: 'real' },
-  );
+  storageBasedLockProviderIntegrationTests(async () => new Neo4jLockProvider(driver), { timeMode: 'real' });
 
   fuzzTests(async () => new Neo4jLockProvider(driver));
 
@@ -302,16 +299,16 @@ All must pass. Integration tests are gated behind a separate Vitest config so th
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| **Constraint error code changes across Neo4j versions** | Match by `error.code` first, fall back to `error.message` regex (`/already exists with label/`) and lock-name containment. Add unit tests for both detection paths. |
-| **Cypher injection from misconfigured label/column name** | Validate label and column names against `^[A-Za-z_][A-Za-z0-9_]*$` in `resolveOptions()`. Throw on invalid input. |
-| **Epoch millis precision** | Neo4j integers are 64-bit; `neo4j-driver` v5 accepts JS numbers up to `Number.MAX_SAFE_INTEGER`. Current epoch millis (~1.7e12) is well within range. No `neo4j.int()` conversion needed. |
-| **Session leak on error** | Always wrap `session` use in `try { ... } finally { await session.close() }`. Unit test asserts `close()` is called when `writeTransaction` throws. |
-| **Container startup flakiness in CI** | Generous `withStartupTimeout(120_000)`; retry `verifyConnectivity()` 3 times with 5s backoff. Mark integration suite `test.slow` so fast-CI skips it without Docker. |
-| **Concurrent `insertRecord` race** | Handled by the unique constraint — both calls fail except one, which succeeds. The loser's `ConstraintValidationFailed` maps to `false`. |
-| **Custom database name** | `driver.session({ database })` — when `undefined`, omit the option so the driver default applies. Test with default + custom database. |
-| **`lockedBy` mismatch on extend** | Document: the accessor must use the same `lockedByValue` at insert and extend time. Recommend users set `lockedByValue` explicitly when running across multiple instances (do not rely on hostname stability). |
+| Risk                                                      | Mitigation                                                                                                                                                                                                     |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Constraint error code changes across Neo4j versions**   | Match by `error.code` first, fall back to `error.message` regex (`/already exists with label/`) and lock-name containment. Add unit tests for both detection paths.                                            |
+| **Cypher injection from misconfigured label/column name** | Validate label and column names against `^[A-Za-z_][A-Za-z0-9_]*$` in `resolveOptions()`. Throw on invalid input.                                                                                              |
+| **Epoch millis precision**                                | Neo4j integers are 64-bit; `neo4j-driver` v5 accepts JS numbers up to `Number.MAX_SAFE_INTEGER`. Current epoch millis (~1.7e12) is well within range. No `neo4j.int()` conversion needed.                      |
+| **Session leak on error**                                 | Always wrap `session` use in `try { ... } finally { await session.close() }`. Unit test asserts `close()` is called when `writeTransaction` throws.                                                            |
+| **Container startup flakiness in CI**                     | Generous `withStartupTimeout(120_000)`; retry `verifyConnectivity()` 3 times with 5s backoff. Mark integration suite `test.slow` so fast-CI skips it without Docker.                                           |
+| **Concurrent `insertRecord` race**                        | Handled by the unique constraint — both calls fail except one, which succeeds. The loser's `ConstraintValidationFailed` maps to `false`.                                                                       |
+| **Custom database name**                                  | `driver.session({ database })` — when `undefined`, omit the option so the driver default applies. Test with default + custom database.                                                                         |
+| **`lockedBy` mismatch on extend**                         | Document: the accessor must use the same `lockedByValue` at insert and extend time. Recommend users set `lockedByValue` explicitly when running across multiple instances (do not rely on hostname stability). |
 
 ## Estimation
 

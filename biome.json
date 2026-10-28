@@ -42,5 +42,13 @@
     "formatter": {
       "enabled": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["docs/specs/25-architecture-improvements.md"],
+      "formatter": {
+        "enabled": false
+      }
+    }
+  ]
 }

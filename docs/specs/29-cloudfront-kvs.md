@@ -28,12 +28,12 @@ Teams that already use CloudFront KeyValueStore for edge config want the same st
 
 ## Architecture fit
 
-| Field | Value |
-|---|---|
+| Field        | Value                                                                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **Category** | **B — Direct `LockProvider`** (custom ETag CAS; does not fit clean `StorageAccessor` insert-or-update without store-wide ETag retries) |
-| **Package** | `@tslock/cloudfront-kvs` |
-| **Peers** | `@tslock/core`, `@aws-sdk/client-cloudfront-keyvaluestore` |
-| **Node.js** | >= 22 |
+| **Package**  | `@tslock/cloudfront-kvs`                                                                                                               |
+| **Peers**    | `@tslock/core`, `@aws-sdk/client-cloudfront-keyvaluestore`                                                                             |
+| **Node.js**  | >= 22                                                                                                                                  |
 
 ```
 @tslock/core
@@ -48,14 +48,13 @@ Teams that already use CloudFront KeyValueStore for edge config want the same st
 ```typescript
 interface CloudFrontKvsLockProviderOptions {
   client: CloudFrontKeyValueStoreClient; // required — caller owns region/credentials (SigV4A)
-  kvsArn: string;                        // required — KeyValueStore ARN
-  keyPrefix?: string;                    // default 'tslock/'
-  maxEtagRetries?: number;               // default 3 — ConflictException retries on store ETag races
+  kvsArn: string; // required — KeyValueStore ARN
+  keyPrefix?: string; // default 'tslock/'
+  maxEtagRetries?: number; // default 3 — ConflictException retries on store ETag races
 }
 ```
 
 Validation throws `LockException` when:
-
 - `client` is missing.
 - `kvsArn` is missing or empty.
 - `keyPrefix` contains control characters or would make keys exceed 512 bytes for a 1-char lock name (document; validate prefix length <= 256).
@@ -71,9 +70,7 @@ class CloudFrontKvsLockProvider implements ExtensibleLockProvider {
   lock(config: LockConfiguration): Promise<SimpleLock | undefined>;
 }
 
-function createCloudFrontKvsLockProvider(
-  options: CloudFrontKvsLockProviderOptions,
-): CloudFrontKvsLockProvider;
+function createCloudFrontKvsLockProvider(options: CloudFrontKvsLockProviderOptions): CloudFrontKvsLockProvider;
 ```
 
 ### Lock
@@ -106,7 +103,6 @@ Storage key: `${keyPrefix}${lockName}` (must be 1–512 bytes).
 ### Store-wide ETag
 
 `PutKey` / `DeleteKey` / `UpdateKeys` require `IfMatch` equal to the **store** ETag from the **KeyValueStore** `DescribeKeyValueStore` API (not the CloudFront distribution `DescribeKeyValueStore`). Concurrent writes to **any** key in the store invalidate the ETag. The provider:
-
 1. `DescribeKeyValueStore` → `ETag`.
 2. `GetKey` for the lock key (`ResourceNotFoundException` → absent).
 3. Decide acquire / skip / unlock / extend from the value.
@@ -134,15 +130,15 @@ Storage key: `${keyPrefix}${lockName}` (must be 1–512 bytes).
 
 ## Edge limits (must document in README)
 
-| Limit | Value |
-|---|---|
-| Max store size | 5 MB |
-| Max key size | 512 bytes |
-| Max value size | 1 KB |
-| Batch update | 50 keys or 3 MB per `UpdateKeys` |
-| Functions access | **Read-only** via CloudFront Functions KVS handle |
+| Limit                | Value                                                         |
+| -------------------- | ------------------------------------------------------------- |
+| Max store size       | 5 MB                                                          |
+| Max key size         | 512 bytes                                                     |
+| Max value size       | 1 KB                                                          |
+| Batch update         | 50 keys or 3 MB per `UpdateKeys`                              |
+| Functions access     | **Read-only** via CloudFront Functions KVS handle             |
 | Control-plane writes | This provider (`PutKey` / `DescribeKeyValueStore` / `GetKey`) |
-| Concurrency | Store-wide ETag — high cross-key write contention under load |
+| Concurrency          | Store-wide ETag — high cross-key write contention under load  |
 
 **Suitability:** Control-plane / low-frequency scheduled locks, not hot per-request edge locking. Propagation to Functions is eventually consistent with CloudFront’s KVS publish model; do not assume Functions see writes immediately.
 
@@ -152,14 +148,14 @@ Amazon ElastiCache (Redis/Valkey) and MemoryDB are Redis-protocol compatible →
 
 ## Error taxonomy
 
-| Condition | Result |
-|---|---|
-| Lock held | `undefined` |
-| Stale ETag after retries | `undefined` / unlock no-op |
-| `ResourceNotFoundException` on GetKey during acquire | treat as absent |
-| `ResourceNotFoundException` on Describe (store missing) | throw |
-| Auth / network / `ValidationException` / quota | throw |
-| Corrupt value | throw `LockException` |
+| Condition                                               | Result                     |
+| ------------------------------------------------------- | -------------------------- |
+| Lock held                                               | `undefined`                |
+| Stale ETag after retries                                | `undefined` / unlock no-op |
+| `ResourceNotFoundException` on GetKey during acquire    | treat as absent            |
+| `ResourceNotFoundException` on Describe (store missing) | throw                      |
+| Auth / network / `ValidationException` / quota          | throw                      |
+| Corrupt value                                           | throw`LockException`       |
 
 ## Tests
 

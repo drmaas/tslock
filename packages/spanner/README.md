@@ -35,31 +35,33 @@ const spanner = new Spanner({ projectId: process.env.GCP_PROJECT_ID });
 const instance = spanner.instance('my-instance');
 const database = instance.database('my-database');
 
-const provider = createSpannerProvider(database, 'shedlock', {
-  name: 'name',
-  lockUntil: 'lockUntil',
-  lockedAt: 'lockedAt',
-  lockedBy: 'lockedBy',
-}, 'my-hostname');
+const provider = createSpannerProvider(
+  database,
+  'shedlock',
+  {
+    name: 'name',
+    lockUntil: 'lockUntil',
+    lockedAt: 'lockedAt',
+    lockedBy: 'lockedBy',
+  },
+  'my-hostname',
+);
 
 const executor = new DefaultLockingTaskExecutor(provider);
 
-await executor.executeWithLock(
-  () => myScheduledTask(),
-  createLockConfig({ name: 'my-task', lockAtMostFor: '5m' }),
-);
+await executor.executeWithLock(() => myScheduledTask(), createLockConfig({ name: 'my-task', lockAtMostFor: '5m' }));
 ```
 
 ## Configuration
 
 `createSpannerProvider(database, tableName, columnNames, lockedByValue)` takes:
 
-| Argument | Default / notes |
-|---|---|
-| `database` | A Spanner `Database` instance (required). |
-| `tableName` | e.g. `'shedlock'`. |
-| `columnNames` | `{ name, lockUntil, lockedAt, lockedBy }` (all required). |
-| `lockedByValue` | Identifier written to `lockedBy`. |
+| Argument        | Default / notes                                           |
+| --------------- | --------------------------------------------------------- |
+| `database`      | A Spanner `Database` instance (required).                 |
+| `tableName`     | e.g. `'shedlock'`.                                        |
+| `columnNames`   | `{ name, lockUntil, lockedAt, lockedBy }` (all required). |
+| `lockedByValue` | Identifier written to `lockedBy`.                         |
 
 Use `resolveSpannerConfiguration()` if you prefer defaults + `Partial<SpannerColumnNames>` overrides.
 

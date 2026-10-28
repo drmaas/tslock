@@ -88,7 +88,6 @@ Field names are passed into the Painless script as `params` (not string-interpol
 ### Step 3: Implement ElasticsearchAccessor
 
 **File:** `src/elasticsearch-accessor.ts`
-
 - Import `Client` type from `@elastic/elasticsearch`.
 - Constructor: `(client: Client, index: string, fieldNames: ElasticsearchFieldNames)`.
 - Helper `isConflictError(e)`: returns `true` if `e?.meta?.statusCode === 409 || e?.statusCode === 409 || (e?.name === 'ResponseError' && e?.meta?.statusCode === 409)`. Covers v8 driver shapes.
@@ -116,7 +115,6 @@ Define the three script sources as module-level string constants to keep them DR
 ### Step 4: Implement ElasticsearchLock
 
 **File:** `src/elasticsearch-lock.ts`
-
 - `import { AbstractSimpleLock, LockConfiguration, SimpleLock } from '@tslock/core'`
 - `class ElasticsearchLock extends AbstractSimpleLock`:
   - `constructor(private readonly accessor: ElasticsearchAccessor, config: LockConfiguration)` — pass `config` to `super(config)`.
@@ -126,7 +124,6 @@ Define the three script sources as module-level string constants to keep them DR
 ### Step 5: Implement ElasticsearchLockProvider
 
 **File:** `src/elasticsearch-lock-provider.ts`
-
 - `import type { Client } from '@elastic/elasticsearch'`
 - `class ElasticsearchLockProvider implements ExtensibleLockProvider`:
   - `private readonly accessor: ElasticsearchAccessor`
@@ -155,7 +152,6 @@ Do NOT export `ElasticsearchAccessor` or `ElasticsearchLock`.
 **File:** `__tests__/elasticsearch-lock-provider.test.ts`
 
 Mock the `Client`: `const update = vi.fn(); const client = { update } as unknown as Client;`. Use `new ElasticsearchLockProvider(client, { index: 'shedlock-test' })`.
-
 - `lock()`:
   - `update` resolves with `{ result: 'updated' }` → `ElasticsearchLock` returned.
   - `update` resolves with `{ result: 'created' }` → `ElasticsearchLock` returned (upsert path).
@@ -180,8 +176,8 @@ Mock the `Client`: `const update = vi.fn(); const client = { update } as unknown
 ### Step 8: Write elasticsearch integration tests
 
 **File:** `__tests__/integration/elasticsearch-lock-provider.integration.test.ts`
-
 - Use `testcontainers` Elasticsearch image:
+
   ```typescript
   import { ElasticsearchContainer } from '@testcontainers/elasticsearch';
   const container = await new ElasticsearchContainer('docker.elastic.co/elasticsearch/elasticsearch:8.11.0').start();
@@ -225,7 +221,12 @@ packages/opensearch/
   "types": "./dist/index.d.ts",
   "exports": { ".": { "import": "./dist/index.js", "require": "./dist/index.cjs", "types": "./dist/index.d.ts" } },
   "files": ["dist"],
-  "scripts": { "build": "tsup", "test": "vitest run", "test:integration": "vitest run --config vitest.integration.config.ts", "typecheck": "tsc --noEmit" },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
   "engines": { "node": ">=22" },
   "peerDependencies": { "@tslock/core": "workspace:*", "@opensearch-project/opensearch": "^2.0.0" },
   "devDependencies": { "@opensearch-project/opensearch": "^2.0.0", "testcontainers": "^10.0.0", "vitest": "^2.0.0" }
@@ -243,6 +244,7 @@ packages/opensearch/
 
 - Unit tests: copy + swap driver mock. The mock shape is the same (`client.update: vi.fn()`).
 - Integration tests: use the OpenSearch Docker image via `GenericContainer`:
+
   ```typescript
   import { GenericContainer } from 'testcontainers';
   const container = await new GenericContainer('opensearchproject/opensearch:2.11.0')
@@ -264,18 +266,18 @@ pnpm typecheck && pnpm test && pnpm test:integration && pnpm build
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| `@elastic/elasticsearch` v8 `body` shape changes (v8 removed `body` from some methods) | `client.update` still accepts the `body` argument in v8; verify with installed version. If not, switch to flat-params shape (`script`, `upsert` as top-level args). Pin the major in `peerDependencies`. Add a unit test that asserts the request shape the mock receives. |
-| Painless script error semantics (`ctx.op = 'none'` returns `noop`) | Test against a real container. The script is borrowed verbatim from ShedLock which has used it in production for years. |
-| 409 conflict detection differs across driver error shapes | `isConflictError` helper covers `meta.statusCode`, `statusCode`, and `name === 'ResponseError'` shapes. Add unit tests for each shape. |
-| `refresh: 'wait_for'` waits up to the cluster's `index.max_refresh_listeners` (default 1000) | For high-concurrency lock attempts this could throttle; in tests with 50 concurrent locks (fuzz test) it is fine. Document the limit in the README. |
-| OpenSearch Docker image security plugin blocks unauthenticated calls | Set `DISABLE_SECURITY_PLUGIN: 'true'` in the testcontainer env. Document that production users configure TLS/auth on the `Client` constructor. |
-| Index mapping strictness rejects unknown fields | Tests create the index with a dynamic mapping (default) so the lock fields are accepted. Document that production indexes should map the lock fields as `date` or `keyword` per the user's preference. |
-| Field name duplication across both packages | Intentional — driver types are incompatible. Keep the two accessors in sync via a code-review checklist. The script logic is stable; divergence is unlikely. |
-| `ctx.op = 'none'` is the same in both engines | Verified — Painless is shared between ES and OpenSearch. No risk. |
-| `extend()` on a non-existent doc returns `not_found` (no `upsert`) | Treat `not_found` as `undefined` (extend failure). Unit test covers this case. |
-| Script source as a string constant vs inline | Module-level string constants for the three scripts make diffing against ShedLock's Java source easy and keep the accessor methods short. Decision: constants. |
+| Risk                                                                                         | Mitigation                                                                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@elastic/elasticsearch` v8 `body` shape changes (v8 removed `body` from some methods)       | `client.update` still accepts the `body` argument in v8; verify with installed version. If not, switch to flat-params shape (`script`, `upsert` as top-level args). Pin the major in `peerDependencies`. Add a unit test that asserts the request shape the mock receives. |
+| Painless script error semantics (`ctx.op = 'none'` returns `noop`)                           | Test against a real container. The script is borrowed verbatim from ShedLock which has used it in production for years.                                                                                                                                                    |
+| 409 conflict detection differs across driver error shapes                                    | `isConflictError` helper covers `meta.statusCode`, `statusCode`, and `name === 'ResponseError'` shapes. Add unit tests for each shape.                                                                                                                                     |
+| `refresh: 'wait_for'` waits up to the cluster's `index.max_refresh_listeners` (default 1000) | For high-concurrency lock attempts this could throttle; in tests with 50 concurrent locks (fuzz test) it is fine. Document the limit in the README.                                                                                                                        |
+| OpenSearch Docker image security plugin blocks unauthenticated calls                         | Set `DISABLE_SECURITY_PLUGIN: 'true'` in the testcontainer env. Document that production users configure TLS/auth on the `Client` constructor.                                                                                                                             |
+| Index mapping strictness rejects unknown fields                                              | Tests create the index with a dynamic mapping (default) so the lock fields are accepted. Document that production indexes should map the lock fields as `date` or `keyword` per the user's preference.                                                                     |
+| Field name duplication across both packages                                                  | Intentional — driver types are incompatible. Keep the two accessors in sync via a code-review checklist. The script logic is stable; divergence is unlikely.                                                                                                               |
+| `ctx.op = 'none'` is the same in both engines                                                | Verified — Painless is shared between ES and OpenSearch. No risk.                                                                                                                                                                                                          |
+| `extend()` on a non-existent doc returns `not_found` (no `upsert`)                           | Treat `not_found` as `undefined` (extend failure). Unit test covers this case.                                                                                                                                                                                             |
+| Script source as a string constant vs inline                                                 | Module-level string constants for the three scripts make diffing against ShedLock's Java source easy and keep the accessor methods short. Decision: constants.                                                                                                             |
 
 ## Estimation
 

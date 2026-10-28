@@ -17,16 +17,16 @@ Follows `docs/specs/30-cloudflare-durable-objects.md`. Issue #47. Workers KV def
 
 ## Files to create
 
-| Path | Purpose |
-|---|---|
-| `packages/cloudflare-do/package.json` | Manifest |
-| `packages/cloudflare-do/tsconfig.json` | Extends base |
-| `packages/cloudflare-do/tsup.config.ts` | Dual ESM+CJS |
-| `packages/cloudflare-do/vitest.config.ts` | Unit |
-| `packages/cloudflare-do/src/*.ts` | Implementation |
-| `packages/cloudflare-do/__tests__/*.ts` | Tests |
-| `packages/cloudflare-do/README.md` | User docs |
-| `.changeset/cloudflare-do.md` | Release note |
+| Path                                      | Purpose        |
+| ----------------------------------------- | -------------- |
+| `packages/cloudflare-do/package.json`     | Manifest       |
+| `packages/cloudflare-do/tsconfig.json`    | Extends base   |
+| `packages/cloudflare-do/tsup.config.ts`   | Dual ESM+CJS   |
+| `packages/cloudflare-do/vitest.config.ts` | Unit           |
+| `packages/cloudflare-do/src/*.ts`         | Implementation |
+| `packages/cloudflare-do/__tests__/*.ts`   | Tests          |
+| `packages/cloudflare-do/README.md`        | User docs      |
+| `.changeset/cloudflare-do.md`             | Release note   |
 
 ## Verification
 

@@ -48,12 +48,12 @@ await executor.executeWithLock(
 
 `new Neo4jLockProvider(driver, options?)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `label` | `'ShedLock'` | The node label used to store lock records (must match your constraint). |
-| `columnNames` | see below | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`. |
-| `lockedByValue` | `os.hostname()` | Identifier written to `lockedBy`. |
-| `database` | default database | The Neo4j database to query. |
+| Option          | Default          | Description                                                             |
+| --------------- | ---------------- | ----------------------------------------------------------------------- |
+| `label`         | `'ShedLock'`     | The node label used to store lock records (must match your constraint). |
+| `columnNames`   | see below        | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`.            |
+| `lockedByValue` | `os.hostname()`  | Identifier written to `lockedBy`.                                       |
+| `database`      | default database | The Neo4j database to query.                                            |
 
 Default property names: `name`, `lockUntil`, `lockedAt`, `lockedBy`.
 

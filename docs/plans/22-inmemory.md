@@ -52,7 +52,6 @@ packages/in-memory/
 ### Step 2: Implement InMemoryLock
 
 **File:** `src/in-memory-lock.ts`
-
 - `import { AbstractSimpleLock, ClockProvider, LockConfiguration, SimpleLock, lockAtLeastUntil, lockAtMostUntil } from '@tslock/core'`
 - `import type { InMemoryLockProvider } from './in-memory-lock-provider.js'` (type-only import to avoid a runtime circular dep)
 - `class InMemoryLock extends AbstractSimpleLock`:
@@ -68,11 +67,10 @@ packages/in-memory/
 ### Step 3: Implement InMemoryLockProvider + factory
 
 **File:** `src/in-memory-lock-provider.ts`
-
 - `import { ClockProvider, ExtensibleLockProvider, LockConfiguration, SimpleLock, lockAtMostUntil } from '@tslock/core'`
 - `import { InMemoryLock } from './in-memory-lock.js'`
 - `class InMemoryLockProvider implements ExtensibleLockProvider`:
-  - `private readonly locks = new Map<string, number>();`  (accessible from `InMemoryLock` — same package)
+  - `private readonly locks = new Map<string, number>();` (accessible from `InMemoryLock` — same package)
   - `isLocked(name: string): boolean { return this.locks.has(name) && (this.locks.get(name)! > ClockProvider.now()); }` (accessible from `InMemoryLock` — same package)
   - `async lock(config: LockConfiguration): Promise<SimpleLock | undefined>`:
     1. `if (this.isLocked(config.name)) return undefined;`
@@ -97,7 +95,6 @@ Do NOT export `InMemoryLock`.
 **File:** `__tests__/in-memory-lock-provider.test.ts`
 
 Use `ClockProvider.setClock` / `resetClock` for deterministic time.
-
 - `lock()`:
   - Fresh provider, `lock('test', 30s)` → `InMemoryLock` returned
   - `lock('test', 30s)` again → `undefined` (held)
@@ -150,15 +147,15 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Circular import between `InMemoryLock` and `InMemoryLockProvider` | Use `import type` for the provider reference in `InMemoryLock` (type-only, no runtime cycle). Runtime import of `InMemoryLock` in the provider is one-directional. ESM handles this cleanly. |
-| `locks` / `isLocked` visibility | Keep them public (TypeScript default) but not exported from `index.ts`. Document as package-internal. Avoids a shared internal module. |
-| Stale entries accumulate in the `Map` | Bounded by the number of distinct lock names (small). Not a leak in practice. Matches ShedLock. No cleanup needed. |
-| Async interleaving breaks check-then-set | `isLocked()` + `locks.set()` in `lock()` are synchronous with no `await` between them — atomic in the event loop. Document this. The contract fuzz test (50 concurrent lockers, exactly 1 winner) verifies it. |
-| `extend()` returns a lock that shares the same `Map` | Correct — the new `InMemoryLock` references the same provider, so `unlock()` on the extended lock updates the same entry. Unit test verifies the `lockedUntil` is updated. |
-| Clock mock leaking between tests | Each test calls `ClockProvider.resetClock()` in `afterEach` (the contract suite handles this; unit tests do it explicitly). |
-| Users mistake this for a distributed lock | Document prominently in the spec, README, and JSDoc on the class. The name `InMemoryLockProvider` and the warning in the overview make it clear. |
+| Risk                                                              | Mitigation                                                                                                                                                                                                     |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Circular import between `InMemoryLock` and `InMemoryLockProvider` | Use `import type` for the provider reference in `InMemoryLock` (type-only, no runtime cycle). Runtime import of `InMemoryLock` in the provider is one-directional. ESM handles this cleanly.                   |
+| `locks` / `isLocked` visibility                                   | Keep them public (TypeScript default) but not exported from `index.ts`. Document as package-internal. Avoids a shared internal module.                                                                         |
+| Stale entries accumulate in the `Map`                             | Bounded by the number of distinct lock names (small). Not a leak in practice. Matches ShedLock. No cleanup needed.                                                                                             |
+| Async interleaving breaks check-then-set                          | `isLocked()` + `locks.set()` in `lock()` are synchronous with no `await` between them — atomic in the event loop. Document this. The contract fuzz test (50 concurrent lockers, exactly 1 winner) verifies it. |
+| `extend()` returns a lock that shares the same `Map`              | Correct — the new `InMemoryLock` references the same provider, so `unlock()` on the extended lock updates the same entry. Unit test verifies the `lockedUntil` is updated.                                     |
+| Clock mock leaking between tests                                  | Each test calls `ClockProvider.resetClock()` in `afterEach` (the contract suite handles this; unit tests do it explicitly).                                                                                    |
+| Users mistake this for a distributed lock                         | Document prominently in the spec, README, and JSDoc on the class. The name `InMemoryLockProvider` and the warning in the overview make it clear.                                                               |
 
 ## Estimation
 

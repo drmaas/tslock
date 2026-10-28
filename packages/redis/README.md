@@ -33,11 +33,11 @@ await executor.executeWithLock(
 
 `createNodeRedisLockProvider(client, config?)` accepts an optional config:
 
-| Option | Default | Description |
-|---|---|---|
-| `keyPrefix` | `'job-lock'` | Redis key namespace. |
-| `env` | `'default'` | Environment segment of the key (enables multi-tenancy). |
-| `safeUpdate` | `true` | When `true`, unlock/extend use a Lua script that verifies the lock value first — safe across instances. Set `false` to use plain `DEL`/`SET XX` (faster, but less safe). |
+| Option       | Default      | Description                                                                                                                                                              |
+| ------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `keyPrefix`  | `'job-lock'` | Redis key namespace.                                                                                                                                                     |
+| `env`        | `'default'`  | Environment segment of the key (enables multi-tenancy).                                                                                                                  |
+| `safeUpdate` | `true`       | When `true`, unlock/extend use a Lua script that verifies the lock value first — safe across instances. Set `false` to use plain `DEL`/`SET XX` (faster, but less safe). |
 
 The full key is `${keyPrefix}:${env}:${lockName}`.
 
@@ -46,7 +46,6 @@ The full key is `${keyPrefix}:${env}:${lockName}`.
 ## Valkey and Redis-compatible managed services
 
 This package speaks the Redis protocol (`SET NX PX` + Lua). It works against:
-
 - **Valkey** (Redis-compatible OSS)
 - **Amazon ElastiCache** (Redis or Valkey engine)
 - **Amazon MemoryDB** (Redis OSS or Valkey)
@@ -65,10 +64,10 @@ TSLOCK_REDIS_INTEGRATION=1 REDIS_URL=redis://127.0.0.1:6379 pnpm --filter @tsloc
 
 ## Exports
 
-| Export | Description |
-|---|---|
-| `createNodeRedisLockProvider`, `NodeRedisLockProvider` | Factory + class. |
-| `NodeRedisTemplate` | The `RedisTemplate` adapter (useful if you're building your own `InternalRedisLockProvider`). |
+| Export                                                 | Description                                                                                   |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `createNodeRedisLockProvider`, `NodeRedisLockProvider` | Factory + class.                                                                              |
+| `NodeRedisTemplate`                                    | The `RedisTemplate` adapter (useful if you're building your own `InternalRedisLockProvider`). |
 
 ## Requirements
 

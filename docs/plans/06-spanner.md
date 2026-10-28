@@ -62,7 +62,6 @@ packages/spanner/
 ### Step 2: Implement SpannerConfiguration
 
 **File:** `src/spanner-configuration.ts`
-
 - `SpannerColumnNames` interface (defaults: name="name", lockUntil="lockUntil", lockedAt="lockedAt", lockedBy="lockedBy").
 - `SpannerConfiguration` interface.
 - `DEFAULT_COLUMN_NAMES` constant.
@@ -311,14 +310,14 @@ All must pass. The live-integration test is skipped by default.
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| No Spanner emulator — cannot run real integration tests in CI | Unit tests with mocked `DatabaseClient` cover all code paths. Provide a skipped live-integration test for manual verification. Document clearly in README. |
-| Spanner SDK API drift across versions (`readRow` signature, error codes) | Pin `@google-cloud/spanner` to a specific major in devDeps. Parameterize the mock to test both error shapes. |
-| `Mutation.insert` conflict error code varies (`FAILED_PRECONDITION` vs `ALREADY_EXISTS`) | `isInsertConflictError` checks both `code` and message substring. Unit tests cover both shapes. |
-| SQL identifier injection via `tableName` / `columnNames` | Validate against `^[A-Za-z_][A-Za-z0-9_]*$` in `resolveSpannerConfiguration`. Backtick-quote identifiers in generated SQL. |
-| Transaction retry exhaustion surfaces as `AbortedError` | Propagate — caller (`StorageBasedLockProvider`) treats it as a storage error. Document. |
-| `readRow` returns `null` vs `undefined` across SDK versions | Treat both as "not found" via a `!row` check. Add a test for both. |
+| Risk                                                                                     | Mitigation                                                                                                                                                 |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No Spanner emulator — cannot run real integration tests in CI                            | Unit tests with mocked `DatabaseClient` cover all code paths. Provide a skipped live-integration test for manual verification. Document clearly in README. |
+| Spanner SDK API drift across versions (`readRow` signature, error codes)                 | Pin `@google-cloud/spanner` to a specific major in devDeps. Parameterize the mock to test both error shapes.                                               |
+| `Mutation.insert` conflict error code varies (`FAILED_PRECONDITION` vs `ALREADY_EXISTS`) | `isInsertConflictError` checks both `code` and message substring. Unit tests cover both shapes.                                                            |
+| SQL identifier injection via `tableName` / `columnNames`                                 | Validate against `^[A-Za-z_][A-Za-z0-9_]*$` in `resolveSpannerConfiguration`. Backtick-quote identifiers in generated SQL.                                 |
+| Transaction retry exhaustion surfaces as `AbortedError`                                  | Propagate — caller (`StorageBasedLockProvider`) treats it as a storage error. Document.                                                                    |
+| `readRow` returns `null` vs `undefined` across SDK versions                              | Treat both as "not found" via a `!row` check. Add a test for both.                                                                                         |
 
 ## Estimation
 
