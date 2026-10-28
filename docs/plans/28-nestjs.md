@@ -7,6 +7,7 @@ Implement `docs/specs/28-nestjs.md` as a new `@tslock/nestjs` package. Core and 
 ## Files
 
 Create:
+
 - `packages/nestjs/package.json`
 - `packages/nestjs/tsconfig.json`
 - `packages/nestjs/tsup.config.ts`
@@ -24,6 +25,7 @@ Create:
 - `.changeset/nestjs-scheduler-lock.md`
 
 Update:
+
 - `README.md` — middleware/framework matrix and design-doc counts
 - `AGENTS.md` — framework integration row and design-doc counts
 - `pnpm-lock.yaml` — install the new package's Nest, rxjs, and reflect-metadata dependencies

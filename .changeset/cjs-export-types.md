@@ -1,5 +1,4 @@
 ---
-
 '@tslock/arangodb': patch
 '@tslock/aws-lambda': patch
 '@tslock/bree': patch

@@ -65,12 +65,14 @@ export default defineConfig({
 ### Step 2: Define ArangoDbLockDocument
 
 **File:** `src/arangodb-lock-document.ts`
+
 - Interface with `_key: string`, `lockUntil: string`, `lockedAt: string`, `lockedBy: string`.
 - Export so consumers can type their `Collection<ArangoDbLockDocument>`.
 
 ### Step 3: Implement ArangoDbAccessor
 
 **File:** `src/arangodb-accessor.ts`
+
 - Import `Collection` and `Database` types from `arangojs`.
 - Constructor: `(collection: Collection<ArangoDbLockDocument>)`.
 - Helper `isDocumentNotFoundError(e)`: returns `true` if `e?.errorNum === 1202` || `e?.code === 1202` || `e?.name === 'ArangoError' && e.errorNum === 1202`. Covers the `arangojs` error shape (ArangoDB error code `1202` = `ERROR_ARANGO_DOCUMENT_NOT_FOUND`).
@@ -82,18 +84,18 @@ export default defineConfig({
      a. `let existing: ArangoDbLockDocument | null = null;`
      b. `try { existing = await this.collection.document(documentId); } catch (e) { if (isDocumentNotFoundError(e)) existing = null; else { await txn.abort(); throw e; } }`
      c. If `existing === null`:
-     - `await this.collection.save({ _key: documentId, lockUntil: Utils.toIsoString(lockAtMostUntil(config)), lockedAt: Utils.toIsoString(now), lockedBy: hostname });`
-       - `await txn.commit();`
-         - Return `new ArangoDbLock(config, this)`.
-           d. If `existing !== null`:
-           - `const lockUntilMillis = Date.parse(existing.lockUntil);`
-             - If `lockUntilMillis <= now` (expired):
-               - `await this.collection.update(documentId, { lockUntil: Utils.toIsoString(lockAtMostUntil(config)), lockedAt: Utils.toIsoString(now), lockedBy: hostname });`
-               - `await txn.commit();`
-               - Return `new ArangoDbLock(config, this)`.
-               - Else (lock held):
-                 - `await txn.abort();`
-                 - Return `undefined`.
+        - `await this.collection.save({ _key: documentId, lockUntil: Utils.toIsoString(lockAtMostUntil(config)), lockedAt: Utils.toIsoString(now), lockedBy: hostname });`
+        - `await txn.commit();`
+        - Return `new ArangoDbLock(config, this)`.
+     d. If `existing !== null`:
+        - `const lockUntilMillis = Date.parse(existing.lockUntil);`
+        - If `lockUntilMillis <= now` (expired):
+          - `await this.collection.update(documentId, { lockUntil: Utils.toIsoString(lockAtMostUntil(config)), lockedAt: Utils.toIsoString(now), lockedBy: hostname });`
+          - `await txn.commit();`
+          - Return `new ArangoDbLock(config, this)`.
+        - Else (lock held):
+          - `await txn.abort();`
+          - Return `undefined`.
   5. `catch (e) { try { await txn.abort(); } catch { /* best-effort */ } throw e; }`
 - `extend(config)`:
   1. `const now = ClockProvider.now(); const hostname = Utils.getHostname();`
@@ -110,6 +112,7 @@ export default defineConfig({
 ### Step 4: Implement ArangoDbLock
 
 **File:** `src/arangodb-lock.ts`
+
 - `import { AbstractSimpleLock, LockConfiguration, SimpleLock } from '@tslock/core'`
 - `class ArangoDbLock extends AbstractSimpleLock`:
   - `constructor(private readonly accessor: ArangoDbAccessor, config: LockConfiguration)` — pass `config` to `super(config)`.
@@ -119,6 +122,7 @@ export default defineConfig({
 ### Step 5: Implement ArangoDbLockProvider + factory
 
 **File:** `src/arangodb-lock-provider.ts`
+
 - `import type { Database } from 'arangojs'`
 - `class ArangoDbLockProvider implements ExtensibleLockProvider`:
   - `private readonly accessor: ArangoDbAccessor`
@@ -162,6 +166,7 @@ const provider = new ArangoDbLockProvider(collection);
 ```
 
 Use `ClockProvider.setClock(() => fixedTime)` to make `now` deterministic.
+
 - `lock()`:
   - First lock (doc not found):
     - `collection.document` rejects with `{ errorNum: 1202, name: 'ArangoError' }` → `collection.save` called with `{ _key, lockUntil, lockedAt, lockedBy }` → `txn.commit` called → `ArangoDbLock` returned.
@@ -188,8 +193,8 @@ Use `ClockProvider.setClock(() => fixedTime)` to make `now` deterministic.
 ### Step 8: Write integration tests (testcontainers ArangoDB)
 
 **File:** `__tests__/integration/arangodb-lock-provider.integration.test.ts`
-- Use `testcontainers` ArangoDB image:
 
+- Use `testcontainers` ArangoDB image:
   ```typescript
   import { ArangoDBContainer } from '@testcontainers/arangodb';
   const container = await new ArangoDBContainer('arangodb:3.11').start();
@@ -221,17 +226,17 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk                                                                     | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `arangojs` stream-transaction API differs across versions                | The current `arangojs` v8 API exposes `db.transaction()` + `trx.step()` + `trx.commit()`/`trx.abort()`. Older v7 exposed `db.beginTransaction(options)` returning a `Transaction` with direct collection operations. Pin `arangojs: "^8.0.0"` in `peerDependencies`. If the installed version exposes `db.transaction()` instead of `beginTransaction`, adapt the accessor to use `trx.step(() => collection.document(...), { read: [...] })` / `trx.step(() => collection.save(...), { write: [...] })` / `trx.commit()` / `trx.abort()`. The exclusive-collection semantics are identical; only the call shape differs. Document the chosen API in the accessor's module header. |
-| `exclusiveCollections` is Enterprise-only in ArangoDB                    | On the Community Edition, `exclusiveCollections` is rejected. Fall back to `writeCollections: [collectionName]` — write transactions on the same collection are serialized by ArangoDB, which provides the same at-most-one guarantee for this provider's read-then-write pattern. Detect the edition at runtime by catching the "not supported" error and retrying with `writeCollections`, OR document the requirement and let users on Community Edition pass a flag. **Decision:** support both — try `exclusiveCollections`, fall back to `writeCollections` on error. Document this in the README.                                                                           |
-| Stream transactions require the collection to pre-exist                  | `database.collection(name)` returns a handle; it does not create the collection. `beginTransaction` fails if the collection does not exist. Document that users must create the collection before the first `lock()` call. The integration test's `beforeAll` calls `database.createCollection`.                                                                                                                                                                                                                                                                                                                                                                                   |
-| `collection.database()` returns the database handle                      | Verify this method exists on the `arangojs` `Collection` type. If not, accept the `Database` in the accessor constructor alongside the `Collection`.**Decision:** accept both — the accessor stores the `database` reference passed from the provider to avoid relying on `collection.database()`.                                                                                                                                                                                                                                                                                                                                                                                 |
-| `Date.parse` on ISO-8601 strings is timezone-safe                        | `Utils.toIsoString` always produces UTC `Z`-suffixed strings; `Date.parse` interprets them as UTC. No timezone drift. Unit test with a known timestamp.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `txn.abort()` called twice (once in the held-lock path, once in `catch`) | The held-lock path calls `abort()` then returns `undefined` — it does NOT throw, so the `catch` is not entered. The `catch` only runs when an operation throws. No double-abort. Still, wrap `abort()` in `try/catch` (best-effort) in case the server already rolled back the transaction.                                                                                                                                                                                                                                                                                                                                                                                        |
-| ArangoDB testcontainer image edition (Community vs Enterprise)           | The public `arangodb:3.11` image is Community Edition — `exclusiveCollections` will fail. The integration test must use the `writeCollections` fallback. Verify the fallback path works; if the spec's `exclusiveCollections` is required, use the ArangoDB Enterprise image (`arangodb/enterprise:3.11`) for the integration test. **Decision:** integration test uses Community image + `writeCollections` fallback; unit tests cover both `exclusiveCollections` and `writeCollections` code paths.                                                                                                                                                                             |
-| `collection.update` on a non-existent key throws (not a no-op)           | Unlike MongoDB, ArangoDB's `update` throws `ERROR_ARANGO_DOCUMENT_NOT_FOUND` (`1202`) when the key does not exist. The `unlock()` and `extend()` paths catch `1202` and treat it as a benign no-op. Unit test covers this.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| No `@testcontainers/arangodb` package                                    | Verify a `testcontainers` ArangoDB module exists. If not, use `GenericContainer` with the `arangodb` image, expose port `8529`, and build the `Database` from the mapped URL. The `arangojs` `Database` constructor accepts `{ url }`.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Risk | Mitigation |
+|---|---|
+| `arangojs` stream-transaction API differs across versions | The current `arangojs` v8 API exposes `db.transaction()` + `trx.step()` + `trx.commit()`/`trx.abort()`. Older v7 exposed `db.beginTransaction(options)` returning a `Transaction` with direct collection operations. Pin `arangojs: "^8.0.0"` in `peerDependencies`. If the installed version exposes `db.transaction()` instead of `beginTransaction`, adapt the accessor to use `trx.step(() => collection.document(...), { read: [...] })` / `trx.step(() => collection.save(...), { write: [...] })` / `trx.commit()` / `trx.abort()`. The exclusive-collection semantics are identical; only the call shape differs. Document the chosen API in the accessor's module header. |
+| `exclusiveCollections` is Enterprise-only in ArangoDB | On the Community Edition, `exclusiveCollections` is rejected. Fall back to `writeCollections: [collectionName]` — write transactions on the same collection are serialized by ArangoDB, which provides the same at-most-one guarantee for this provider's read-then-write pattern. Detect the edition at runtime by catching the "not supported" error and retrying with `writeCollections`, OR document the requirement and let users on Community Edition pass a flag. **Decision:** support both — try `exclusiveCollections`, fall back to `writeCollections` on error. Document this in the README. |
+| Stream transactions require the collection to pre-exist | `database.collection(name)` returns a handle; it does not create the collection. `beginTransaction` fails if the collection does not exist. Document that users must create the collection before the first `lock()` call. The integration test's `beforeAll` calls `database.createCollection`. |
+| `collection.database()` returns the database handle | Verify this method exists on the `arangojs` `Collection` type. If not, accept the `Database` in the accessor constructor alongside the `Collection`. **Decision:** accept both — the accessor stores the `database` reference passed from the provider to avoid relying on `collection.database()`. |
+| `Date.parse` on ISO-8601 strings is timezone-safe | `Utils.toIsoString` always produces UTC `Z`-suffixed strings; `Date.parse` interprets them as UTC. No timezone drift. Unit test with a known timestamp. |
+| `txn.abort()` called twice (once in the held-lock path, once in `catch`) | The held-lock path calls `abort()` then returns `undefined` — it does NOT throw, so the `catch` is not entered. The `catch` only runs when an operation throws. No double-abort. Still, wrap `abort()` in `try/catch` (best-effort) in case the server already rolled back the transaction. |
+| ArangoDB testcontainer image edition (Community vs Enterprise) | The public `arangodb:3.11` image is Community Edition — `exclusiveCollections` will fail. The integration test must use the `writeCollections` fallback. Verify the fallback path works; if the spec's `exclusiveCollections` is required, use the ArangoDB Enterprise image (`arangodb/enterprise:3.11`) for the integration test. **Decision:** integration test uses Community image + `writeCollections` fallback; unit tests cover both `exclusiveCollections` and `writeCollections` code paths. |
+| `collection.update` on a non-existent key throws (not a no-op) | Unlike MongoDB, ArangoDB's `update` throws `ERROR_ARANGO_DOCUMENT_NOT_FOUND` (`1202`) when the key does not exist. The `unlock()` and `extend()` paths catch `1202` and treat it as a benign no-op. Unit test covers this. |
+| No `@testcontainers/arangodb` package | Verify a `testcontainers` ArangoDB module exists. If not, use `GenericContainer` with the `arangodb` image, expose port `8529`, and build the `Database` from the mapped URL. The `arangojs` `Database` constructor accepts `{ url }`. |
 
 ## Estimation
 

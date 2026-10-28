@@ -6,14 +6,14 @@ The `@tslock/hazelcast` package provides a DIRECT `LockProvider` implementation 
 
 ## Package
 
-| Field             | Value                                                           |
-| ----------------- | --------------------------------------------------------------- |
-| **Name**          | `@tslock/hazelcast`                                             |
-| **Driver**        | `hazelcast-client` (Hazelcast Node.js client) — peer dependency |
-| **Dependencies**  | `@tslock/core` (peer), `hazelcast-client` (peer)                |
-| **Node.js**       | >= 22                                                           |
-| **Module format** | Dual ESM + CJS                                                  |
-| **Build**         | tsup                                                            |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/hazelcast` |
+| **Driver** | `hazelcast-client` (Hazelcast Node.js client) — peer dependency |
+| **Dependencies** | `@tslock/core` (peer), `hazelcast-client` (peer) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -34,8 +34,8 @@ The constructor accepts an already-started `HazelcastClient`. The user is respon
 
 ```typescript
 interface HazelcastLockProviderOptions {
-  lockStoreKey?: string; // default: 'shedlock_storage'
-  lockLeaseTimeMs?: number; // default: 30000 (30s) — TTL for the entry-level lock used during unlock
+  lockStoreKey?: string;        // default: 'shedlock_storage'
+  lockLeaseTimeMs?: number;     // default: 30000 (30s) — TTL for the entry-level lock used during unlock
 }
 ```
 
@@ -62,9 +62,9 @@ Returned by `HazelcastLockProvider.lock()` when acquisition succeeds. `doExtend`
 
 ```typescript
 interface HazelcastLockRecord {
-  lockUntil: string; // ISO-8601 (Utils.toIsoString)
-  lockedAt: string; // ISO-8601
-  lockedBy: string; // hostname (Utils.getHostname())
+  lockUntil: string;     // ISO-8601 (Utils.toIsoString)
+  lockedAt: string;      // ISO-8601
+  lockedBy: string;     // hostname (Utils.getHostname())
 }
 ```
 
@@ -74,7 +74,11 @@ Stored as the value of the `IMap` entry. All fields are ISO-8601 strings (lexico
 
 ```typescript
 class HazelcastAccessor {
-  constructor(client: HazelcastClient, lockStoreKey: string, lockLeaseTimeMs: number);
+  constructor(
+    client: HazelcastClient,
+    lockStoreKey: string,
+    lockLeaseTimeMs: number,
+  );
   lock(config: LockConfiguration): Promise<SimpleLock | undefined>;
   unlock(config: LockConfiguration): Promise<void>;
 }
@@ -210,19 +214,19 @@ packages/hazelcast/
 
 ## Error Handling Summary
 
-| Situation                                              | Behavior                                                                                                                                                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Lock held by another instance                          | `existing.lockUntil > now` inside the entry-level critical section → return `undefined`                                                                                                          |
-| First lock on a new entry                              | `store.get` returns `null` → `addNewLock` put with TTL → `HazelcastLock` returned                                                                                                                |
-| Lock expired, second acquirer wins                     | `existing.lockUntil <= now` → `replaceLock` put with TTL → `HazelcastLock` returned                                                                                                              |
-| Holder crashed before `unlock`                         | Entry-level lock auto-released after `keyLockTimeMs`; lock record auto-evicted after `lockAtMostFor` TTL. Next acquirer finds `null` (or expired record) and acquires.                           |
-| Holder crashed between `store.lock` and `store.unlock` | Entry-level lock auto-released after the TTL passed to `store.lock`. The next acquirer's `store.lock` blocks until then.                                                                         |
-| Two members race to acquire                            | `store.lock(config.name)` serializes — only one holds the entry lock at a time; the other blocks until the first releases. No `BadVersion`-style conflict.                                       |
-| `store.unlock` called without a matching `store.lock`  | Hazelcast throws (`IllegalMonitorStateException`). Wrap in try/catch and log a warning — do not propagate (the lock acquisition/unlock decision has already been made).                          |
-| Connection to cluster lost                             | Hazelcast client throws (`HazelcastError`, `ClientNotActiveError`, `ClientOfflineError`, etc.) → propagate to caller                                                                             |
-| `extend()` called                                      | Throws `LockException('Extend not supported by this provider')`                                                                                                                                  |
-| Cluster topology change mid-operation                  | Hazelcast re-establishes the entry-level lock via its split-brain / partition-recovery semantics. The entry-level lock is safe across member loss as long as the partition quorum is maintained. |
-| `store.put` TTL exceeds Hazelcast max TTL              | Hazelcast clamps the TTL. Document the Hazelcast max-ttl config in the README.                                                                                                                   |
+| Situation | Behavior |
+|---|---|
+| Lock held by another instance | `existing.lockUntil > now` inside the entry-level critical section → return `undefined` |
+| First lock on a new entry | `store.get` returns `null` → `addNewLock` put with TTL → `HazelcastLock` returned |
+| Lock expired, second acquirer wins | `existing.lockUntil <= now` → `replaceLock` put with TTL → `HazelcastLock` returned |
+| Holder crashed before `unlock` | Entry-level lock auto-released after `keyLockTimeMs`; lock record auto-evicted after `lockAtMostFor` TTL. Next acquirer finds `null` (or expired record) and acquires. |
+| Holder crashed between `store.lock` and `store.unlock` | Entry-level lock auto-released after the TTL passed to `store.lock`. The next acquirer's `store.lock` blocks until then. |
+| Two members race to acquire | `store.lock(config.name)` serializes — only one holds the entry lock at a time; the other blocks until the first releases. No `BadVersion`-style conflict. |
+| `store.unlock` called without a matching `store.lock` | Hazelcast throws (`IllegalMonitorStateException`). Wrap in try/catch and log a warning — do not propagate (the lock acquisition/unlock decision has already been made). |
+| Connection to cluster lost | Hazelcast client throws (`HazelcastError`, `ClientNotActiveError`, `ClientOfflineError`, etc.) → propagate to caller |
+| `extend()` called | Throws `LockException('Extend not supported by this provider')` |
+| Cluster topology change mid-operation | Hazelcast re-establishes the entry-level lock via its split-brain / partition-recovery semantics. The entry-level lock is safe across member loss as long as the partition quorum is maintained. |
+| `store.put` TTL exceeds Hazelcast max TTL | Hazelcast clamps the TTL. Document the Hazelcast max-ttl config in the README. |
 
 ## Dependencies
 

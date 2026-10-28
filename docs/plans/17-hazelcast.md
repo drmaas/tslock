@@ -69,6 +69,7 @@ export default defineConfig({
 ### Step 2: Define options + constants
 
 **File:** `src/hazelcast-lock-provider-options.ts`
+
 - `DEFAULT_LOCK_STORE_KEY = 'shedlock_storage'`
 - `DEFAULT_LOCK_LEASE_TIME = 30_000`
 - Interface `HazelcastLockProviderOptions` with `lockStoreKey?: string` and `lockLeaseTimeMs?: number`.
@@ -79,6 +80,7 @@ export default defineConfig({
 ### Step 3: Implement HazelcastAccessor
 
 **File:** `src/hazelcast-accessor.ts`
+
 - Imports from `hazelcast-client`: `HazelcastClient`, `TimeUnit`.
 - Import `HazelcastLockRecord` type (defined locally or in a shared types file).
 - Constructor: `(client, lockStoreKey, lockLeaseTimeMs)`.
@@ -95,6 +97,7 @@ export default defineConfig({
 ### Step 4: Implement HazelcastLock
 
 **File:** `src/hazelcast-lock.ts`
+
 - `import { AbstractSimpleLock, LockConfiguration, SimpleLock } from '@tslock/core'`
 - `class HazelcastLock extends AbstractSimpleLock`:
   - `constructor(private readonly accessor: HazelcastAccessor, config: LockConfiguration)` — pass `config` to `super(config)`.
@@ -104,6 +107,7 @@ export default defineConfig({
 ### Step 5: Implement HazelcastLockProvider
 
 **File:** `src/hazelcast-lock-provider.ts`
+
 - `import type { HazelcastClient } from 'hazelcast-client'`
 - `class HazelcastLockProvider implements LockProvider`:
   - `private readonly accessor: HazelcastAccessor`
@@ -158,8 +162,8 @@ const provider = new HazelcastLockProvider(client);
 ### Step 8: Write integration tests (Hazelcast testcontainer)
 
 **File:** `__tests__/integration/hazelcast-lock-provider.integration.test.ts`
-- Use the Hazelcast Docker image via testcontainers:
 
+- Use the Hazelcast Docker image via testcontainers:
   ```typescript
   import { GenericContainer } from 'testcontainers';
   const container = await new GenericContainer('hazelcast/hazelcast:5.3.0')
@@ -193,18 +197,18 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk                                                                         | Mitigation                                                                                                                                                                                                                                                                                                                                                            |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hazelcast-client` v5 API drift (`IMap.lock`, `put` TTL signature)           | Pin `^5.0.0` in `peerDependencies`. The `lock(key, ttl, TimeUnit)` and `put(key, value, ttlMillis)` signatures are stable across v5.x. Add a unit test asserting these are called with the expected args.                                                                                                                                                             |
-| `TimeUnit.MILLISECONDS` import path                                          | Import from the top-level `hazelcast-client` export. Add a smoke test that constructs a provider and calls `lock` to catch import regressions early.                                                                                                                                                                                                                  |
-| Entry-level lock TTL too short                                               | `keyLockTimeMs = lockAtMostFor` — if a user sets `lockAtMostFor` very small (e.g. 100ms), the entry-level lock could expire mid get-check-put, allowing a race. Mitigation: document that `lockAtMostFor` must be > the get-check-put round-trip (typically < 50ms on a healthy cluster). The default `lockAtMostFor` in ShedLock is 1h, so this is rarely a concern. |
-| Hazelcast max lock lease time                                                | Hazelcast has a default max lock lease time. If `keyLockTimeMs` exceeds it, the client clamps. Document this and note that very long `lockAtMostFor` values may be clamped.                                                                                                                                                                                           |
-| Holder crashes between `store.lock` and `store.unlock`                       | The TTL on `store.lock` (either `keyLockTimeMs` during `lock()` or `lockLeaseTimeMs` during `unlock()`) ensures the entry-level lock auto-releases. Default `lockLeaseTimeMs = 30s` is safe for normal cleanup.                                                                                                                                                       |
-| `store.unlock` called without holding the entry lock (e.g. after TTL expiry) | Hazelcast throws `IllegalMonitorStateException`. Wrap `store.unlock` in try/catch and log a warning — do not propagate (the lock acquisition/unlock decision has already been made).                                                                                                                                                                                  |
-| `HazelcastLockRecord` serialization                                          | The record is a plain object with string fields. Hazelcast's default serialization handles it. For users with custom serialization configs, document that they may need to register the record class. The integration test should exercise the default serialization path.                                                                                            |
-| Cluster partition / split-brain                                              | Hazelcast's `IMap.lock` has well-defined behavior under partitions (locks are released on the minority side). The lock record's per-entry TTL (`lockAtMostFor`) is the ultimate safety net. Document that `lockAtMostFor` must be longer than the worst-case partition healing time.                                                                                  |
-| `client.getMap` returns a fresh proxy each call                              | The Node.js client returns a lightweight proxy; calling `getMap` per operation is fine (no per-call cost beyond a lookup). Cache the proxy in the accessor if profiling shows it matters.                                                                                                                                                                             |
-| `Date.parse` of an ISO-8601 with 3-digit millis                              | `Date.parse('2018-12-07T12:30:37.810Z')` returns the correct epoch millis in Node.js (all supported versions). No concern.                                                                                                                                                                                                                                            |
+| Risk | Mitigation |
+|---|---|
+| `hazelcast-client` v5 API drift (`IMap.lock`, `put` TTL signature) | Pin `^5.0.0` in `peerDependencies`. The `lock(key, ttl, TimeUnit)` and `put(key, value, ttlMillis)` signatures are stable across v5.x. Add a unit test asserting these are called with the expected args. |
+| `TimeUnit.MILLISECONDS` import path | Import from the top-level `hazelcast-client` export. Add a smoke test that constructs a provider and calls `lock` to catch import regressions early. |
+| Entry-level lock TTL too short | `keyLockTimeMs = lockAtMostFor` — if a user sets `lockAtMostFor` very small (e.g. 100ms), the entry-level lock could expire mid get-check-put, allowing a race. Mitigation: document that `lockAtMostFor` must be > the get-check-put round-trip (typically < 50ms on a healthy cluster). The default `lockAtMostFor` in ShedLock is 1h, so this is rarely a concern. |
+| Hazelcast max lock lease time | Hazelcast has a default max lock lease time. If `keyLockTimeMs` exceeds it, the client clamps. Document this and note that very long `lockAtMostFor` values may be clamped. |
+| Holder crashes between `store.lock` and `store.unlock` | The TTL on `store.lock` (either `keyLockTimeMs` during `lock()` or `lockLeaseTimeMs` during `unlock()`) ensures the entry-level lock auto-releases. Default `lockLeaseTimeMs = 30s` is safe for normal cleanup. |
+| `store.unlock` called without holding the entry lock (e.g. after TTL expiry) | Hazelcast throws `IllegalMonitorStateException`. Wrap `store.unlock` in try/catch and log a warning — do not propagate (the lock acquisition/unlock decision has already been made). |
+| `HazelcastLockRecord` serialization | The record is a plain object with string fields. Hazelcast's default serialization handles it. For users with custom serialization configs, document that they may need to register the record class. The integration test should exercise the default serialization path. |
+| Cluster partition / split-brain | Hazelcast's `IMap.lock` has well-defined behavior under partitions (locks are released on the minority side). The lock record's per-entry TTL (`lockAtMostFor`) is the ultimate safety net. Document that `lockAtMostFor` must be longer than the worst-case partition healing time. |
+| `client.getMap` returns a fresh proxy each call | The Node.js client returns a lightweight proxy; calling `getMap` per operation is fine (no per-call cost beyond a lookup). Cache the proxy in the accessor if profiling shows it matters. |
+| `Date.parse` of an ISO-8601 with 3-digit millis | `Date.parse('2018-12-07T12:30:37.810Z')` returns the correct epoch millis in Node.js (all supported versions). No concern. |
 
 ## Estimation
 

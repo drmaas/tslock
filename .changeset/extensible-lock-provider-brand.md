@@ -1,5 +1,4 @@
 ---
-
 '@tslock/core': minor
 '@tslock/otel': minor
 ---

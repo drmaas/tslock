@@ -75,6 +75,7 @@ class TslockModule {
 `forRoot` validates options when it is called. `forRootAsync` validates when the factory resolves. Validation uses `parseDuration` and the same least/most relationship as `createLockConfig`.
 
 Invalid options throw `LockException`:
+
 - `lockProvider.lock` is missing.
 - `defaultLockAtMostFor` is missing or not a valid duration.
 - `defaultLockAtLeastFor` is not a valid duration.
@@ -82,9 +83,9 @@ Invalid options throw `LockException`:
 
 The dynamic module provides and exports:
 
-| Token                          | Value                                                    |
-| ------------------------------ | -------------------------------------------------------- |
-| `TSLOCK_LOCK_PROVIDER`         | The configured `LockProvider`                            |
+| Token | Value |
+|---|---|
+| `TSLOCK_LOCK_PROVIDER` | The configured `LockProvider` |
 | `TSLOCK_LOCKING_TASK_EXECUTOR` | `new DefaultLockingTaskExecutor(lockProvider, listener)` |
 
 `SchedulerLockInterceptor` is also registered and exported. When `registerInterceptor` is true, the module additionally registers that interceptor as `APP_INTERCEPTOR`.
@@ -110,6 +111,7 @@ function SchedulerLock(options: SchedulerLockOptions): MethodDecorator;
 `createLockConfig` runs on each invocation so `createdAt` is the attempt time. A decorator duration that is incompatible with the module default (for example a shorter `lockAtMostFor` than the module `defaultLockAtLeastFor`) throws `LockException` from that attempt.
 
 The wrapper:
+
 1. Resolves the active runtime. If none is bound, throws `LockException`.
 2. Calls `executor.executeWithLock`.
 3. Returns `TaskResult.getResult()` when `wasExecuted` is true.
@@ -130,6 +132,7 @@ async createReport(): Promise<void> {}
 ### Interceptor
 
 `SchedulerLockInterceptor` implements `NestInterceptor`.
+
 - No `@SchedulerLock` metadata on the handler: delegate to `next.handle()`.
 - Handler already wrapped by `@SchedulerLock`: delegate to `next.handle()`. The wrapper performs the single acquire. Listener hooks for that invocation fire once.
 - Metadata present on an unwrapped handler: run `next.handle()` inside `executeWithLock`. On success, emit the handler value. When the lock is not acquired, emit `undefined` and do not subscribe to the handler. Errors propagate on the observable.
@@ -142,15 +145,15 @@ Metadata is stored on the wrapped function. `SCHEDULER_LOCK_METADATA` is the `re
 
 ## Behavior
 
-| Situation                                       | Result                                                                                                                     |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Lock acquired                                   | Original method runs inside `LockAssert` / `LockExtender` context. Return value is passed through. Lock unlocks afterward. |
-| Same lock name already held on this async stack | Executor reenters and runs the method.                                                                                     |
-| Lock not acquired                               | Method does not run. Decorator and interceptor resolve `undefined`. No throw.                                              |
-| Provider or task throws                         | Error propagates. Successful lock is unlocked by the executor.                                                             |
-| Module not initialized                          | Decorator throws `LockException`.                                                                                          |
-| Module destroyed and it owns the runtime        | Later decorated calls throw `LockException` until a module binds a runtime again.                                          |
-| `registerInterceptor` with a wrapped handler    | Interceptor does not acquire a second lock.                                                                                |
+| Situation | Result |
+|---|---|
+| Lock acquired | Original method runs inside `LockAssert` / `LockExtender` context. Return value is passed through. Lock unlocks afterward. |
+| Same lock name already held on this async stack | Executor reenters and runs the method. |
+| Lock not acquired | Method does not run. Decorator and interceptor resolve `undefined`. No throw. |
+| Provider or task throws | Error propagates. Successful lock is unlocked by the executor. |
+| Module not initialized | Decorator throws `LockException`. |
+| Module destroyed and it owns the runtime | Later decorated calls throw `LockException` until a module binds a runtime again. |
+| `registerInterceptor` with a wrapped handler | Interceptor does not acquire a second lock. |
 
 `lockAtLeastFor` and expiry are entirely the executor and provider's behavior. The Nest package does not unlock early and does not implement its own TTL.
 
@@ -159,6 +162,7 @@ Metadata is stored on the wrapped function. `SCHEDULER_LOCK_METADATA` is the `re
 `packages/nestjs` follows the existing framework-adapter layout: dual ESM/CJS via tsup, `engines.node >= 22`, `Apache-2.0`, public `publishConfig`, and `workspace:*` dependency on `@tslock/core`.
 
 Peer dependencies (required):
+
 - `@nestjs/common` `^10.0.0 || ^11.0.0`
 - `@nestjs/core` `^10.0.0 || ^11.0.0`
 - `rxjs` `^7.1.0`
@@ -168,6 +172,7 @@ Peer dependencies (required):
 ## Tests
 
 Unit tests, without a Nest application:
+
 - Acquired lock runs the method, preserves `this`, and returns the value.
 - Lock held by another caller skips the method and returns `undefined`.
 - Provider errors and task errors propagate; the lock unlocks after a task error.
@@ -180,6 +185,7 @@ Unit tests, without a Nest application:
 - Interceptor executes an unwrapped metadata handler under the lock, skips it when the lock is not acquired, and propagates task errors.
 
 Integration tests use `@nestjs/testing` and `InMemoryLockProvider`:
+
 - `forRoot` resolves `TSLOCK_LOCK_PROVIDER` and `TSLOCK_LOCKING_TASK_EXECUTOR`, and a decorated provider method runs under that module.
 - Overlapping calls on the same name execute the method once.
 - `forRootAsync` injects a lock provider from an imported module.

@@ -37,7 +37,7 @@ try {
   await store.lock(config.name, keyLockTimeMs, TimeUnit.MILLISECONDS);
   // ... get-check-put ...
 } finally {
-  await store.unlock(config.name); // NOT wrapped in try/catch
+  await store.unlock(config.name);  // NOT wrapped in try/catch
 }
 ```
 If `store.lock()` throws (connection lost, cluster down), the `finally` block calls `store.unlock()` on a lock we do not hold → Hazelcast throws `IllegalMonitorStateException`, which **masks the original connection error**. The spec's own error-handling table acknowledges this case ("`store.unlock` called without a matching `store.lock` → Hazelcast throws `IllegalMonitorStateException`. Wrap in try/catch and log a warning") but the `lock()` code does not implement the mitigation. The plan's Step 3 for `unlock()` correctly wraps the finally-unlock in `try/catch`, but Step 3 for `lock()` does not. **This is inconsistent and should be fixed** — both finally blocks need the same guard, or a `locked` boolean flag should gate the unlock.

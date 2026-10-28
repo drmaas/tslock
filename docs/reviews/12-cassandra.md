@@ -46,7 +46,6 @@ The Cassandra provider implements `StorageAccessor` over the `cassandra-driver` 
 ## Gaps and Issues
 
 1. **Incomplete "rejects extend from a different lockedBy" integration test.** Same pattern as Neo4j (04) and Couchbase (05). The plan's test:
-
    ```typescript
    it('rejects extend from a different lockedBy', async () => {
      const owner = new CassandraLockProvider(lockClient, { keyspace: 'shedlock_test', lockedByValue: 'node-A' });
@@ -57,7 +56,6 @@ The Cassandra provider implements `StorageAccessor` over the `cassandra-driver` 
      await extended!.unlock();
    });
    ```
-
    The `intruder` provider is created but **never used**. The `lock!.extend('1m', 0)` is called on the **owner's** lock — which should succeed (same `lockedBy = node-A`). The test asserts `extended` is defined — the happy path, not the rejection. The test does not verify that the `intruder` (lockedBy = node-B) cannot extend the owner's lock.
 
    **Fix:** Acquire a lock with `owner`, then attempt to extend it via `intruder`'s internal accessor (or construct a `StorageBasedLockProvider` with the intruder's accessor), and assert it returns `false` (the `IF locked_by = 'node-B'` condition fails because the row has `locked_by = 'node-A'`). The current test passes but doesn't test the rejection.

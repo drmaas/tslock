@@ -8,14 +8,14 @@ TSLock uses [Changesets](https://github.com/changesets/changesets) for versionin
 
 ## Package
 
-| Field               | Value                                                         |
-| ------------------- | ------------------------------------------------------------- |
-| **Tool**            | `@changesets/cli` (root devDependency)                        |
-| **Strategy**        | Lockstep (fixed) — all `@tslock/*` packages share one version |
-| **Registry**        | npm (public scoped packages)                                  |
-| **Publish method**  | Local (`pnpm publish -r`)                                     |
-| **CI verification** | `pnpm check && pnpm typecheck && pnpm test && pnpm build`     |
-| **Changelog**       | `@changesets/changelog-github` (PR-linked entries)            |
+| Field | Value |
+|---|---|
+| **Tool** | `@changesets/cli` (root devDependency) |
+| **Strategy** | Lockstep (fixed) — all `@tslock/*` packages share one version |
+| **Registry** | npm (public scoped packages) |
+| **Publish method** | Local (`pnpm publish -r`) |
+| **CI verification** | `pnpm check && pnpm typecheck && pnpm test && pnpm build` |
+| **Changelog** | `@changesets/changelog-github` (PR-linked entries) |
 
 ## Versioning Strategy
 
@@ -25,13 +25,13 @@ All `@tslock/*` packages are grouped in `"fixed": [["@tslock/*"]]` in `.changese
 
 **Why lockstep over independent (multi-semantic-release):**
 
-| Concern          | Lockstep                                                                             | Independent                                                |
-| ---------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| User clarity     | `@tslock/core@1.2.0` + `@tslock/redis@1.2.0` always compatible                       | User must verify peer-dep ranges per upgrade               |
-| Release cost     | One release command bumps all 25+ packages                                           | Only changed packages bump (25+ changelogs)                |
-| Tooling          | Simple (changesets fixed mode)                                                       | Complex (multi-semantic-release or changesets independent) |
-| Impact of bugfix | All packages bump even for a single-provider fix                                     | Only the fixed provider bumps                              |
-| Cosmetic waste   | Unchanged packages get a new version (invisible — users install only what they need) | None                                                       |
+| Concern | Lockstep | Independent |
+|---|---|---|
+| User clarity | `@tslock/core@1.2.0` + `@tslock/redis@1.2.0` always compatible | User must verify peer-dep ranges per upgrade |
+| Release cost | One release command bumps all 25+ packages | Only changed packages bump (25+ changelogs) |
+| Tooling | Simple (changesets fixed mode) | Complex (multi-semantic-release or changesets independent) |
+| Impact of bugfix | All packages bump even for a single-provider fix | Only the fixed provider bumps |
+| Cosmetic waste | Unchanged packages get a new version (invisible — users install only what they need) | None |
 
 The "cosmetic waste" of bumping all packages is **zero-cost in practice**: users install only the packages they need (`pnpm add @tslock/core @tslock/redis`); the version numbers of packages they don't install are invisible. The clarity benefit — every `@tslock/*` package at the same version is guaranteed compatible — outweighs the cosmetic cost.
 
@@ -88,7 +88,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ['**']
   pull_request:
     branches: [main]
 
@@ -103,10 +103,10 @@ jobs:
       - run: corepack enable && pnpm install
         env:
           CI: true
-      - run: pnpm check # Biome format + lint
-      - run: pnpm typecheck # tsc --noEmit across all packages
-      - run: pnpm test # vitest run across all packages
-      - run: pnpm build # tsup across all packages
+      - run: pnpm check      # Biome format + lint
+      - run: pnpm typecheck   # tsc --noEmit across all packages
+      - run: pnpm test        # vitest run across all packages
+      - run: pnpm build       # tsup across all packages
 ```
 
 This catches formatting issues, type errors, test failures, and build breaks before they reach `main`.
@@ -202,17 +202,17 @@ tslock/
 
 ## Error Handling Summary
 
-| Situation                                   | Behavior                                                             |
-| ------------------------------------------- | -------------------------------------------------------------------- |
-| `pnpm login` not yet run                    | `pnpm publish -r` fails with `ENEEDAUTH` — run `pnpm login` first    |
-| npm 2FA challenge during publish            | Handled interactively via `pnpm login` session — no token-based auth |
-| `pnpm check` fails in CI                    | CI workflow fails; push/PR is blocked                                |
-| `pnpm typecheck` fails in CI                | CI workflow fails; push/PR is blocked                                |
-| `pnpm test` failures in CI                  | CI workflow fails; push/PR is blocked                                |
-| `pnpm build` failures in CI                 | CI workflow fails; push/PR is blocked                                |
-| Changeset file has invalid frontmatter      | `changeset version` fails with a parse error                         |
-| Package already published at target version | `pnpm publish -r` skips it (no-op)                                   |
-| Wrong version bump applied                  | Amend the commit or revert and recreate the changeset                |
+| Situation | Behavior |
+|---|---|
+| `pnpm login` not yet run | `pnpm publish -r` fails with `ENEEDAUTH` — run `pnpm login` first |
+| npm 2FA challenge during publish | Handled interactively via `pnpm login` session — no token-based auth |
+| `pnpm check` fails in CI | CI workflow fails; push/PR is blocked |
+| `pnpm typecheck` fails in CI | CI workflow fails; push/PR is blocked |
+| `pnpm test` failures in CI | CI workflow fails; push/PR is blocked |
+| `pnpm build` failures in CI | CI workflow fails; push/PR is blocked |
+| Changeset file has invalid frontmatter | `changeset version` fails with a parse error |
+| Package already published at target version | `pnpm publish -r` skips it (no-op) |
+| Wrong version bump applied | Amend the commit or revert and recreate the changeset |
 
 ## Non-Goals (for this spec)
 

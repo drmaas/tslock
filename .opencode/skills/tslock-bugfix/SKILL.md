@@ -1,5 +1,4 @@
 ---
-
 name: tslock-bugfix
 description: Reproduce-first bug-fixing workflow for TSLock. Use this skill whenever the user reports a bug, regression, failing test, incorrect behavior, race, compatibility problem, or asks to fix an issue. Reproduce the failure, implement the smallest correct fix, verify, obtain an independent review, and repeat until done. Do not use it for a new feature, architectural refactor, documentation-only work, or test-only improvement; route those to tslock-sdd, tslock-doc-improver, or tslock-test-improver.
 ---

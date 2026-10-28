@@ -37,7 +37,7 @@ The NATS provider implements a DIRECT `LockProvider` using JetStream Key-Value s
 if (lockAtLeastUntil(this.config) > now) {
   await this.kv.update(this.config.name, longToBytes(lockAtLeastUntil(this.config)), entry.revision);
 } else {
-  await this.kv.delete(this.config.name); // UNCONDITIONAL — no revision check
+  await this.kv.delete(this.config.name);  // UNCONDITIONAL — no revision check
 }
 ```
 The `lockUntil > lockAtMostUntil(config)` guard (step 2 of `doUnlock`) is meant to detect if someone else has taken over. But it only triggers if the stored `lockUntil` is **greater** than what we set. If the holder **overruns** `lockAtMostFor` and another acquirer takes over with a **shorter** `lockAtMostFor`, the new acquirer's `lockAtMostUntil` could be less than or equal to ours:

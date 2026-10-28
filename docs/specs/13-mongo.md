@@ -6,14 +6,14 @@ The `@tslock/mongo` package provides a DIRECT `LockProvider` implementation back
 
 ## Package
 
-| Field             | Value                                                         |
-| ----------------- | ------------------------------------------------------------- |
-| **Name**          | `@tslock/mongo`                                               |
-| **Driver**        | `mongodb` (official Node.js MongoDB driver) — peer dependency |
-| **Dependencies**  | `@tslock/core` (peer), `mongodb` (peer)                       |
-| **Node.js**       | >= 22                                                         |
-| **Module format** | Dual ESM + CJS                                                |
-| **Build**         | tsup                                                          |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/mongo` |
+| **Driver** | `mongodb` (official Node.js MongoDB driver) — peer dependency |
+| **Dependencies** | `@tslock/core` (peer), `mongodb` (peer) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -33,7 +33,10 @@ The constructor accepts an already-configured `Collection` from the `mongodb` dr
 ### 2. createMongoLockProvider factory
 
 ```typescript
-function createMongoLockProvider(db: Db, options?: MongoLockProviderOptions): MongoLockProvider;
+function createMongoLockProvider(
+  db: Db,
+  options?: MongoLockProviderOptions,
+): MongoLockProvider;
 ```
 
 Convenience factory that builds a `Collection` with the given options (collection name, write/read concern) and wraps it in a `MongoLockProvider`. Users who want full control over the `Collection` construct `MongoLockProvider` directly.
@@ -42,7 +45,7 @@ Convenience factory that builds a `Collection` with the given options (collectio
 
 ```typescript
 interface MongoLockProviderOptions {
-  collection?: string; // default: 'shedLock'
+  collection?: string;             // default: 'shedLock'
   collectionOptions?: {
     writeConcern?: { w: 'majority' | number; j?: boolean; wtimeoutMS?: number };
     readConcern?: { level: 'local' | 'majority' | 'linearizable' | 'available' | 'snapshot' };
@@ -59,10 +62,10 @@ Defaults applied by `createMongoLockProvider`:
 
 ```typescript
 interface MongoLockDocument {
-  _id: string; // lock name
-  lockUntil: Date; // BSON Date — `new Date(epochMillis)`
-  lockedAt: Date; // BSON Date — `new Date(epochMillis)`
-  lockedBy: string; // hostname (Utils.getHostname())
+  _id: string;          // lock name
+  lockUntil: Date;      // BSON Date — `new Date(epochMillis)`
+  lockedAt: Date;       // BSON Date — `new Date(epochMillis)`
+  lockedBy: string;     // hostname (Utils.getHostname())
 }
 ```
 
@@ -194,17 +197,17 @@ packages/mongo/
 
 ## Error Handling Summary
 
-| Situation                                       | Behavior                                                                                                                       |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Lock held by another instance                   | `findOneAndUpdate` matches zero docs (lockUntil > now) and upsert is pre-empted → `null` result or duplicate-key → `undefined` |
-| Concurrent upsert of same `_id`                 | `MongoServerError` with `code === 11000` → caught → return `undefined`                                                         |
-| First lock on a new `_id`                       | upsert insert succeeds → doc returned → `MongoLock`                                                                            |
-| Lock expired, second acquirer wins              | filter matches (lockUntil <= now) → doc updated → `MongoLock`                                                                  |
-| Connection error / network failure              | Propagate the driver error to the caller                                                                                       |
-| `extend()` on a lock held by another            | filter matches zero docs → `null` result → `undefined`                                                                         |
-| `extend()` on an expired lock                   | filter matches zero docs (`lockUntil > now` fails) → `undefined`                                                               |
-| `unlock()` on a non-existent doc                | No-op (update matches zero docs, no error)                                                                                     |
-| Invalid `Collection` (wrong db/collection name) | Propagate driver error on first operation                                                                                      |
+| Situation | Behavior |
+|---|---|
+| Lock held by another instance | `findOneAndUpdate` matches zero docs (lockUntil > now) and upsert is pre-empted → `null` result or duplicate-key → `undefined` |
+| Concurrent upsert of same `_id` | `MongoServerError` with `code === 11000` → caught → return `undefined` |
+| First lock on a new `_id` | upsert insert succeeds → doc returned → `MongoLock` |
+| Lock expired, second acquirer wins | filter matches (lockUntil <= now) → doc updated → `MongoLock` |
+| Connection error / network failure | Propagate the driver error to the caller |
+| `extend()` on a lock held by another | filter matches zero docs → `null` result → `undefined` |
+| `extend()` on an expired lock | filter matches zero docs (`lockUntil > now` fails) → `undefined` |
+| `unlock()` on a non-existent doc | No-op (update matches zero docs, no error) |
+| Invalid `Collection` (wrong db/collection name) | Propagate driver error on first operation |
 
 ## Dependencies
 

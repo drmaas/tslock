@@ -7,6 +7,7 @@ Add `@tslock/otel` from `docs/specs/28-otel.md`. The package records OpenTelemet
 ## Files
 
 Create:
+
 - `packages/otel/package.json`
 - `packages/otel/tsconfig.json`
 - `packages/otel/tsup.config.ts`
@@ -17,6 +18,7 @@ Create:
 - `.changeset/otel-metrics.md`
 
 Update:
+
 - `README.md` — observability package row and doc counts
 - `packages/core/README.md` — listener export and pointer to `@tslock/otel`
 - `docs/00-vision.md` — OpenTelemetry is provided by `@tslock/otel`; Prometheus stays user-wired

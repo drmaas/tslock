@@ -4,18 +4,18 @@
 
 The `@tslock/memcached` package provides a DIRECT `LockProvider` implementation backed by Memcached. It uses `memjs` (the most widely adopted pure-JavaScript memcached client for Node.js) and the memcached `add` command (which fails atomically if the key already exists) for lock acquisition, and `replace` / `delete` for release. This is a faithful port of ShedLock's `MemcachedLockProvider`.
 
-> **⚠️ CAVEAT — Memcached can evict locks early.** Memcached is an LRU cache, not a durable store. Under memory pressure it may evict keys before their TTL expires. A prematurely evicted lock allows another instance to re-acquire it, so `lockAtMostFor` is an _upper_ bound on hold time, not a guarantee. If you require strict lock validity, use a durable backend (Mongo, SQL, DynamoDB, Redis, Etcd, ZooKeeper, NATS KV with file storage). This limitation is inherent to memcached and is documented in the architecture (§6.7).
+> **⚠️ CAVEAT — Memcached can evict locks early.** Memcached is an LRU cache, not a durable store. Under memory pressure it may evict keys before their TTL expires. A prematurely evicted lock allows another instance to re-acquire it, so `lockAtMostFor` is an *upper* bound on hold time, not a guarantee. If you require strict lock validity, use a durable backend (Mongo, SQL, DynamoDB, Redis, Etcd, ZooKeeper, NATS KV with file storage). This limitation is inherent to memcached and is documented in the architecture (§6.7).
 
 ## Package
 
-| Field             | Value                                                |
-| ----------------- | ---------------------------------------------------- |
-| **Name**          | `@tslock/memcached`                                  |
-| **Driver**        | `memjs` (pure-JS memcached client) — peer dependency |
-| **Dependencies**  | `@tslock/core` (peer), `memjs` (peer)                |
-| **Node.js**       | >= 22                                                |
-| **Module format** | Dual ESM + CJS                                       |
-| **Build**         | tsup                                                 |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/memcached` |
+| **Driver** | `memjs` (pure-JS memcached client) — peer dependency |
+| **Dependencies** | `@tslock/core` (peer), `memjs` (peer) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -44,9 +44,9 @@ Creates a `memjs.Client` from `options.servers` and wraps it. Users who want ful
 
 ```typescript
 interface MemcachedLockProviderOptions {
-  servers: string; // required, e.g. "localhost:11211" (comma-separated for clusters)
-  env?: string; // default: 'default'
-  clientOptions?: MemjsClientOptions; // passed to memjs.Client.create()
+  servers: string;                 // required, e.g. "localhost:11211" (comma-separated for clusters)
+  env?: string;                    // default: 'default'
+  clientOptions?: MemjsClientOptions;  // passed to memjs.Client.create()
 }
 ```
 
@@ -128,6 +128,7 @@ Not supported. `AbstractSimpleLock.doExtend()` throws `LockException('Extend not
 ## ⚠️ Memcached Eviction Caveat
 
 Memcached uses LRU eviction. When the cache is full, the least-recently-used keys are evicted regardless of their remaining TTL. This means:
+
 1. **A lock can be released early.** If memcached evicts the lock key before `lockAtMostFor` elapses, another instance can acquire the lock while the original holder believes it still holds it. This breaks the at-most-once guarantee.
 2. **`lockAtLeastFor` is also affected.** If the key is evicted during the minimum hold window, `replace` in `doUnlock` fails and throws `LockException`. The lock is already gone, so the throw is informational.
 3. **No durable guarantee.** Memcached makes no persistence guarantees. A restart loses all locks (acceptable — they re-acquire), but memory pressure can lose specific locks mid-flight.
@@ -161,17 +162,17 @@ packages/memcached/
 
 ## Error Handling Summary
 
-| Situation                                                  | Behavior                                                           |
-| ---------------------------------------------------------- | ------------------------------------------------------------------ |
-| Lock held by another instance                              | `add` returns `success: false` → return `undefined`                |
-| First lock on a key                                        | `add` returns `success: true` → return `MemcachedLock`             |
-| `unlock()` with `keepLockFor <= 0` and key present         | `delete` returns `success: true` → return void                     |
-| `unlock()` with `keepLockFor <= 0` and key evicted/expired | `delete` returns `success: false` → throw `LockException`          |
-| `unlock()` with `keepLockFor > 0` and key present          | `replace` returns `success: true` → return void                    |
-| `unlock()` with `keepLockFor > 0` and key evicted          | `replace` returns `success: false` → throw `LockException`         |
-| `extend()`                                                 | Throws `LockException('Extend not supported')` (inherited default) |
-| Connection error / network failure                         | Propagate the memjs error to the caller                            |
-| Key evicted mid-lock                                       | Lock silently lost; documented caveat, not a runtime error         |
+| Situation | Behavior |
+|---|---|
+| Lock held by another instance | `add` returns `success: false` → return `undefined` |
+| First lock on a key | `add` returns `success: true` → return `MemcachedLock` |
+| `unlock()` with `keepLockFor <= 0` and key present | `delete` returns `success: true` → return void |
+| `unlock()` with `keepLockFor <= 0` and key evicted/expired | `delete` returns `success: false` → throw `LockException` |
+| `unlock()` with `keepLockFor > 0` and key present | `replace` returns `success: true` → return void |
+| `unlock()` with `keepLockFor > 0` and key evicted | `replace` returns `success: false` → throw `LockException` |
+| `extend()` | Throws `LockException('Extend not supported')` (inherited default) |
+| Connection error / network failure | Propagate the memjs error to the caller |
+| Key evicted mid-lock | Lock silently lost; documented caveat, not a runtime error |
 
 ## Dependencies
 

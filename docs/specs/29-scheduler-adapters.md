@@ -34,12 +34,12 @@ README and vision tell users to pair TSLock with `node-cron`, `bree`, Agenda, or
 
 Match existing integration packages (Express, NestJS, otel): **one package per host library**, plus a shared core when several adapters share non-trivial glue.
 
-| Package                  | Role                                                    | Peers / deps                                    |
-| ------------------------ | ------------------------------------------------------- | ----------------------------------------------- |
-| `@tslock/scheduler-core` | Shared config resolve + wrap/run lifecycle              | `@tslock/core`                                  |
-| `@tslock/node-cron`      | `createNodeCronLock`, optional `RunCoordinator`         | peer `node-cron` ^3 \|\| ^4; dep scheduler-core |
-| `@tslock/bree`           | `createBreeLock` for Bree job functions                 | peer `bree` ^9; dep scheduler-core              |
-| `@tslock/aws-lambda`     | `createAwsLambdaLock` for Lambda / EventBridge handlers | dep scheduler-core only (no AWS peer required)  |
+| Package | Role | Peers / deps |
+|---|---|---|
+| `@tslock/scheduler-core` | Shared config resolve + wrap/run lifecycle | `@tslock/core` |
+| `@tslock/node-cron` | `createNodeCronLock`, optional `RunCoordinator` | peer `node-cron` ^3 \|\| ^4; dep scheduler-core |
+| `@tslock/bree` | `createBreeLock` for Bree job functions | peer `bree` ^9; dep scheduler-core |
+| `@tslock/aws-lambda` | `createAwsLambdaLock` for Lambda / EventBridge handlers | dep scheduler-core only (no AWS peer required) |
 
 A single `@tslock/adapters` mega-package with subpath exports was rejected: every other integration is a separate package with its own peer, README, and publish unit; subpaths would force optional peers and weaker discoverability on npm.
 
@@ -95,6 +95,7 @@ function createSchedulerLock(input: SchedulerLockConfig): SchedulerLockLifecycle
 ```
 
 `resolveSchedulerLockConfig` / `createSchedulerLock` validate like Nest's `TslockModule`:
+
 - `lockProvider.lock` must be a function.
 - `defaultLockAtMostFor` is required and must parse.
 - `defaultLockAtLeastFor` defaults to `0` and must be `<= defaultLockAtMostFor`.
@@ -103,6 +104,7 @@ function createSchedulerLock(input: SchedulerLockConfig): SchedulerLockLifecycle
 `JobLockOptions.name` is required. Present durations are validated when the wrapped function is created (name + parse + least/most when both present). Omitted durations fall back to resolved defaults at invoke time. `createLockConfig` runs on every invoke so `createdAt` is the attempt time.
 
 `wrap` / `run` behavior (NestJS-aligned):
+
 1. `executeWithLock(task, config)`.
 2. If `wasExecuted`: return `getResult()` (including `0`, `false`, `null`).
 3. If not acquired: return `undefined`; do not call `task`.
@@ -136,6 +138,7 @@ function createNodeCronLock(input: SchedulerLockConfig): NodeCronLock;
 `schedule` is sugar for `cron.schedule(expression, wrap(task, job), taskOptions)`. It does not set `distributed: true` by default; callers who use the wrap path rely on TSLock alone.
 
 `createRunCoordinator` implements node-cron v4's `RunCoordinator`:
+
 - `shouldRun(key, ttlMs)` → `lockProvider.lock(createLockConfig(prefixedKey, ttlMs, lockAtLeastFor))`; store the `SimpleLock`; return `true`/`false`.
 - `onComplete(key)` → unlock the stored lock if present; ignore missing entries.
 - Storage errors from `shouldRun` propagate (node-cron maps them to skip with `coordinator-error`).
@@ -187,14 +190,14 @@ No AWS SDK peer. Suitable for EventBridge Scheduler → Lambda and other schedul
 
 ## Behavior matrix
 
-| Situation                 | Result                                                                                        |
-| ------------------------- | --------------------------------------------------------------------------------------------- |
-| Lock acquired             | Task runs under `LockAssert` / `LockExtender`. Return value passed through. Unlock afterward. |
-| Lock not acquired         | Task not called. Wrapper resolves `undefined`. Listener `onLockNotAcquired` may fire.         |
-| Task throws               | Error propagates. Unlock still runs.                                                          |
-| `lock()` throws           | Error propagates. Task not called.                                                            |
-| Nested same lock name     | Executor reentrancy: run without re-acquire.                                                  |
-| Invalid config / job name | `LockException` at factory or wrap time (or invoke time if default/job duration conflict).    |
+| Situation | Result |
+|---|---|
+| Lock acquired | Task runs under `LockAssert` / `LockExtender`. Return value passed through. Unlock afterward. |
+| Lock not acquired | Task not called. Wrapper resolves `undefined`. Listener `onLockNotAcquired` may fire. |
+| Task throws | Error propagates. Unlock still runs. |
+| `lock()` throws | Error propagates. Task not called. |
+| Nested same lock name | Executor reentrancy: run without re-acquire. |
+| Invalid config / job name | `LockException` at factory or wrap time (or invoke time if default/job duration conflict). |
 
 ## Invariants
 

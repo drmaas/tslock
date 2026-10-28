@@ -38,14 +38,12 @@ The ArangoDB provider is a **DIRECT** `LockProvider` (not `StorageBasedLockProvi
 ## Gaps and Issues
 
 1. **`extend` is non-transactional with no CAS — TOCTOU race can clobber another instance's lock.** The spec's `extend` does a read-then-update WITHOUT a stream transaction:
-
    ```typescript
    existing = await this.collection.document(documentId);  // read
    if (existing.lockedBy !== hostname) return undefined;
    if (Date.parse(existing.lockUntil) <= now) return undefined;
    await this.collection.update(documentId, { lockUntil: ... });  // unconditional update
    ```
-
    Between the read and the update, another instance could acquire the lock (if it expired and was taken over). The unconditional `collection.update` would then clobber the new holder's lock. The spec acknowledges no transaction but claims "the check-then-update is safe because only the original holder can extend, and a stale read just causes a no-op update." This is **incorrect** — a stale read does NOT cause a no-op. The `update` is unconditional (no `WHERE`, no CAS, no `ifMatch` revision check). If the lock was taken by another instance between read and update, the update clobbers it.
 
    **Race window:** The lock is about to expire (lockUntil ≈ now) → `KeepAliveLockProvider` calls extend → read succeeds (lockedBy = me, lockUntil > now) → lock expires (now > lockUntil) → another instance acquires (update with their lockedBy + future lockUntil) → our extend's `collection.update` fires, overwriting lockUntil with our new value. Now the other instance thinks it holds the lock, but our extend changed the lockUntil. The other instance's `lockedBy` is preserved (we only update `lockUntil`), but the lockUntil is wrong.

@@ -65,12 +65,14 @@ export default defineConfig({
 ### Step 2: Define MongoLockDocument
 
 **File:** `src/mongo-lock-document.ts`
+
 - Interface with `_id: string`, `lockUntil: Date`, `lockedAt: Date`, `lockedBy: string`.
 - Export so consumers can type their `Collection<MongoLockDocument>`.
 
 ### Step 3: Implement MongoAccessor
 
 **File:** `src/mongo-accessor.ts`
+
 - Import `MongoServerError` from `mongodb` (for duplicate-key detection).
 - Constructor: `(collection: Collection<MongoLockDocument>)`.
 - `lock(config)`:
@@ -92,6 +94,7 @@ export default defineConfig({
 ### Step 4: Implement MongoLock
 
 **File:** `src/mongo-lock.ts`
+
 - `import { AbstractSimpleLock, LockConfiguration, SimpleLock } from '@tslock/core'`
 - `class MongoLock extends AbstractSimpleLock`:
   - `constructor(private readonly accessor: MongoAccessor, config: LockConfiguration)` — pass `config` to `super(config)`.
@@ -101,6 +104,7 @@ export default defineConfig({
 ### Step 5: Implement MongoLockProvider + factory
 
 **File:** `src/mongo-lock-provider.ts`
+
 - `import type { Collection, Db } from 'mongodb'`
 - `class MongoLockProvider implements ExtensibleLockProvider`:
   - `private readonly accessor: MongoAccessor`
@@ -130,6 +134,7 @@ Do NOT export `MongoAccessor` or `MongoLock`.
 **File:** `__tests__/mongo-lock-provider.test.ts`
 
 Mock the `Collection` object: `const collection = { findOneAndUpdate: vi.fn() } as unknown as Collection<MongoLockDocument>`. Use `new MongoLockProvider(collection)`.
+
 - `lock()`:
   - `findOneAndUpdate` returns a doc → `MongoLock` returned (instance check)
   - `findOneAndUpdate` returns `null` → `undefined`
@@ -151,8 +156,8 @@ Mock the `Collection` object: `const collection = { findOneAndUpdate: vi.fn() } 
 ### Step 8: Write integration tests (testcontainers MongoDB)
 
 **File:** `__tests__/integration/mongo-lock-provider.integration.test.ts`
-- Use `testcontainers` MongoDB container (single-node replica set — required for `w: 'majority'`):
 
+- Use `testcontainers` MongoDB container (single-node replica set — required for `w: 'majority'`):
   ```typescript
   import { MongoDBContainer } from '@testcontainers/mongodb';
   const container = await new MongoDBContainer('mongo:7').start();
@@ -181,15 +186,15 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk                                                     | Mitigation                                                                                                                                                                                                                                                                                                     |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mongodb` driver v5 vs v6 API differences                | Test against latest v6. Declare `peerDependencies: { mongodb: "^6.0.0" }` and document v5 compatibility in the README. The `findOneAndUpdate` API is stable across both.                                                                                                                                       |
-| Duplicate-key detection relies on `code === 11000`       | This is the documented MongoDB error code for duplicate-key on unique indexes; stable across all server and driver versions. Add a unit test that throws a `MongoServerError` with `code: 11000` and asserts `undefined` is returned.                                                                          |
-| `WriteConcern.MAJORITY` requires a replica set           | The MongoDB testcontainer image (`@testcontainers/mongodb`) initializes a single-node replica set. For users running standalone `mongod`, document that `w: 'majority'` blocks indefinitely; recommend a replica set. The factory's default concern is majority but can be overridden via `collectionOptions`. |
-| `findOneAndUpdate` return shape across driver versions   | v6 returns the matched doc or `null` when using `returnDocument: 'after'`. Add unit tests covering both `null` and doc-return cases.                                                                                                                                                                           |
-| No index on `lockUntil` — query performance              | `_id` is the primary filter and is indexed. `lockUntil` is a secondary comparison on a single matched doc; no index needed. Document this.                                                                                                                                                                     |
-| Time-zone of `new Date()` in MongoDB                     | `new Date(epochMillis)` is UTC; MongoDB stores BSON Date as UTC millis. No timezone concern. Document that all dates are UTC.                                                                                                                                                                                  |
-| `lockAtLeastFor` honored by `unlockTime()` in `unlock()` | Unit test: lock with `lockAtLeastFor=5s`, unlock immediately, assert the stored `lockUntil` is `>= now + 5s`. The integration test `shouldLockAtLeastFor` covers this end-to-end.                                                                                                                              |
+| Risk | Mitigation |
+|---|---|
+| `mongodb` driver v5 vs v6 API differences | Test against latest v6. Declare `peerDependencies: { mongodb: "^6.0.0" }` and document v5 compatibility in the README. The `findOneAndUpdate` API is stable across both. |
+| Duplicate-key detection relies on `code === 11000` | This is the documented MongoDB error code for duplicate-key on unique indexes; stable across all server and driver versions. Add a unit test that throws a `MongoServerError` with `code: 11000` and asserts `undefined` is returned. |
+| `WriteConcern.MAJORITY` requires a replica set | The MongoDB testcontainer image (`@testcontainers/mongodb`) initializes a single-node replica set. For users running standalone `mongod`, document that `w: 'majority'` blocks indefinitely; recommend a replica set. The factory's default concern is majority but can be overridden via `collectionOptions`. |
+| `findOneAndUpdate` return shape across driver versions | v6 returns the matched doc or `null` when using `returnDocument: 'after'`. Add unit tests covering both `null` and doc-return cases. |
+| No index on `lockUntil` — query performance | `_id` is the primary filter and is indexed. `lockUntil` is a secondary comparison on a single matched doc; no index needed. Document this. |
+| Time-zone of `new Date()` in MongoDB | `new Date(epochMillis)` is UTC; MongoDB stores BSON Date as UTC millis. No timezone concern. Document that all dates are UTC. |
+| `lockAtLeastFor` honored by `unlockTime()` in `unlock()` | Unit test: lock with `lockAtLeastFor=5s`, unlock immediately, assert the stored `lockUntil` is `>= now + 5s`. The integration test `shouldLockAtLeastFor` covers this end-to-end. |
 
 ## Estimation
 

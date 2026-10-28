@@ -22,25 +22,25 @@ TSLock exposes `LockingTaskExecutorListener` so applications can record lock met
 
 `@tslock/core` already exposes every signal this package needs:
 
-| Signal                                          | Existing hook                                                              | Why a new core hook is unnecessary                                                                                                                                         |
-| ----------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lock attempt, acquired, skipped                 | `LockingTaskExecutorListener`                                              | The executor already emits these.                                                                                                                                          |
-| Task duration and in-flight tasks               | `onTaskStarted` / `onTaskFinished(config, executionTimeMillis)`            | Duration is already measured.                                                                                                                                              |
+| Signal | Existing hook | Why a new core hook is unnecessary |
+|---|---|---|
+| Lock attempt, acquired, skipped | `LockingTaskExecutorListener` | The executor already emits these. |
+| Task duration and in-flight tasks | `onTaskStarted` / `onTaskFinished(config, executionTimeMillis)` | Duration is already measured. |
 | Unlock success, unlock failure, unlock duration | `SimpleLock.unlock()` on the lock the executor and keep-alive wrapper call | `onUnlockError` reports executor unlock failures only. Successful unlock, unlock duration, direct `unlock()` calls, and keep-alive unlocks are visible on the lock handle. |
-| Extend success and failure                      | `SimpleLock.extend()`                                                      | `LockExtender` and `KeepAliveLock` both call the current handle. A listener method on the executor would not see keep-alive renewals.                                      |
-| Keep-alive failure                              | `KeepAliveLockProvider` constructor callback                               | Fired when a renewal returns no lock or when the single retry also throws. Distinct from one failed extend attempt.                                                        |
+| Extend success and failure | `SimpleLock.extend()` | `LockExtender` and `KeepAliveLock` both call the current handle. A listener method on the executor would not see keep-alive renewals. |
+| Keep-alive failure | `KeepAliveLockProvider` constructor callback | Fired when a renewal returns no lock or when the single retry also throws. Distinct from one failed extend attempt. |
 
 Recording unlock or extend inside the listener alone would miss keep-alive renewals. Wrapping the storage provider's `SimpleLock` covers the executor, `LockExtender`, and keep-alive with one path.
 
 ## Package
 
-| Field               | Value                                    |
-| ------------------- | ---------------------------------------- |
-| **Name**            | `@tslock/otel`                           |
-| **Dependencies**    | `@tslock/core`                           |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/otel` |
+| **Dependencies** | `@tslock/core` |
 | **Peer dependency** | `@opentelemetry/api` `^1.9.0` (required) |
-| **Node.js**         | >= 22                                    |
-| **Module format**   | Dual ESM + CJS via tsup                  |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS via tsup |
 
 `@opentelemetry/api` is a peer dependency so the application and this package share one API instance. A private copy would not observe `metrics.setGlobalMeterProvider`.
 
@@ -57,7 +57,9 @@ interface OpenTelemetryLockMetrics {
   instrument(provider: LockProvider): LockProvider;
 }
 
-function createOpenTelemetryLockMetrics(options?: OpenTelemetryLockMetricsOptions): OpenTelemetryLockMetrics;
+function createOpenTelemetryLockMetrics(
+  options?: OpenTelemetryLockMetricsOptions,
+): OpenTelemetryLockMetrics;
 ```
 
 `TSLOCK_METRIC_NAMES` and `TSLOCK_METRIC_ATTRIBUTES` export the instrument names and attribute keys below.
@@ -73,14 +75,14 @@ function createOpenTelemetryLockMetrics(options?: OpenTelemetryLockMetricsOption
 
 Implements `LockingTaskExecutorListener` and records:
 
-| Callback            | Instrument             | Type          | Unit        |
-| ------------------- | ---------------------- | ------------- | ----------- |
-| `onLockAttempt`     | `tslock.lock.attempt`  | Counter       | `{attempt}` |
-| `onLockAcquired`    | `tslock.lock.acquired` | Counter       | `{lock}`    |
-| `onLockNotAcquired` | `tslock.lock.skipped`  | Counter       | `{lock}`    |
-| `onTaskStarted`     | `tslock.task.active`   | UpDownCounter | `{task}`    |
-| `onTaskFinished`    | `tslock.task.duration` | Histogram     | `ms`        |
-| `onTaskFinished`    | `tslock.task.active`   | UpDownCounter | `{task}`    |
+| Callback | Instrument | Type | Unit |
+|---|---|---|---|
+| `onLockAttempt` | `tslock.lock.attempt` | Counter | `{attempt}` |
+| `onLockAcquired` | `tslock.lock.acquired` | Counter | `{lock}` |
+| `onLockNotAcquired` | `tslock.lock.skipped` | Counter | `{lock}` |
+| `onTaskStarted` | `tslock.task.active` | UpDownCounter | `{task}` |
+| `onTaskFinished` | `tslock.task.duration` | Histogram | `ms` |
+| `onTaskFinished` | `tslock.task.active` | UpDownCounter | `{task}` |
 
 `onTaskFinished` records `executionTimeMillis` and adds `-1` to the active counter. `onUnlockError` is not a second unlock counter. Unlock is recorded by `instrument`.
 
@@ -95,11 +97,13 @@ Calling `instrument` with a provider it already returned returns that same objec
 The wrapper implements `LockProvider` only. Provider-specific methods stay on the original instance. Callers that use `KeepAliveLockProvider` instrument the storage provider, then pass the wrapper into `KeepAliveLockProvider`. Instrumenting the keep-alive wrapper instead of the storage provider counts the outer unlock and misses internal renewals.
 
 Wrapped `unlock`:
+
 - Awaits the delegate.
 - On fulfillment, records `tslock.lock.unlocked` with `outcome=success` and `tslock.lock.unlock.duration` in milliseconds.
 - On rejection or throw, records both instruments with `outcome=failure` and `error.type`, then rethrows. The executor still swallows unlock failures and may call `onUnlockError`.
 
 Wrapped `extend(lockAtMostFor, lockAtLeastFor)`:
+
 - Awaits the delegate.
 - A returned lock is wrapped again. The metric attributes use the requested durations. The wrapper records `tslock.lock.extend` and `tslock.lock.extend.duration` with `outcome=success`.
 - `undefined` records both instruments with `outcome=failure` and `error.type=NotExtended`, then returns `undefined`.
@@ -113,13 +117,13 @@ Records `tslock.lock.keepalive.failure` with `error.type` taken from the error. 
 
 ## Attributes
 
-| Key                    | Value                                   | Applied to                                |
-| ---------------------- | --------------------------------------- | ----------------------------------------- |
-| `lock.name`            | `LockConfiguration.name`                | Every instrument                          |
-| `lock.at_most_for_ms`  | `lockAtMostFor`                         | Every instrument                          |
-| `lock.at_least_for_ms` | `lockAtLeastFor`                        | Every instrument                          |
-| `outcome`              | `success` or `failure`                  | Unlock and extend counters and histograms |
-| `error.type`           | Error `name`, `NotExtended`, or `Error` | Failure outcomes and keep-alive failure   |
+| Key | Value | Applied to |
+|---|---|---|
+| `lock.name` | `LockConfiguration.name` | Every instrument |
+| `lock.at_most_for_ms` | `lockAtMostFor` | Every instrument |
+| `lock.at_least_for_ms` | `lockAtLeastFor` | Every instrument |
+| `outcome` | `success` or `failure` | Unlock and extend counters and histograms |
+| `error.type` | Error `name`, `NotExtended`, or `Error` | Failure outcomes and keep-alive failure |
 
 `error.type` uses `error.name` when `error` is an `Error` with a non-empty name. Otherwise it is `Error`. Extend returning `undefined` uses `NotExtended`. Error messages are not attributes.
 
@@ -141,6 +145,7 @@ Records `tslock.lock.keepalive.failure` with `error.type` taken from the error. 
 ## Tests
 
 Unit tests with an in-memory OpenTelemetry metric reader and `@tslock/in-memory`:
+
 - Acquired, skipped, attempt, task duration, active returning to zero, and successful unlock, including `lock.name` and duration attributes.
 - `LockExtender.extendActiveLock` records extend success and the requested durations.
 - Extend returning `undefined` records `outcome=failure` and `error.type=NotExtended`.

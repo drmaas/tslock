@@ -61,21 +61,15 @@ packages/memcached/
 Minimal ambient declaration:
 ```typescript
 declare module 'memjs' {
-  interface ClientAddOptions {
-    expires?: number;
-  }
-  interface ClientResult {
-    success: boolean;
-  }
+  interface ClientAddOptions { expires?: number; }
+  interface ClientResult { success: boolean; }
   interface Client {
     add(key: string, value: string | Buffer, options?: ClientAddOptions): Promise<ClientResult>;
     replace(key: string, value: string | Buffer, options?: ClientAddOptions): Promise<ClientResult>;
     delete(key: string): Promise<ClientResult>;
   }
-  interface ClientCreateOptions {
-    [key: string]: unknown;
-  }
-  export const Client: { create(servers: string, options?: ClientCreateOptions): Client };
+  interface ClientCreateOptions { [key: string]: unknown; }
+  export const Client: { create(servers: string, options?: ClientCreateOptions): Client; };
   export type { Client, ClientResult, ClientAddOptions };
 }
 ```
@@ -85,12 +79,14 @@ Keep the surface minimal so it does not drift from the real `memjs` API.
 ### Step 3: Define MemcachedLockProviderOptions
 
 **File:** `src/memcached-configuration.ts`
+
 - Interface: `servers: string` (required), `env?: string` (default `'default'`), `clientOptions?: Record<string, unknown>` (passed to `memjs.Client.create()`).
 - Re-export the `ClientCreateOptions` type alias if useful.
 
 ### Step 4: Implement MemcachedLock
 
 **File:** `src/memcached-lock.ts`
+
 - `import { AbstractSimpleLock, ClockProvider, LockConfiguration, LockException, lockAtLeastUntil } from '@tslock/core'`
 - `import type { Client as MemjsClient } from 'memjs'`
 - `class MemcachedLock extends AbstractSimpleLock`:
@@ -109,6 +105,7 @@ Keep the surface minimal so it does not drift from the real `memjs` API.
 ### Step 5: Implement MemcachedLockProvider + factory
 
 **File:** `src/memcached-lock-provider.ts`
+
 - `import { Client as MemjsClient } from 'memjs'` (runtime, for the factory)
 - `import { ClockProvider, LockConfiguration, LockProvider, SimpleLock, Utils, lockAtMostUntil } from '@tslock/core'`
 - `import { MemcachedLock } from './memcached-lock.js'`
@@ -144,6 +141,7 @@ Do NOT export `MemcachedLock` or the `memjs` type shim.
 **File:** `__tests__/memcached-lock-provider.test.ts`
 
 Mock the `memjs.Client` object: `const client = { add: vi.fn(), replace: vi.fn(), delete: vi.fn() }`. Each returns `{ success: boolean }`. Use `new MemcachedLockProvider(client, 'test')`.
+
 - `lock()`:
   - `add` returns `{ success: true }` → `MemcachedLock` returned (instance check)
   - `add` returns `{ success: false }` → `undefined` (lock held)
@@ -164,8 +162,8 @@ Mock the `memjs.Client` object: `const client = { add: vi.fn(), replace: vi.fn()
 ### Step 8: Write integration tests (testcontainers memcached)
 
 **File:** `__tests__/integration/memcached-lock-provider.integration.test.ts`
-- Use `testcontainers` memcached image:
 
+- Use `testcontainers` memcached image:
   ```typescript
   import { GenericContainer } from 'testcontainers';
   const container = await new GenericContainer('memcached:1.6').withExposedPorts(11211).start();
@@ -194,17 +192,17 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk                                             | Mitigation                                                                                                                                                                                                                                  |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `memjs` has no TypeScript types                  | Ship a minimal `src/memjs-types.d.ts` shim covering `add`, `replace`, `delete` returning `{ success: boolean }`. Keep the surface minimal so it does not drift from the real `memjs` API. Unit tests use the shim via the real import path. |
-| `memjs.add` success semantics                    | Verify via unit + integration tests: `add` on a fresh key returns `{ success: true }`; on an existing key returns `{ success: false }`. Confirmed in the `memjs` README.                                                                    |
-| `Math.ceil` vs ShedLock's `/1000 + 1` for TTL    | `Math.ceil(30000/1000) = 30`, ShedLock does `30000/1000 + 1 = 31`. Consider `Math.floor(ttl/1000) + 1` to match ShedLock's 1s safety buffer against clock drift. Document the choice in the spec; either is acceptable.                     |
-| Eviction breaks the at-most-once guarantee       | Document prominently in the spec and README. Recommend a dedicated memcached instance and proper sizing. Inherent — no code fix.                                                                                                            |
-| `delete` / `replace` returning failure on unlock | Throw `LockException` (matches ShedLock). The lock is already gone (evicted/expired), so the throw is informational. `DefaultLockingTaskExecutor` catches unlock errors in `finally`.                                                       |
-| `lockAtLeastFor` honored correctly               | Unit test: lock with `lockAtLeastFor=5s`, unlock immediately, assert `replace` called with `expires >= 5`. Integration test `shouldLockAtLeastFor` covers this end-to-end with real TTL.                                                    |
-| memjs `expires` unit (seconds vs millis)         | `memjs` uses seconds for `expires`. Confirmed in the memjs API. Unit test asserts `{ expires: 60 }` not `60000`.                                                                                                                            |
-| Testcontainer memcached image availability       | Use the official `memcached:1.6` Docker image, widely available. Fallback: `memcached:alpine`.                                                                                                                                              |
-| Flushing memcached between integration tests     | Use a separate `memjs` client to call `flush_all` in `beforeEach`, or rely on unique lock names per test (the contract suite already does this). Prefer unique names to avoid flush complexity.                                             |
+| Risk | Mitigation |
+|---|---|
+| `memjs` has no TypeScript types | Ship a minimal `src/memjs-types.d.ts` shim covering `add`, `replace`, `delete` returning `{ success: boolean }`. Keep the surface minimal so it does not drift from the real `memjs` API. Unit tests use the shim via the real import path. |
+| `memjs.add` success semantics | Verify via unit + integration tests: `add` on a fresh key returns `{ success: true }`; on an existing key returns `{ success: false }`. Confirmed in the `memjs` README. |
+| `Math.ceil` vs ShedLock's `/1000 + 1` for TTL | `Math.ceil(30000/1000) = 30`, ShedLock does `30000/1000 + 1 = 31`. Consider `Math.floor(ttl/1000) + 1` to match ShedLock's 1s safety buffer against clock drift. Document the choice in the spec; either is acceptable. |
+| Eviction breaks the at-most-once guarantee | Document prominently in the spec and README. Recommend a dedicated memcached instance and proper sizing. Inherent — no code fix. |
+| `delete` / `replace` returning failure on unlock | Throw `LockException` (matches ShedLock). The lock is already gone (evicted/expired), so the throw is informational. `DefaultLockingTaskExecutor` catches unlock errors in `finally`. |
+| `lockAtLeastFor` honored correctly | Unit test: lock with `lockAtLeastFor=5s`, unlock immediately, assert `replace` called with `expires >= 5`. Integration test `shouldLockAtLeastFor` covers this end-to-end with real TTL. |
+| memjs `expires` unit (seconds vs millis) | `memjs` uses seconds for `expires`. Confirmed in the memjs API. Unit test asserts `{ expires: 60 }` not `60000`. |
+| Testcontainer memcached image availability | Use the official `memcached:1.6` Docker image, widely available. Fallback: `memcached:alpine`. |
+| Flushing memcached between integration tests | Use a separate `memjs` client to call `flush_all` in `beforeEach`, or rely on unique lock names per test (the contract suite already does this). Prefer unique names to avoid flush complexity. |
 
 ## Estimation
 

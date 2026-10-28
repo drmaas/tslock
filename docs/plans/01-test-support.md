@@ -42,6 +42,7 @@ packages/test-support/
 ### Step 2: Implement helpers
 
 **File:** `src/helpers.ts`
+
 - `config(name, lockAtMostFor, lockAtLeastFor?)`: wraps `createLockConfig` + `parseDuration`
 - `sleep(ms)`: `new Promise(resolve => setTimeout(resolve, ms))`
 - `cleanupLock(provider, name)`: acquire with 1s lockAtMostFor, unlock immediately. Best-effort, catch errors.
@@ -71,7 +72,6 @@ function lockProviderIntegrationTests(
   options?: { timeMode?: 'mock' | 'real' },
 ): void;
 ```
-
 - `'mock'`: use `ClockProvider.setClock()` to advance time. For InMemory provider only.
 - `'real'` (default): use `sleep()` to wait real time. For real backends.
 
@@ -103,8 +103,8 @@ function storageBasedLockProviderIntegrationTests(
 ### Step 6: Implement fuzzTests
 
 **File:** `src/fuzz-tests.ts`
-- `shouldHandleConcurrentLockAttempts`:
 
+- `shouldHandleConcurrentLockAttempts`:
   ```typescript
   const promises = Array.from({ length: 50 }, () => provider.lock(config(name, '30s')));
   const results = await Promise.all(promises);
@@ -124,6 +124,7 @@ Export all test factory functions + helpers.
 ### Step 8: Write tests for helpers
 
 **File:** `__tests__/helpers.test.ts`
+
 - `config()` produces valid LockConfiguration
 - `sleep()` resolves after approximately the right time
 - `uniqueLockName()` produces unique names
@@ -139,12 +140,12 @@ pnpm build
 
 ## Risks
 
-| Risk                                          | Mitigation                                                                                    |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Mock time vs real time test mode confusion    | Default to `'real'` mode. Document `'mock'` is for InMemory only.                             |
-| Fuzz test flakiness on slow CI                | Use reasonable timeouts (5s fuzz duration). Mark fuzz tests as `test.slow` or separate suite. |
-| Storage-based tests need accessor access      | Make `getAccessor` optional — if not provided, skip record-verification tests.                |
-| Integration tests with real backends are slow | These are only run in provider packages with containers, not in test-support itself.          |
+| Risk | Mitigation |
+|---|---|
+| Mock time vs real time test mode confusion | Default to `'real'` mode. Document `'mock'` is for InMemory only. |
+| Fuzz test flakiness on slow CI | Use reasonable timeouts (5s fuzz duration). Mark fuzz tests as `test.slow` or separate suite. |
+| Storage-based tests need accessor access | Make `getAccessor` optional — if not provided, skip record-verification tests. |
+| Integration tests with real backends are slow | These are only run in provider packages with containers, not in test-support itself. |
 
 ## Estimation
 

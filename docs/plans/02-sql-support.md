@@ -69,6 +69,7 @@ packages/sql-support/
 ### Step 2: Implement DatabaseProduct
 
 **File:** `src/database-product.ts`
+
 - `enum DatabaseProduct` with 11 values (POSTGRES, COCKROACH_DB, SQL_SERVER, ORACLE, MYSQL, MARIA_DB, HSQL, H2, DB2, SQLITE, UNKNOWN)
 - `matchProductName(name: string): DatabaseProduct`:
   - Convert to lowercase
@@ -99,6 +100,7 @@ assert(DatabaseProduct.matchProductName('unknown db') === DatabaseProduct.UNKNOW
 ### Step 3: Implement ColumnNames + SqlConfiguration
 
 **File:** `src/sql-configuration.ts`
+
 - `interface ColumnNames { name, lockUntil, lockedAt, lockedBy }`
 - `interface SqlConfigurationOptions { databaseProduct, tableName?, columnNames?, lockedByValue?, timeZone?, useDbTime? }`
 - `class SqlConfiguration`:
@@ -126,25 +128,24 @@ const c2 = new SqlConfiguration({ databaseProduct: DatabaseProduct.ORACLE });
 assert(c2.tableName === 'SHEDLOCK');
 assert(c2.columnNames.name === 'NAME');
 
-assertThrows(
-  () =>
-    new SqlConfiguration({
-      databaseProduct: DatabaseProduct.POSTGRES,
-      useDbTime: true,
-      timeZone: 'UTC',
-    }),
-);
+assertThrows(() => new SqlConfiguration({
+  databaseProduct: DatabaseProduct.POSTGRES,
+  useDbTime: true,
+  timeZone: 'UTC',
+}));
 ```
 
 ### Step 4: Implement SqlStatements + SQL_PARAM_NAMES
 
 **File:** `src/sql-statements.ts`
+
 - `interface SqlStatements { insert, update, extend, unlock }` — four `string` fields
 - `const SQL_PARAM_NAMES = { NAME: 'name', LOCK_UNTIL: 'lockUntil', NOW: 'now', LOCKED_BY: 'lockedBy', UNLOCK_TIME: 'unlockTime' } as const`
 
 ### Step 5: Implement timestamp helper
 
 **File:** `src/timestamp.ts`
+
 - `function timestamp(epochMillis: number, timeZone?: string): Date`
   - If `!timeZone`: return `new Date(epochMillis)`
   - If `timeZone` is set:
@@ -155,6 +156,7 @@ assertThrows(
 ### Step 6: Implement SqlStatementsSource (abstract)
 
 **File:** `src/sql-statements-source.ts`
+
 - `abstract class SqlStatementsSource`:
   - `protected readonly config: SqlConfiguration`
   - `protected constructor(config: SqlConfiguration)`
@@ -165,7 +167,6 @@ assertThrows(
   - `abstract getUnlockStatement(): string`
   - `params(lockConfig: LockConfiguration): Record<string, unknown>`:
     - Base implementation (app clock, `!useDbTime`):
-
       ```typescript
       return {
         name: lockConfig.name,
@@ -216,6 +217,7 @@ static create(config: SqlConfiguration): SqlStatementsSource {
 ### Step 7: Implement DefaultSqlStatementsSource
 
 **File:** `src/default-sql-statements-source.ts`
+
 - `class DefaultSqlStatementsSource extends SqlStatementsSource`
 - Constructor: `super(config)`
 - Private helper to build statements from config table/column names
@@ -228,6 +230,7 @@ static create(config: SqlConfiguration): SqlStatementsSource {
 ### Step 8: Implement PostgresSqlStatementsSource
 
 **File:** `src/postgres-sql-statements-source.ts`
+
 - `class PostgresSqlStatementsSource extends SqlStatementsSource`
 - Same as Default except `getInsertStatement()` appends ` ON CONFLICT ({col.name}) DO NOTHING`
 - UPDATE, EXTEND, UNLOCK identical to Default (can share via a shared helper or just duplicate — small strings)
@@ -236,6 +239,7 @@ static create(config: SqlConfiguration): SqlStatementsSource {
 ### Step 9: Implement ServerTimeStatementsSource (abstract)
 
 **File:** `src/server-time-statements-source.ts`
+
 - `abstract class ServerTimeStatementsSource extends SqlStatementsSource`
   - `protected abstract nowExpression(): string`
   - `getInsertStatement()`: INSERT with `{nowExpr}` replacing `:now`. For Postgres subclasses, includes `ON CONFLICT DO NOTHING`. For SQLite subclass, uses `INSERT OR IGNORE`. Default: plain INSERT.
@@ -243,7 +247,6 @@ static create(config: SqlConfiguration): SqlStatementsSource {
   - `getExtendStatement()`: UPDATE with `{nowExpr}` replacing `:now` in WHERE
   - `getUnlockStatement()`: same as Default (no `now` reference)
   - `params(lockConfig)`: override to omit `now` key:
-
     ```typescript
     return {
       name: lockConfig.name,
@@ -261,16 +264,16 @@ static create(config: SqlConfiguration): SqlStatementsSource {
 
 Each file exports a class extending `ServerTimeStatementsSource`:
 
-| File                      | Class                                | `nowExpression()`     | Insert override                       |
-| ------------------------- | ------------------------------------ | --------------------- | ------------------------------------- |
-| `postgres-server-time.ts` | `PostgresServerTimeStatementsSource` | `'now()'`             | `ON CONFLICT ({col.name}) DO NOTHING` |
-| `mssql-server-time.ts`    | `MsSqlServerTimeStatementsSource`    | `'GETUTCDATE()'`      | none (base)                           |
-| `mysql-server-time.ts`    | `MySqlServerTimeStatementsSource`    | `'UTC_TIMESTAMP(3)'`  | none (base)                           |
-| `oracle-server-time.ts`   | `OracleServerTimeStatementsSource`   | `'CURRENT_TIMESTAMP'` | none (base)                           |
-| `hsql-server-time.ts`     | `HsqlServerTimeStatementsSource`     | `'CURRENT_TIMESTAMP'` | none (base)                           |
-| `h2-server-time.ts`       | `H2ServerTimeStatementsSource`       | `'CURRENT_TIMESTAMP'` | none (base)                           |
-| `db2-server-time.ts`      | `Db2ServerTimeStatementsSource`      | `'CURRENT TIMESTAMP'` | none (base)                           |
-| `sqlite-server-time.ts`   | `SqliteServerTimeStatementsSource`   | `'CURRENT_TIMESTAMP'` | `INSERT OR IGNORE INTO`               |
+| File | Class | `nowExpression()` | Insert override |
+|---|---|---|---|
+| `postgres-server-time.ts` | `PostgresServerTimeStatementsSource` | `'now()'` | `ON CONFLICT ({col.name}) DO NOTHING` |
+| `mssql-server-time.ts` | `MsSqlServerTimeStatementsSource` | `'GETUTCDATE()'` | none (base) |
+| `mysql-server-time.ts` | `MySqlServerTimeStatementsSource` | `'UTC_TIMESTAMP(3)'` | none (base) |
+| `oracle-server-time.ts` | `OracleServerTimeStatementsSource` | `'CURRENT_TIMESTAMP'` | none (base) |
+| `hsql-server-time.ts` | `HsqlServerTimeStatementsSource` | `'CURRENT_TIMESTAMP'` | none (base) |
+| `h2-server-time.ts` | `H2ServerTimeStatementsSource` | `'CURRENT_TIMESTAMP'` | none (base) |
+| `db2-server-time.ts` | `Db2ServerTimeStatementsSource` | `'CURRENT TIMESTAMP'` | none (base) |
+| `sqlite-server-time.ts` | `SqliteServerTimeStatementsSource` | `'CURRENT_TIMESTAMP'` | `INSERT OR IGNORE INTO` |
 
 Each subclass:
 1. `constructor(config) { super(config); }`
@@ -373,14 +376,14 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk                                                                          | Mitigation                                                                                                                                                                                                                                                                |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `matchProductName` ordering causes misidentification (CockroachDB → Postgres) | Check `cockroach` before `postgres`, `mariadb` before `mysql`. Unit tests cover all overlap cases.                                                                                                                                                                        |
-| `timestamp()` with timeZone produces incorrect Date                           | The `timeZone` feature is rarely used. Document it as best-effort. Most drivers accept `Date` objects and handle timezone via DB session settings. Unit test just verifies no crash + returns Date.                                                                       |
-| `ON CONFLICT DO NOTHING` not supported on older Postgres/Cockroach            | `ON CONFLICT` is supported since Postgres 9.5 (2016) and all CockroachDB versions. Document minimum version.                                                                                                                                                              |
-| SQL injection via table/column names                                          | Table and column names come from `SqlConfiguration`, which the user controls. They are interpolated into SQL strings, not parameterized. Document that user-provided column names are not sanitized (matching ShedLock). This is a config-trust boundary, not user-input. |
-| 8 server-time subclasses is repetitive                                        | The base `ServerTimeStatementsSource` encapsulates all template logic. Subclasses only provide a `nowExpression()` string and optionally override INSERT. Minimal boilerplate.                                                                                            |
-| Oracle/DB2/HSQL/H2 server-time sources are untested against real DBs          | These are included for ShedLock parity. `@tslock/sql` only supports `pg`, `mysql2`, `mssql`. The Oracle/HSQL/H2/DB2 sources are unit-tested (string generation) but not integration-tested. Document that they are provided for completeness and manual use.              |
+| Risk | Mitigation |
+|---|---|
+| `matchProductName` ordering causes misidentification (CockroachDB → Postgres) | Check `cockroach` before `postgres`, `mariadb` before `mysql`. Unit tests cover all overlap cases. |
+| `timestamp()` with timeZone produces incorrect Date | The `timeZone` feature is rarely used. Document it as best-effort. Most drivers accept `Date` objects and handle timezone via DB session settings. Unit test just verifies no crash + returns Date. |
+| `ON CONFLICT DO NOTHING` not supported on older Postgres/Cockroach | `ON CONFLICT` is supported since Postgres 9.5 (2016) and all CockroachDB versions. Document minimum version. |
+| SQL injection via table/column names | Table and column names come from `SqlConfiguration`, which the user controls. They are interpolated into SQL strings, not parameterized. Document that user-provided column names are not sanitized (matching ShedLock). This is a config-trust boundary, not user-input. |
+| 8 server-time subclasses is repetitive | The base `ServerTimeStatementsSource` encapsulates all template logic. Subclasses only provide a `nowExpression()` string and optionally override INSERT. Minimal boilerplate. |
+| Oracle/DB2/HSQL/H2 server-time sources are untested against real DBs | These are included for ShedLock parity. `@tslock/sql` only supports `pg`, `mysql2`, `mssql`. The Oracle/HSQL/H2/DB2 sources are unit-tested (string generation) but not integration-tested. Document that they are provided for completeness and manual use. |
 
 ## Estimation
 

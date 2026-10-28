@@ -8,13 +8,13 @@ This is a direct port of ShedLock's `shedlock-sql` module, adapted for TypeScrip
 
 ## Package
 
-| Field             | Value                 |
-| ----------------- | --------------------- |
-| **Name**          | `@tslock/sql-support` |
-| **Dependencies**  | `@tslock/core` (peer) |
-| **Node.js**       | >= 22                 |
-| **Module format** | Dual ESM + CJS        |
-| **Build**         | tsup                  |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/sql-support` |
+| **Dependencies** | `@tslock/core` (peer) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -46,19 +46,19 @@ namespace DatabaseProduct {
 
 **`matchProductName`** maps a database product name string (e.g., from a connection metadata query or user config) to the enum. Matching is case-insensitive and substring-based:
 
-| Pattern (case-insensitive)                          | Result         |
-| --------------------------------------------------- | -------------- |
-| contains `"postgresql"` or `"postgres"`             | `POSTGRES`     |
-| contains `"cockroach"`                              | `COCKROACH_DB` |
-| contains `"microsoft sql server"` or `"sql server"` | `SQL_SERVER`   |
-| contains `"oracle"`                                 | `ORACLE`       |
-| contains `"mariadb"`                                | `MARIA_DB`     |
-| contains `"mysql"`                                  | `MYSQL`        |
-| contains `"hsql"` or `"hsqldb"`                     | `HSQL`         |
-| contains `"h2"`                                     | `H2`           |
-| contains `"db2"`                                    | `DB2`          |
-| contains `"sqlite"`                                 | `SQLITE`       |
-| no match                                            | `UNKNOWN`      |
+| Pattern (case-insensitive) | Result |
+|---|---|
+| contains `"postgresql"` or `"postgres"` | `POSTGRES` |
+| contains `"cockroach"` | `COCKROACH_DB` |
+| contains `"microsoft sql server"` or `"sql server"` | `SQL_SERVER` |
+| contains `"oracle"` | `ORACLE` |
+| contains `"mariadb"` | `MARIA_DB` |
+| contains `"mysql"` | `MYSQL` |
+| contains `"hsql"` or `"hsqldb"` | `HSQL` |
+| contains `"h2"` | `H2` |
+| contains `"db2"` | `DB2` |
+| contains `"sqlite"` | `SQLITE` |
+| no match | `UNKNOWN` |
 
 **Order matters:** `mariadb` is checked before `mysql` (MariaDB connections may report a name containing "mysql"). `cockroach` is checked before `postgres` (CockroachDB may report a Postgres-compatible name).
 
@@ -80,11 +80,11 @@ Defaults: `{ name: 'name', lockUntil: 'lockUntil', lockedAt: 'lockedAt', lockedB
 ```typescript
 interface SqlConfigurationOptions {
   databaseProduct: DatabaseProduct;
-  tableName?: string; // default: DEFAULT_TABLE_NAME
+  tableName?: string;                 // default: DEFAULT_TABLE_NAME
   columnNames?: Partial<ColumnNames>; // default: see above
-  lockedByValue?: string; // default: Utils.getHostname()
-  timeZone?: string; // IANA timezone, e.g. 'UTC', 'America/New_York'
-  useDbTime?: boolean; // default: false
+  lockedByValue?: string;             // default: Utils.getHostname()
+  timeZone?: string;                  // IANA timezone, e.g. 'UTC', 'America/New_York'
+  useDbTime?: boolean;                // default: false
 }
 
 class SqlConfiguration {
@@ -303,16 +303,16 @@ WHERE {col.name}=:name AND {col.lockedBy}=:lockedBy
 
 Each extends `ServerTimeStatementsSource` and provides `nowExpression()`:
 
-| Class                                | DatabaseProduct(s)         | `nowExpression()`   | Insert variant                    |
-| ------------------------------------ | -------------------------- | ------------------- | --------------------------------- |
-| `PostgresServerTimeStatementsSource` | `POSTGRES`, `COCKROACH_DB` | `now()`             | `ON CONFLICT ({name}) DO NOTHING` |
-| `MsSqlServerTimeStatementsSource`    | `SQL_SERVER`               | `GETUTCDATE()`      | plain INSERT                      |
-| `MySqlServerTimeStatementsSource`    | `MYSQL`, `MARIA_DB`        | `UTC_TIMESTAMP(3)`  | plain INSERT                      |
-| `OracleServerTimeStatementsSource`   | `ORACLE`                   | `CURRENT_TIMESTAMP` | plain INSERT                      |
-| `HsqlServerTimeStatementsSource`     | `HSQL`                     | `CURRENT_TIMESTAMP` | plain INSERT                      |
-| `H2ServerTimeStatementsSource`       | `H2`                       | `CURRENT_TIMESTAMP` | plain INSERT                      |
-| `Db2ServerTimeStatementsSource`      | `DB2`                      | `CURRENT TIMESTAMP` | plain INSERT                      |
-| `SqliteServerTimeStatementsSource`   | `SQLITE`                   | `CURRENT_TIMESTAMP` | `INSERT OR IGNORE`                |
+| Class | DatabaseProduct(s) | `nowExpression()` | Insert variant |
+|---|---|---|---|
+| `PostgresServerTimeStatementsSource` | `POSTGRES`, `COCKROACH_DB` | `now()` | `ON CONFLICT ({name}) DO NOTHING` |
+| `MsSqlServerTimeStatementsSource` | `SQL_SERVER` | `GETUTCDATE()` | plain INSERT |
+| `MySqlServerTimeStatementsSource` | `MYSQL`, `MARIA_DB` | `UTC_TIMESTAMP(3)` | plain INSERT |
+| `OracleServerTimeStatementsSource` | `ORACLE` | `CURRENT_TIMESTAMP` | plain INSERT |
+| `HsqlServerTimeStatementsSource` | `HSQL` | `CURRENT_TIMESTAMP` | plain INSERT |
+| `H2ServerTimeStatementsSource` | `H2` | `CURRENT_TIMESTAMP` | plain INSERT |
+| `Db2ServerTimeStatementsSource` | `DB2` | `CURRENT TIMESTAMP` | plain INSERT |
+| `SqliteServerTimeStatementsSource` | `SQLITE` | `CURRENT_TIMESTAMP` | `INSERT OR IGNORE` |
 
 All extend `ServerTimeStatementsSource`. The `nowExpression()` string is embedded directly into the SQL at the position where `:now` would appear.
 
@@ -336,14 +336,14 @@ Constants for the canonical param names, used by providers when extracting value
 
 All statements use `:name`-style named parameters. `{tableName}` and `{col.*}` are interpolated at statement-source construction time from `SqlConfiguration`.
 
-| Operation             | SQL                                                                                                              |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **INSERT (default)**  | `INSERT INTO {t}({n}, {lu}, {la}, {lb}) VALUES(:name, :lockUntil, :now, :lockedBy)`                              |
+| Operation | SQL |
+|---|---|
+| **INSERT (default)** | `INSERT INTO {t}({n}, {lu}, {la}, {lb}) VALUES(:name, :lockUntil, :now, :lockedBy)` |
 | **INSERT (Postgres)** | `INSERT INTO {t}({n}, {lu}, {la}, {lb}) VALUES(:name, :lockUntil, :now, :lockedBy) ON CONFLICT ({n}) DO NOTHING` |
-| **INSERT (SQLite)**   | `INSERT OR IGNORE INTO {t}({n}, {lu}, {la}, {lb}) VALUES(:name, :lockUntil, :now, :lockedBy)`                    |
-| **UPDATE**            | `UPDATE {t} SET {lu}=:lockUntil, {la}=:now, {lb}=:lockedBy WHERE {n}=:name AND {lu}<=:now`                       |
-| **EXTEND**            | `UPDATE {t} SET {lu}=:lockUntil WHERE {n}=:name AND {lb}=:lockedBy AND {lu}>:now`                                |
-| **UNLOCK**            | `UPDATE {t} SET {lu}=:unlockTime WHERE {n}=:name AND {lb}=:lockedBy`                                             |
+| **INSERT (SQLite)** | `INSERT OR IGNORE INTO {t}({n}, {lu}, {la}, {lb}) VALUES(:name, :lockUntil, :now, :lockedBy)` |
+| **UPDATE** | `UPDATE {t} SET {lu}=:lockUntil, {la}=:now, {lb}=:lockedBy WHERE {n}=:name AND {lu}<=:now` |
+| **EXTEND** | `UPDATE {t} SET {lu}=:lockUntil WHERE {n}=:name AND {lb}=:lockedBy AND {lu}>:now` |
+| **UNLOCK** | `UPDATE {t} SET {lu}=:unlockTime WHERE {n}=:name AND {lb}=:lockedBy` |
 
 Where `{t}` = tableName, `{n}` = columnNames.name, `{lu}` = columnNames.lockUntil, `{la}` = columnNames.lockedAt, `{lb}` = columnNames.lockedBy.
 
@@ -453,13 +453,13 @@ packages/sql-support/
 
 ## Error Handling Summary
 
-| Situation                                                                                 | Behavior                                                        |
-| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `matchProductName` receives unrecognized string                                           | Return `DatabaseProduct.UNKNOWN`                                |
-| `SqlConfiguration` constructed with both `useDbTime` and `timeZone`                       | Throw `LockException('Cannot set both useDbTime and timeZone')` |
+| Situation | Behavior |
+|---|---|
+| `matchProductName` receives unrecognized string | Return `DatabaseProduct.UNKNOWN` |
+| `SqlConfiguration` constructed with both `useDbTime` and `timeZone` | Throw `LockException('Cannot set both useDbTime and timeZone')` |
 | `SqlStatementsSource.create()` with `useDbTime` and unsupported product (e.g., `UNKNOWN`) | Throw `LockException('useDbTime not supported for ' + product)` |
-| `timestamp()` with invalid timezone string                                                | Throw `RangeError` from `Intl.DateTimeFormat` (propagate)       |
-| Missing `databaseProduct` in `SqlConfigurationOptions`                                    | TypeScript compile error (required field)                       |
+| `timestamp()` with invalid timezone string | Throw `RangeError` from `Intl.DateTimeFormat` (propagate) |
+| Missing `databaseProduct` in `SqlConfigurationOptions` | TypeScript compile error (required field) |
 
 ## Dependencies
 
@@ -469,6 +469,7 @@ packages/sql-support/
 ## Exports
 
 All types, classes, and functions listed in the Public API section are exported from `src/index.ts`:
+
 - `DatabaseProduct` (enum + `matchProductName`)
 - `ColumnNames` (interface)
 - `SqlConfigurationOptions` (interface)

@@ -69,6 +69,7 @@ export default defineConfig({
 ### Step 2: Define options + constant
 
 **File:** `src/zookeeper-lock-provider-options.ts`
+
 - `DEFAULT_PATH = '/shedlock'`
 - Interface `ZooKeeperLockProviderOptions` with `basePath?: string`.
 - `resolveOptions(opts?)` returns `{ basePath: normalizePath(opts?.basePath ?? DEFAULT_PATH) }`.
@@ -79,6 +80,7 @@ export default defineConfig({
 **File:** `src/zookeeper-errors.ts`
 
 The `zookeeper` npm package throws `Exception` instances with a `.code` field that matches numeric constants exported from the package (`Exception.NO_NODE`, `Exception.BAD_VERSION`, `Exception.NODE_EXISTS`, `Exception.CONNECTION_LOSS`, `Exception.SESSION_EXPIRED`, etc.).
+
 - `isNoNodeException(e: unknown): boolean` — `e?.code === Exception.NO_NODE` (or the numeric code `Exception.ZNO_NODE` — confirm against the installed driver).
 - `isBadVersionException(e: unknown): boolean` — `e?.code === Exception.BAD_VERSION`.
 - `isNodeExistsException(e: unknown): boolean` — `e?.code === Exception.NODE_EXISTS`.
@@ -87,6 +89,7 @@ The `zookeeper` npm package throws `Exception` instances with a `.code` field th
 ### Step 4: Implement ZooKeeperAccessor
 
 **File:** `src/zookeeper-accessor.ts`
+
 - Imports from `zookeeper`: `ZooKeeper`, `CreateMode`, `Exception` (for error code constants).
 - Constructor: `(client, basePath)`.
 - `lock(config)`:
@@ -102,6 +105,7 @@ The `zookeeper` npm package throws `Exception` instances with a `.code` field th
 ### Step 5: Implement ZooKeeperLock
 
 **File:** `src/zookeeper-lock.ts`
+
 - `import { AbstractSimpleLock, LockConfiguration, SimpleLock } from '@tslock/core'`
 - `class ZooKeeperLock extends AbstractSimpleLock`:
   - `constructor(private readonly accessor: ZooKeeperAccessor, config: LockConfiguration)` — pass `config` to `super(config)`.
@@ -111,6 +115,7 @@ The `zookeeper` npm package throws `Exception` instances with a `.code` field th
 ### Step 6: Implement ZooKeeperLockProvider
 
 **File:** `src/zookeeper-lock-provider.ts`
+
 - `import type { ZooKeeper } from 'zookeeper'`
 - `class ZooKeeperLockProvider implements LockProvider`:
   - `private readonly accessor: ZooKeeperAccessor`
@@ -163,8 +168,8 @@ const provider = new ZooKeeperLockProvider(client, { basePath: '/shedlock-test' 
 ### Step 9: Write integration tests (ZooKeeper testcontainer)
 
 **File:** `__tests__/integration/zookeeper-lock-provider.integration.test.ts`
-- Use the ZooKeeper Docker image via testcontainers:
 
+- Use the ZooKeeper Docker image via testcontainers:
   ```typescript
   import { GenericContainer } from 'testcontainers';
   const container = await new GenericContainer('zookeeper:3.9.0')
@@ -199,19 +204,19 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk                                                                    | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zookeeper` npm package error code constants differ across versions     | The `zookeeper` package exposes error codes as numeric constants (`Exception.NO_NODE`, `Exception.BAD_VERSION`, `Exception.NODE_EXISTS`) on a thrown `Exception` instance's `.code` field. Pin `^6.0.0` in `peerDependencies`. Add a unit test that throws mock errors with the relevant codes and asserts the helpers recognize them. If the constants change in a future major, the unit test catches the regression. |
-| `creatingParentsIfNeeded` argument signature in `zookeeper` npm package | The `create(path, data, mode, creatingParentsIfNeeded?)` signature is stable in v6. Add a unit test asserting `create` is called with `true` for the 4th argument.                                                                                                                                                                                                                                                      |
-| `getData` return shape (`stat.data` vs `data` field)                    | The `zookeeper` npm package's `getData` resolves `{ data: Buffer, stat: Stat }` — confirm against the installed version. The unit test mocks the return shape; if the driver's shape differs, the unit test catches it.                                                                                                                                                                                                 |
-| Connection establishment timing                                         | The provider does not wait for connection — the user must ensure the client is connected before calling `lock()`. Document this. The integration test awaits the `connect` event before constructing the provider.                                                                                                                                                                                                      |
-| ZooKeeper session expiry mid-operation                                  | The `zookeeper` client throws `SESSION_EXPIRED` on any operation after session loss. The provider propagates this to the caller. Document that users should reconnect the client (or use a client that auto-reconnects) on session expiry.                                                                                                                                                                              |
-| Race between `getData` (NO_NODE) and `create` (NODE_EXISTS)             | This is the expected optimistic-concurrency race. The provider handles it by returning `undefined` on `NODE_EXISTS`. The integration test's `shouldHandleConcurrentLockAttempts` fuzz test exercises this.                                                                                                                                                                                                              |
-| PERSISTENT znode accumulation                                           | Lock znodes are never deleted (by design — they are reused across acquisitions). For high-cardinality lock names, the user may want a separate ZooKeeper namespace or periodic cleanup. Document this.                                                                                                                                                                                                                  |
-| `setData` unconditional unlock vs. CAS-based lock                       | Unlock uses `setData` without a version (unconditional). This is correct: the holder is overwriting with an "unlocked" timestamp. A concurrent acquirer's CAS would have failed (the holder's `setData` changed the version), so the concurrent acquirer returned `undefined` and does not write. There is no race.                                                                                                     |
-| `Date.parse` of an ISO-8601 with 3-digit millis                         | `Date.parse('2018-12-07T12:30:37.810Z')` returns the correct epoch millis in Node.js (all supported versions). No concern.                                                                                                                                                                                                                                                                                              |
-| `basePath` with trailing slash (e.g. `/shedlock/`)                      | `nodePath = `${basePath}/${config.name}`` would produce `//lock-name` if `basePath` ends with `/`. Normalize by stripping the trailing slash in `resolveOptions`.                                                                                                                                                                                                                                                       |
-| ACL on created znodes                                                   | The provider creates znodes with the client's default ACL (`OPEN_ACL_UNSAFE`). Users with stricter ACL requirements should configure the client accordingly. Document this.                                                                                                                                                                                                                                             |
+| Risk | Mitigation |
+|---|---|
+| `zookeeper` npm package error code constants differ across versions | The `zookeeper` package exposes error codes as numeric constants (`Exception.NO_NODE`, `Exception.BAD_VERSION`, `Exception.NODE_EXISTS`) on a thrown `Exception` instance's `.code` field. Pin `^6.0.0` in `peerDependencies`. Add a unit test that throws mock errors with the relevant codes and asserts the helpers recognize them. If the constants change in a future major, the unit test catches the regression. |
+| `creatingParentsIfNeeded` argument signature in `zookeeper` npm package | The `create(path, data, mode, creatingParentsIfNeeded?)` signature is stable in v6. Add a unit test asserting `create` is called with `true` for the 4th argument. |
+| `getData` return shape (`stat.data` vs `data` field) | The `zookeeper` npm package's `getData` resolves `{ data: Buffer, stat: Stat }` — confirm against the installed version. The unit test mocks the return shape; if the driver's shape differs, the unit test catches it. |
+| Connection establishment timing | The provider does not wait for connection — the user must ensure the client is connected before calling `lock()`. Document this. The integration test awaits the `connect` event before constructing the provider. |
+| ZooKeeper session expiry mid-operation | The `zookeeper` client throws `SESSION_EXPIRED` on any operation after session loss. The provider propagates this to the caller. Document that users should reconnect the client (or use a client that auto-reconnects) on session expiry. |
+| Race between `getData` (NO_NODE) and `create` (NODE_EXISTS) | This is the expected optimistic-concurrency race. The provider handles it by returning `undefined` on `NODE_EXISTS`. The integration test's `shouldHandleConcurrentLockAttempts` fuzz test exercises this. |
+| PERSISTENT znode accumulation | Lock znodes are never deleted (by design — they are reused across acquisitions). For high-cardinality lock names, the user may want a separate ZooKeeper namespace or periodic cleanup. Document this. |
+| `setData` unconditional unlock vs. CAS-based lock | Unlock uses `setData` without a version (unconditional). This is correct: the holder is overwriting with an "unlocked" timestamp. A concurrent acquirer's CAS would have failed (the holder's `setData` changed the version), so the concurrent acquirer returned `undefined` and does not write. There is no race. |
+| `Date.parse` of an ISO-8601 with 3-digit millis | `Date.parse('2018-12-07T12:30:37.810Z')` returns the correct epoch millis in Node.js (all supported versions). No concern. |
+| `basePath` with trailing slash (e.g. `/shedlock/`) | `nodePath = `${basePath}/${config.name}`` would produce `//lock-name` if `basePath` ends with `/`. Normalize by stripping the trailing slash in `resolveOptions`. |
+| ACL on created znodes | The provider creates znodes with the client's default ACL (`OPEN_ACL_UNSAFE`). Users with stricter ACL requirements should configure the client accordingly. Document this. |
 
 ## Estimation
 

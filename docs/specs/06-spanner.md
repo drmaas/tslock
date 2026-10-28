@@ -8,14 +8,14 @@ This is a port of ShedLock's `SpannerLockProvider` (Java), adapted to TypeScript
 
 ## Package
 
-| Field               | Value                                                 |
-| ------------------- | ----------------------------------------------------- |
-| **Name**            | `@tslock/spanner`                                     |
-| **Driver**          | `@google-cloud/spanner` (peer dependency)             |
-| **Core dependency** | `@tslock/core` (peer dependency)                      |
-| **Node.js**         | >= 22                                                 |
-| **Module format**   | Dual ESM + CJS (tsup)                                 |
-| **Test strategy**   | Unit tests only — no reliable Spanner emulator exists |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/spanner` |
+| **Driver** | `@google-cloud/spanner` (peer dependency) |
+| **Core dependency** | `@tslock/core` (peer dependency) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS (tsup) |
+| **Test strategy** | Unit tests only — no reliable Spanner emulator exists |
 
 ## Public API
 
@@ -36,10 +36,10 @@ interface SpannerConfiguration {
 }
 
 interface SpannerColumnNames {
-  readonly name: string; // default "name"
+  readonly name: string;       // default "name"
   readonly lockUntil: string; // default "lockUntil"
-  readonly lockedAt: string; // default "lockedAt"
-  readonly lockedBy: string; // default "lockedBy"
+  readonly lockedAt: string;  // default "lockedAt"
+  readonly lockedBy: string;  // default "lockedBy"
 }
 ```
 
@@ -84,18 +84,16 @@ Acquire a lock by inserting a new row. Atomic at Spanner level — `Mutation.ins
 **Mechanism:**
 ```typescript
 await databaseClient.readWriteTransaction().run(async (txn) => {
-  txn.add(
-    Mutation.insert({
-      table: tableName,
-      columns: [nameCol, lockUntilCol, lockedAtCol, lockedByCol],
-      values: [
-        config.name,
-        Utils.toIsoString(lockAtMostUntil(config)),
-        Utils.toIsoString(ClockProvider.now()),
-        lockedByValue,
-      ],
-    }),
-  );
+  txn.add(Mutation.insert({
+    table: tableName,
+    columns: [nameCol, lockUntilCol, lockedAtCol, lockedByCol],
+    values: [
+      config.name,
+      Utils.toIsoString(lockAtMostUntil(config)),
+      Utils.toIsoString(ClockProvider.now()),
+      lockedByValue,
+    ],
+  }));
 });
 ```
 
@@ -188,6 +186,7 @@ return await databaseClient.readWriteTransaction().run(async (txn) => {
 ### 4. Locking Mechanism (end-to-end)
 
 `StorageBasedLockProvider.lock(config)` algorithm (from core, included here for clarity):
+
 1. If the lock name is not in the `LockRecordRegistry`:
    - Call `insertRecord(config)`.
    - Add the name to the registry regardless of result (record now exists or was just created).
@@ -224,16 +223,16 @@ Fields are stored as ISO-8601 strings via `Utils.toIsoString()` (e.g., `"2018-12
 
 ## Error Handling
 
-| Situation                                     | Behavior                                                            |
-| --------------------------------------------- | ------------------------------------------------------------------- |
-| Insert fails — row already exists             | Return `false` from `insertRecord` (not an error)                   |
-| Update — row missing                          | Return `false` (record was deleted externally)                      |
-| Update — row still locked (`lockUntil > now`) | Return `false` (lock held)                                          |
-| Unlock — 0 rows affected (lock expired/lost)  | No-op, return `void` (not an error)                                 |
-| Extend — 0 rows affected (lock expired/lost)  | Return `false` (not an error)                                       |
+| Situation | Behavior |
+|---|---|
+| Insert fails — row already exists | Return `false` from `insertRecord` (not an error) |
+| Update — row missing | Return `false` (record was deleted externally) |
+| Update — row still locked (`lockUntil > now`) | Return `false` (lock held) |
+| Unlock — 0 rows affected (lock expired/lost) | No-op, return `void` (not an error) |
+| Extend — 0 rows affected (lock expired/lost) | Return `false` (not an error) |
 | Transaction aborted (concurrent modification) | Spanner client auto-retries; if exhausted, propagate `AbortedError` |
-| Network / auth / permission error             | Propagate the driver error                                          |
-| Schema mismatch (column not found)            | Propagate (indicates misconfiguration)                              |
+| Network / auth / permission error | Propagate the driver error |
+| Schema mismatch (column not found) | Propagate (indicates misconfiguration) |
 
 ## Dependencies
 

@@ -6,13 +6,13 @@ The `@tslock/core` package provides the fundamental abstractions for distributed
 
 ## Package
 
-| Field             | Value                    |
-| ----------------- | ------------------------ |
-| **Name**          | `@tslock/core`           |
-| **Dependencies**  | None (zero runtime deps) |
-| **Node.js**       | >= 22                    |
-| **Module format** | Dual ESM + CJS           |
-| **Build**         | tsup                     |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/core` |
+| **Dependencies** | None (zero runtime deps) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -21,9 +21,9 @@ The `@tslock/core` package provides the fundamental abstractions for distributed
 ```typescript
 interface LockConfiguration {
   readonly name: string;
-  readonly lockAtMostFor: number; // millis, must be >= 0
-  readonly lockAtLeastFor: number; // millis, must be >= 0 and <= lockAtMostFor
-  readonly createdAt: number; // epoch millis, set by ClockProvider
+  readonly lockAtMostFor: number;    // millis, must be >= 0
+  readonly lockAtLeastFor: number;   // millis, must be >= 0 and <= lockAtMostFor
+  readonly createdAt: number;        // epoch millis, set by ClockProvider
 }
 ```
 
@@ -34,9 +34,9 @@ interface LockConfiguration {
 
 **Derived values** (helper functions, not methods — TS has no idiomatic interface getters):
 ```typescript
-function lockAtMostUntil(config: LockConfiguration): number; // config.createdAt + config.lockAtMostFor
-function lockAtLeastUntil(config: LockConfiguration): number; // config.createdAt + config.lockAtLeastFor
-function unlockTime(config: LockConfiguration): number; // Math.max(ClockProvider.now(), lockAtLeastUntil(config))
+function lockAtMostUntil(config: LockConfiguration): number;  // config.createdAt + config.lockAtMostFor
+function lockAtLeastUntil(config: LockConfiguration): number;  // config.createdAt + config.lockAtLeastFor
+function unlockTime(config: LockConfiguration): number;        // Math.max(ClockProvider.now(), lockAtLeastUntil(config))
 ```
 
 **Factory:**
@@ -49,7 +49,7 @@ function createLockConfig(name: string, lockAtMostFor: number, lockAtLeastFor?: 
 ```typescript
 type DurationInput = number | string | { hours?: number; minutes?: number; seconds?: number; millis?: number };
 
-function parseDuration(input: DurationInput): number; // returns millis
+function parseDuration(input: DurationInput): number;  // returns millis
 ```
 
 **Accepted string formats:** `"30s"`, `"5m"`, `"1h"`, `"1d"`, `"500ms"`, `"250"` (bare number string = millis).
@@ -78,13 +78,13 @@ interface SimpleLock {
 abstract class AbstractSimpleLock implements SimpleLock {
   protected valid: boolean = true;
   constructor(protected readonly config: LockConfiguration) {}
-
+  
   async unlock(): Promise<void> {
     this.checkValidity();
     await this.doUnlock();
     this.valid = false;
   }
-
+  
   async extend(lockAtMostFor: number, lockAtLeastFor: number): Promise<SimpleLock | undefined> {
     this.checkValidity();
     const newConfig: LockConfiguration = {
@@ -97,13 +97,13 @@ abstract class AbstractSimpleLock implements SimpleLock {
     this.valid = false;
     return result;
   }
-
+  
   protected abstract doUnlock(): Promise<void>;
-
+  
   protected async doExtend(config: LockConfiguration): Promise<SimpleLock | undefined> {
     throw new LockException('Extend not supported by this provider');
   }
-
+  
   protected checkValidity(): void {
     if (!this.valid) throw new LockException('Lock has already been released or extended');
   }
@@ -142,8 +142,14 @@ interface TaskResult<T> {
 }
 
 interface LockingTaskExecutor {
-  executeWithLock(task: () => Promise<void>, config: LockConfiguration): Promise<TaskResult<void>>;
-  executeWithLock<T>(task: () => Promise<T>, config: LockConfiguration): Promise<TaskResult<T>>;
+  executeWithLock(
+    task: () => Promise<void>,
+    config: LockConfiguration,
+  ): Promise<TaskResult<void>>;
+  executeWithLock<T>(
+    task: () => Promise<T>,
+    config: LockConfiguration,
+  ): Promise<TaskResult<T>>;
 }
 
 declare namespace TaskResult {
@@ -164,7 +170,10 @@ declare namespace TaskResult {
 
 ```typescript
 class DefaultLockingTaskExecutor implements LockingTaskExecutor {
-  constructor(lockProvider: LockProvider, listener?: LockingTaskExecutorListener);
+  constructor(
+    lockProvider: LockProvider,
+    listener?: LockingTaskExecutorListener,
+  );
 }
 ```
 
@@ -203,7 +212,7 @@ This is the **metrics extension point**. Users implement this to wire Prometheus
 
 ```typescript
 class LockAssert {
-  static assertLocked(): void; // throws LockException if no active lock in current async context
+  static assertLocked(): void;  // throws LockException if no active lock in current async context
   static alreadyLockedBy(name: string): boolean;
 }
 
@@ -238,8 +247,11 @@ class LockCanNotBeExtendedException extends LockException {}
 ```typescript
 class KeepAliveLockProvider implements LockProvider {
   static readonly MIN_LOCK_AT_MOST_FOR: number; // 30_000 millis
-
-  constructor(provider: ExtensibleLockProvider, scheduler?: Scheduler);
+  
+  constructor(
+    provider: ExtensibleLockProvider,
+    scheduler?: Scheduler,
+  );
 }
 ```
 
@@ -254,7 +266,7 @@ class KeepAliveLockProvider implements LockProvider {
 
 ```typescript
 interface Scheduler {
-  setInterval(callback: () => void, ms: number): Disposable; // returns something with .clear()
+  setInterval(callback: () => void, ms: number): Disposable;  // returns something with .clear()
 }
 ```
 
@@ -315,8 +327,8 @@ Wraps a `LockProvider` and tracks active locks in a `Set`. Returned `SimpleLock`
 
 ```typescript
 class Utils {
-  static getHostname(): string; // os.hostname(), fallback "unknown"
-  static toIsoString(epochMillis: number): string; // ISO-8601 with 3-digit millis
+  static getHostname(): string;     // os.hostname(), fallback "unknown"
+  static toIsoString(epochMillis: number): string;  // ISO-8601 with 3-digit millis
 }
 ```
 
@@ -324,9 +336,9 @@ class Utils {
 
 ```typescript
 class ClockProvider {
-  static now(): number; // epoch millis
-  static setClock(clock: () => number): void; // override for tests
-  static resetClock(): void; // reset to Date.now()
+  static now(): number;              // epoch millis
+  static setClock(clock: () => number): void;  // override for tests
+  static resetClock(): void;         // reset to Date.now()
 }
 ```
 
@@ -402,17 +414,17 @@ packages/core/
 
 ## Error Handling Summary
 
-| Situation                                             | Behavior                                      |
-| ----------------------------------------------------- | --------------------------------------------- |
-| Lock held by another instance                         | Return `undefined` (not an error)             |
-| Storage/driver error during lock                      | Throw the error                               |
-| `unlock()` called twice                               | Throw `LockException`                         |
-| `extend()` on non-extensible provider                 | Throw `LockException('Extend not supported')` |
-| `extend()` fails at storage layer                     | Return `undefined` (not an error)             |
-| Task throws                                           | Propagate error after releasing lock          |
-| Listener throws                                       | Catch, log, continue                          |
-| `LockAssert.assertLocked()` outside lock              | Throw `LockException`                         |
-| `LockExtender.extendActiveLock()` with no active lock | Throw `NoActiveLockException`                 |
+| Situation | Behavior |
+|---|---|
+| Lock held by another instance | Return `undefined` (not an error) |
+| Storage/driver error during lock | Throw the error |
+| `unlock()` called twice | Throw `LockException` |
+| `extend()` on non-extensible provider | Throw `LockException('Extend not supported')` |
+| `extend()` fails at storage layer | Return `undefined` (not an error) |
+| Task throws | Propagate error after releasing lock |
+| Listener throws | Catch, log, continue |
+| `LockAssert.assertLocked()` outside lock | Throw `LockException` |
+| `LockExtender.extendActiveLock()` with no active lock | Throw `NoActiveLockException` |
 
 ## Dependencies
 

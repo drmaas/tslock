@@ -1,5 +1,4 @@
 ---
-
 '@tslock/search-core': minor
 '@tslock/elasticsearch': patch
 '@tslock/opensearch': patch

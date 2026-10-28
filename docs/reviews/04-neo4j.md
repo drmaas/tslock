@@ -34,7 +34,7 @@ The spec also documents the `lockedBy` stability assumption for extend — impor
 - EXTEND: `MATCH (lock:ShedLock {name: $name}) WHERE lock.lockedBy = $lockedBy AND lock.lockUntil > $now SET lock.lockUntil = $lockUntil RETURN lock` — correct. Verifies ownership (`lockedBy`) and validity (`lockUntil > now`).
 - CREATE CONSTRAINT: `CREATE CONSTRAINT shedlock_name_unique IF NOT EXISTS FOR (lock:ShedLock) REQUIRE lock.name IS UNIQUE` — correct Neo4j 4.1+ syntax.
 
-**Constraint violation detection:** `error.code === 'Neo.ClientError.Schema.ConstraintValidationFailed'` + `error.message.match(/already exists with label/)` + `error.message.includes(lockName)`. This matches ShedLock's Java `Neo4jLockProvider` exactly. The `lockName` containment check is important — it avoids swallowing a constraint violation on a _different_ constraint that happens to share the same error code. The `error.message.match(/already exists with label/)` is a fixed pattern (not injectable by lock name), and `error.message.includes(lockName)` is a substring check (not regex) — no regex injection. ✅
+**Constraint violation detection:** `error.code === 'Neo.ClientError.Schema.ConstraintValidationFailed'` + `error.message.match(/already exists with label/)` + `error.message.includes(lockName)`. This matches ShedLock's Java `Neo4jLockProvider` exactly. The `lockName` containment check is important — it avoids swallowing a constraint violation on a *different* constraint that happens to share the same error code. The `error.message.match(/already exists with label/)` is a fixed pattern (not injectable by lock name), and `error.message.includes(lockName)` is a substring check (not regex) — no regex injection. ✅
 
 **Epoch millis as JS numbers:** The plan correctly notes that `neo4j-driver` v5 accepts JS numbers up to `Number.MAX_SAFE_INTEGER` (current epoch millis ~1.7e12 is well within range). No `neo4j.int()` conversion needed. ✅
 
@@ -49,7 +49,6 @@ The spec also documents the `lockedBy` stability assumption for extend — impor
 ## Gaps and Issues
 
 1. **Incomplete integration test for "rejects extend from a different lockedBy".** Plan Step 9 shows:
-
    ```typescript
    it('rejects extend from a different lockedBy', async () => {
      const owner = new Neo4jLockProvider(driver, { lockedByValue: 'node-A' });
@@ -62,7 +61,6 @@ The spec also documents the `lockedBy` stability assumption for extend — impor
      await lock!.unlock();
    });
    ```
-
    The test creates an `intruder` provider but never uses it. The comment says "covered indirectly" — but it isn't. The test should: acquire lock with `owner`, then attempt extend with `intruder` (by constructing an `intruder`-owned `StorageLock` or by calling `intruder.lock()` and then internally extending). This requires either exposing the accessor for testing or constructing a `StorageBasedLockProvider` directly with the intruder's accessor. The test as written does not verify the cross-instance extend rejection. **Should be fixed.**
 
 2. **Neo4j version requirement prominence.** The spec's Non-Goals says "No support for Neo4j 3.x (which lacks `IF NOT EXISTS` on `CREATE CONSTRAINT`). Requires Neo4j 4.1+ for the constraint helper." This is buried in Non-Goals. The `IF NOT EXISTS` clause for constraints was added in Neo4j 4.1. The Setup Requirements section should mention the minimum version prominently, as the `createUniqueConstraint` helper would fail with a syntax error on older versions.

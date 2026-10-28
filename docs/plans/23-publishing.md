@@ -85,7 +85,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ['**']
   pull_request:
     branches: [main]
 
@@ -155,13 +155,13 @@ git tag v<version> && git push --follow-tags     # tag + push
 
 ## Risks & Mitigations
 
-| Risk                                                    | Mitigation                                                                                                                                        |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Risk | Mitigation |
+|---|---|
 | `pnpm publish -r` fails with `workspace:*` not resolved | `changeset version` in Step 3 replaces `workspace:*` with `^x.y.z` in the version commit. Verify by checking `git diff` after `version-packages`. |
-| Scoped package publish fails as private                 | `publishConfig.access: "public"` on every package (Step 5).                                                                                       |
-| Forgot `pnpm login` before publish                      | `pnpm publish -r` fails with `ENEEDAUTH` — run `pnpm login` and retry.                                                                            |
-| CI `pnpm test` slow (500+ tests)                        | Acceptable for a gate. Run in CI in parallel. Not a blocking concern for correctness.                                                             |
-| `@changesets/changelog-github` requires `GITHUB_TOKEN`  | CI workflow provides it automatically via `${{ secrets.GITHUB_TOKEN }}`.                                                                          |
+| Scoped package publish fails as private | `publishConfig.access: "public"` on every package (Step 5). |
+| Forgot `pnpm login` before publish | `pnpm publish -r` fails with `ENEEDAUTH` — run `pnpm login` and retry. |
+| CI `pnpm test` slow (500+ tests) | Acceptable for a gate. Run in CI in parallel. Not a blocking concern for correctness. |
+| `@changesets/changelog-github` requires `GITHUB_TOKEN` | CI workflow provides it automatically via `${{ secrets.GITHUB_TOKEN }}`. |
 
 ## Estimation
 

@@ -67,6 +67,7 @@ packages/datastore/
 ### Step 2: Implement DatastoreConfiguration
 
 **File:** `src/datastore-configuration.ts`
+
 - `DatastoreFieldNames` interface (defaults: lockUntil="lockUntil", lockedAt="lockedAt", lockedBy="lockedBy").
 - `DatastoreConfiguration` interface.
 - `DEFAULT_FIELD_NAMES` constant.
@@ -97,7 +98,6 @@ Private helpers:
 - `toData(config): Record<string, string | Date>` returns `{ [lockUntil]: toFieldValue(lockAtMostUntil(config)), [lockedAt]: toFieldValue(now), [lockedBy]: lockedByValue }`.
 - `isNotFound(e): boolean` checks `e.code === 5` (gRPC NOT_FOUND) or error message includes "not found".
 - `safeGet(txn, key): Promise<entity | undefined>`:
-
   ```typescript
   try {
     const [entity] = await txn.get(key);
@@ -324,15 +324,15 @@ For CI, spawn the emulator in `vitest.integration.config.ts`'s `globalSetup` / `
 
 ## Risks & Mitigations
 
-| Risk                                                                                          | Mitigation                                                                                                                                                                                                                                                                   |
-| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Datastore emulator behavior differs from production (transaction retry, eventual consistency) | Run fuzz tests against emulator. Provide a skipped live-integration test for manual GCP verification. Document emulator limitations in README.                                                                                                                               |
-| `txn.get` NOT_FOUND error shape varies across SDK versions                                    | `isNotFound` checks both `code === 5` (gRPC NOT_FOUND) and message substring. Unit tests cover both shapes.                                                                                                                                                                  |
-| `txn.upsert` overwrites entire entity, losing user-added fields                               | Spread `existing` into the upsert data to preserve unknown fields. Defensive; TSLock only writes three fields. Unit test verifies spread preservation.                                                                                                                       |
-| Emulator startup flakiness in CI                                                              | Spawn emulator in `globalSetup`, wait for ready (poll port), tear down in `globalTeardown`. Or require the emulator to be pre-started and document it.                                                                                                                       |
-| Entity name restrictions (UTF-8, no leading `!`, max 1500 bytes)                              | Document; user responsible for lock names. TSLock does not validate per-call names (overhead). Invalid names surface as Datastore errors.                                                                                                                                    |
-| Transaction retry exhaustion surfaces as an error                                             | Propagate. Document.                                                                                                                                                                                                                                                         |
-| Namespace handling (Datastore supports namespaces)                                            | Out of scope for v1. User configures namespace via the `Datastore` client constructor (`new Datastore({ namespace })`). TSLock uses whatever the client is configured with. Document.                                                                                        |
+| Risk | Mitigation |
+|---|---|
+| Datastore emulator behavior differs from production (transaction retry, eventual consistency) | Run fuzz tests against emulator. Provide a skipped live-integration test for manual GCP verification. Document emulator limitations in README. |
+| `txn.get` NOT_FOUND error shape varies across SDK versions | `isNotFound` checks both `code === 5` (gRPC NOT_FOUND) and message substring. Unit tests cover both shapes. |
+| `txn.upsert` overwrites entire entity, losing user-added fields | Spread `existing` into the upsert data to preserve unknown fields. Defensive; TSLock only writes three fields. Unit test verifies spread preservation. |
+| Emulator startup flakiness in CI | Spawn emulator in `globalSetup`, wait for ready (poll port), tear down in `globalTeardown`. Or require the emulator to be pre-started and document it. |
+| Entity name restrictions (UTF-8, no leading `!`, max 1500 bytes) | Document; user responsible for lock names. TSLock does not validate per-call names (overhead). Invalid names surface as Datastore errors. |
+| Transaction retry exhaustion surfaces as an error | Propagate. Document. |
+| Namespace handling (Datastore supports namespaces) | Out of scope for v1. User configures namespace via the `Datastore` client constructor (`new Datastore({ namespace })`). TSLock uses whatever the client is configured with. Document. |
 | `instanceof Date` check fails across SDK module duplicates (rare ESM/CJS dual-package hazard) | Document that `useDate` requires a single Datastore SDK instance in the runtime. If cross-realm `instanceof` fails, fall back to duck-typing (`typeof value.getTime === 'function' && typeof value.toISOString === 'function'`). Add a unit test for the duck-type fallback. |
 
 ## Estimation

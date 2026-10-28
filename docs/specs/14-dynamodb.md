@@ -6,14 +6,14 @@ The `@tslock/dynamodb` package provides a DIRECT `LockProvider` backed by Amazon
 
 ## Package
 
-| Field             | Value                                                     |
-| ----------------- | --------------------------------------------------------- |
-| **Name**          | `@tslock/dynamodb`                                        |
-| **Driver**        | `@aws-sdk/client-dynamodb` (AWS SDK v3) — peer dependency |
-| **Dependencies**  | `@tslock/core` (peer), `@aws-sdk/client-dynamodb` (peer)  |
-| **Node.js**       | >= 22                                                     |
-| **Module format** | Dual ESM + CJS                                            |
-| **Build**         | tsup                                                      |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/dynamodb` |
+| **Driver** | `@aws-sdk/client-dynamodb` (AWS SDK v3) — peer dependency |
+| **Dependencies** | `@tslock/core` (peer), `@aws-sdk/client-dynamodb` (peer) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -32,11 +32,10 @@ The constructor accepts an options object that includes either a pre-configured 
 
 ```typescript
 interface DynamoDBLockProviderOptions {
-  client?: DynamoDBClient; // optional — if omitted, a default client is constructed
-  tableName: string; // REQUIRED — must already exist
-  partitionKey?: string; // default: '_id'
-  sortKey?: {
-    // optional — use if the table has a composite key
+  client?: DynamoDBClient;       // optional — if omitted, a default client is constructed
+  tableName: string;              // REQUIRED — must already exist
+  partitionKey?: string;          // default: '_id'
+  sortKey?: {                     // optional — use if the table has a composite key
     name: string;
     value: string;
   };
@@ -206,16 +205,16 @@ packages/dynamodb/
 
 ## Error Handling Summary
 
-| Situation                                 | Behavior                                                                                                                                                                                                                                              |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lock held by another instance             | `UpdateItem` ConditionExpression fails → `ConditionalCheckFailedException` → `undefined`                                                                                                                                                              |
-| First lock on a new item                  | `attribute_not_exists(lockUntil)` succeeds → lock acquired                                                                                                                                                                                            |
-| Connection / credentials error            | Propagate `DynamoDBServiceException` to the caller                                                                                                                                                                                                    |
-| Table does not exist                      | `ResourceNotFoundException` propagates                                                                                                                                                                                                                |
-| `extend()` on expired lock                | `lockUntil > :now` fails → `ConditionalCheckFailedException` → `undefined`                                                                                                                                                                            |
-| `extend()` by a different holder          | `lockedBy = :lockedBy` fails → `ConditionalCheckFailedException` → `undefined`                                                                                                                                                                        |
-| `unlock()` on a non-existent item         | `attribute_exists(${partitionKey})` fails → `ConditionalCheckFailedException` caught and swallowed (benign no-op)                                                                                                                                     |
-| Sort-key mismatch (wrong `sortKey.value`) | `UpdateItem` writes a _new_ item under the composite key — this is a configuration error. The provider assumes the `sortKey.value` is constant for all lock names. Document that composite-key tables share a single sort-key value across all locks. |
+| Situation | Behavior |
+|---|---|
+| Lock held by another instance | `UpdateItem` ConditionExpression fails → `ConditionalCheckFailedException` → `undefined` |
+| First lock on a new item | `attribute_not_exists(lockUntil)` succeeds → lock acquired |
+| Connection / credentials error | Propagate `DynamoDBServiceException` to the caller |
+| Table does not exist | `ResourceNotFoundException` propagates |
+| `extend()` on expired lock | `lockUntil > :now` fails → `ConditionalCheckFailedException` → `undefined` |
+| `extend()` by a different holder | `lockedBy = :lockedBy` fails → `ConditionalCheckFailedException` → `undefined` |
+| `unlock()` on a non-existent item | `attribute_exists(${partitionKey})` fails → `ConditionalCheckFailedException` caught and swallowed (benign no-op) |
+| Sort-key mismatch (wrong `sortKey.value`) | `UpdateItem` writes a *new* item under the composite key — this is a configuration error. The provider assumes the `sortKey.value` is constant for all lock names. Document that composite-key tables share a single sort-key value across all locks. |
 
 **ISO-8601 string comparison correctness:** `Utils.toIsoString` emits strings of the form `2018-12-07T12:30:37.810Z` (fixed-width, zero-padded, 3-digit millis, UTC `Z` suffix). Lexicographic comparison of these strings matches chronological comparison. DynamoDB compares string attributes lexicographically via `<`, `<=`, `>`, `>=` operators in `ConditionExpression`. Therefore `lockUntil <= :lockedAt` correctly means "lock expired at time `:lockedAt`".
 

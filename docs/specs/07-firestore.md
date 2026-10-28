@@ -8,14 +8,14 @@ This is a port of ShedLock's `FirestoreLockProvider` (Java), adapted to TypeScri
 
 ## Package
 
-| Field               | Value                                                                                                         |
-| ------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Name**            | `@tslock/firestore`                                                                                           |
-| **Driver**          | `@google-cloud/firestore` (peer dependency)                                                                   |
-| **Core dependency** | `@tslock/core` (peer dependency)                                                                              |
-| **Node.js**         | >= 22                                                                                                         |
-| **Module format**   | Dual ESM + CJS (tsup)                                                                                         |
-| **Test strategy**   | Integration tests against Firestore emulator (`@firebase/rules-unit-testing` or `gcloud emulators firestore`) |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/firestore` |
+| **Driver** | `@google-cloud/firestore` (peer dependency) |
+| **Core dependency** | `@tslock/core` (peer dependency) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS (tsup) |
+| **Test strategy** | Integration tests against Firestore emulator (`@firebase/rules-unit-testing` or `gcloud emulators firestore`) |
 
 ## Public API
 
@@ -39,8 +39,8 @@ interface FirestoreConfiguration {
 
 interface FirestoreFieldNames {
   readonly lockUntil: string; // default "lockUntil"
-  readonly lockedAt: string; // default "lockedAt"
-  readonly lockedBy: string; // default "lockedBy"
+  readonly lockedAt: string;  // default "lockedAt"
+  readonly lockedBy: string;  // default "lockedBy"
 }
 ```
 
@@ -215,16 +215,16 @@ If `useTimestamps: true`, fields are stored as Firestore `Timestamp` objects. Th
 
 ## Error Handling
 
-| Situation                                               | Behavior                                        |
-| ------------------------------------------------------- | ----------------------------------------------- |
-| Insert — document already exists                        | Return `false` (not an error)                   |
-| Update — document missing                               | Return `false`                                  |
-| Update — document still locked (`lockUntil > now`)      | Return `false`                                  |
-| Unlock — document missing or owned by another           | No-op, return `void`                            |
-| Extend — document missing, owned by another, or expired | Return `false`                                  |
-| Transaction retries exhausted                           | Propagate the final error from `runTransaction` |
-| Network / auth / permission error                       | Propagate                                       |
-| Invalid document ID (contains `/`, empty)               | Propagate Firestore error                       |
+| Situation | Behavior |
+|---|---|
+| Insert — document already exists | Return `false` (not an error) |
+| Update — document missing | Return `false` |
+| Update — document still locked (`lockUntil > now`) | Return `false` |
+| Unlock — document missing or owned by another | No-op, return `void` |
+| Extend — document missing, owned by another, or expired | Return `false` |
+| Transaction retries exhausted | Propagate the final error from `runTransaction` |
+| Network / auth / permission error | Propagate |
+| Invalid document ID (contains `/`, empty) | Propagate Firestore error |
 
 ## Dependencies
 

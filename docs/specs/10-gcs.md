@@ -10,13 +10,13 @@ This is a direct port of ShedLock's `GcsStorageAccessor` / `GcsLockProvider` to 
 
 ## Package
 
-| Field             | Value                                                 |
-| ----------------- | ----------------------------------------------------- |
-| **Name**          | `@tslock/gcs`                                         |
-| **Dependencies**  | `@tslock/core` (peer), `@google-cloud/storage` (peer) |
-| **Node.js**       | >= 22                                                 |
-| **Module format** | Dual ESM + CJS                                        |
-| **Build**         | tsup                                                  |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/gcs` |
+| **Dependencies** | `@tslock/core` (peer), `@google-cloud/storage` (peer) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -59,7 +59,10 @@ e.g. "shedlock/my-task-name"
 ### 3. createGcsProviderConfig (factory helper)
 
 ```typescript
-function createGcsProviderConfig(input: { bucket: string; objectPrefix?: string }): GcsProviderConfig;
+function createGcsProviderConfig(input: {
+  bucket: string;
+  objectPrefix?: string;
+}): GcsProviderConfig;
 ```
 
 Validates and applies defaults.
@@ -68,24 +71,24 @@ Validates and applies defaults.
 
 The lock record for a given `name` is a single GCS object. GCS assigns each object version a monotonically increasing integer **generation** number. Conditional writes use this generation as the optimistic-concurrency token: a `save({ precondition: { generationMatch: g } })` only succeeds when the object's current generation equals `g`.
 
-| Field       | GCS custom metadata key | Value                                                                       |
-| ----------- | ----------------------- | --------------------------------------------------------------------------- |
-| `lockUntil` | `lockUntil`             | ISO-8601 instant string (3-digit millis), e.g. `2018-12-07T12:30:37.810Z`   |
-| `lockedAt`  | `lockedAt`              | ISO-8601 instant string                                                     |
-| `lockedBy`  | `lockedBy`              | Hostname string (`Utils.getHostname()`)                                     |
-| `lockName`  | `lockName`              | The lock name (useful for debugging when objects are inspected out-of-band) |
+| Field | GCS custom metadata key | Value |
+|---|---|---|
+| `lockUntil` | `lockUntil` | ISO-8601 instant string (3-digit millis), e.g. `2018-12-07T12:30:37.810Z` |
+| `lockedAt` | `lockedAt` | ISO-8601 instant string |
+| `lockedBy` | `lockedBy` | Hostname string (`Utils.getHostname()`) |
+| `lockName` | `lockName` | The lock name (useful for debugging when objects are inspected out-of-band) |
 
 The object body is empty. All state lives in custom metadata. The GCS **generation** serves the same role as S3's ETag — it changes on every write, enabling compare-and-swap.
 
 ### insertRecord(config)
 
 Invoked by `StorageBasedLockProvider.lock()` when the `LockRecordRegistry` has no record for `name`.
+
 1. `const file = storage.bucket(bucket).file(objectName);`
 2. `const [exists] = await file.exists()` (or `file.get({ generation: 0 })` and catch the not-found branch).
    - **Implementation choice:** use `file.exists()` — it's the canonical GCS existence check and avoids throwing on 404. (Some ShedLock ports use `get({ generation: 0 })` + try/catch — both are valid; `exists()` is cleaner.)
 3. If `exists === true` → return `false`. Record already present; `lock()` falls through to `updateRecord`.
 4. If `exists === false`:
-
    ```typescript
    await file.save('', {
      metadata: {
@@ -107,6 +110,7 @@ Invoked by `StorageBasedLockProvider.lock()` when the `LockRecordRegistry` has n
 ### updateRecord(config)
 
 Invoked when the `LockRecordRegistry` knows a record exists for `name`.
+
 1. `const [metadata] = await file.get();` → fetches the current `generation` and `metadata`.
    - `file.get()` returns `[File, Metadata]`. The `Metadata` object has `metadata` (custom metadata map), `generation` (string or number).
 2. If `file.get()` throws with code `404` → return `false` (object was deleted externally; the registry is stale).
@@ -133,6 +137,7 @@ Invoked when the `LockRecordRegistry` knows a record exists for `name`.
 ### unlock(config)
 
 Invoked by `StorageLock.doUnlock()`. Sets `lockUntil` to `unlockTime(config)` so a subsequent `updateRecord` succeeds.
+
 1. `const [file, metadata] = await file.get();` → fetch `generation` and current custom metadata.
 2. If `file.get()` throws with code `404` → no-op return (log warning, do not throw).
 3. ```typescript
@@ -155,6 +160,7 @@ Invoked by `StorageLock.doUnlock()`. Sets `lockUntil` to `unlockTime(config)` so
 ### extend(config)
 
 Invoked by `StorageLock.doExtend()`. Re-extends `lockUntil` to `lockAtMostUntil(config)` only if the caller is still the current holder.
+
 1. `const [file, metadata] = await file.get();` → fetch `generation` and custom metadata.
 2. If `file.get()` throws with code `404` → return `false` (record gone).
 3. Parse `lockUntil`, `lockedBy` from `metadata.metadata`.
@@ -178,19 +184,19 @@ Invoked by `StorageLock.doExtend()`. Re-extends `lockUntil` to `lockAtMostUntil(
 
 ## Error Handling
 
-| Situation                                                    | Behavior                                                |
-| ------------------------------------------------------------ | ------------------------------------------------------- |
-| `file.exists()` returns `true` in `insertRecord`             | Return `false` (record exists — fall through to update) |
-| `file.exists()` returns `false` in `insertRecord`            | Proceed to `file.save` with `doesNotExist` precondition |
-| `file.save` throws `412` in `insertRecord`                   | Return `false` (concurrent create)                      |
-| `file.get()` throws `404` in `updateRecord`                  | Return `false`                                          |
-| `file.get()` throws `404` in `unlock`                        | Log warning, no-op return                               |
-| `file.get()` throws `404` in `extend`                        | Return `false`                                          |
-| `file.save` / `file.setMetadata` throws `412`                | Return `false` (generation mismatch)                    |
-| `file.save` / `file.setMetadata` throws any other `ApiError` | Propagate as storage error                              |
-| Corrupt metadata (`lockUntil` unparseable)                   | Propagate `LockException('Corrupted lock record: ...')` |
-| Missing `bucket` in config                                   | Throw `LockException` at provider construction          |
-| Auth error (`600`, `403`)                                    | Propagate                                               |
+| Situation | Behavior |
+|---|---|
+| `file.exists()` returns `true` in `insertRecord` | Return `false` (record exists — fall through to update) |
+| `file.exists()` returns `false` in `insertRecord` | Proceed to `file.save` with `doesNotExist` precondition |
+| `file.save` throws `412` in `insertRecord` | Return `false` (concurrent create) |
+| `file.get()` throws `404` in `updateRecord` | Return `false` |
+| `file.get()` throws `404` in `unlock` | Log warning, no-op return |
+| `file.get()` throws `404` in `extend` | Return `false` |
+| `file.save` / `file.setMetadata` throws `412` | Return `false` (generation mismatch) |
+| `file.save` / `file.setMetadata` throws any other `ApiError` | Propagate as storage error |
+| Corrupt metadata (`lockUntil` unparseable) | Propagate `LockException('Corrupted lock record: ...')` |
+| Missing `bucket` in config | Throw `LockException` at provider construction |
+| Auth error (`600`, `403`) | Propagate |
 
 **Error detection strategy:** `@google-cloud/storage` throws `ApiError` objects with a `code` field (HTTP status as number). The accessor maps:
 - `code === 404` → not-found branch.
@@ -228,6 +234,7 @@ No `__tests__/integration/` directory — there is no first-class GCS emulator. 
 ## Exports
 
 From `src/index.ts`:
+
 - `GcsLockProvider`
 - `GcsProviderConfig` (interface)
 - `createGcsProviderConfig`
@@ -238,11 +245,11 @@ The `Storage` client from `@google-cloud/storage` is **not** re-exported — use
 
 There is **no first-class GCS emulator** maintained by Google. Options considered:
 
-| Option                                   | Verdict                                                                                                                                                                                                 |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fsouza/fake-gcs-server` (Docker)        | Precondition semantics differ subtly from real GCS (esp. around `generationMatch` after metadata-only PATCH). Acceptable for smoke testing, but **not** trusted for the canonical integration contract. |
-| GCP project with a dedicated test bucket | Real semantics, but cannot run in CI without credentials + billing. Used for manual pre-release verification only.                                                                                      |
-| `vi.mock('@google-cloud/storage')`       | Unit-test only — verifies accessor logic against mocked `File` / `Bucket` objects. Fast, runs in CI.                                                                                                    |
+| Option | Verdict |
+|---|---|
+| `fsouza/fake-gcs-server` (Docker) | Precondition semantics differ subtly from real GCS (esp. around `generationMatch` after metadata-only PATCH). Acceptable for smoke testing, but **not** trusted for the canonical integration contract. |
+| GCP project with a dedicated test bucket | Real semantics, but cannot run in CI without credentials + billing. Used for manual pre-release verification only. |
+| `vi.mock('@google-cloud/storage')` | Unit-test only — verifies accessor logic against mocked `File` / `Bucket` objects. Fast, runs in CI. |
 
 **Decision:** ship unit tests only (`__tests__/unit/`). The unit tests mock `@google-cloud/storage` at the `Bucket`/`File` level and assert the accessor issues the correct calls with the correct preconditions. Manual verification against a real GCS bucket is documented as a pre-release checklist item.
 

@@ -8,14 +8,14 @@ The `@tslock/in-memory` package provides a DIRECT `LockProvider` implementation 
 
 ## Package
 
-| Field             | Value                      |
-| ----------------- | -------------------------- |
-| **Name**          | `@tslock/in-memory`        |
-| **Driver**        | None (pure TypeScript)     |
-| **Dependencies**  | `@tslock/core` (peer) only |
-| **Node.js**       | >= 22                      |
-| **Module format** | Dual ESM + CJS             |
-| **Build**         | tsup                       |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/in-memory` |
+| **Driver** | None (pure TypeScript) |
+| **Dependencies** | `@tslock/core` (peer) only |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -57,7 +57,7 @@ Returned by `InMemoryLockProvider.lock()` on successful acquisition. Overrides b
 private readonly locks = new Map<string, number>();  // name -> lockedUntilEpochMillis
 ```
 
-A plain `Map`. Node.js is single-threaded (event loop), so no synchronization is required. Async operations interleave at `await` points, but each `Map` operation (`has`, `get`, `set`, `delete`) is synchronous and atomic — no interleaving occurs _within_ a `Map` call.
+A plain `Map`. Node.js is single-threaded (event loop), so no synchronization is required. Async operations interleave at `await` points, but each `Map` operation (`has`, `get`, `set`, `delete`) is synchronous and atomic — no interleaving occurs *within* a `Map` call.
 
 ### isLocked(name)
 
@@ -140,17 +140,17 @@ packages/in-memory/
 
 ## Error Handling Summary
 
-| Situation                                 | Behavior                                                                     |
-| ----------------------------------------- | ---------------------------------------------------------------------------- |
-| Lock held by another (same process)       | `isLocked` returns true → `undefined`                                        |
-| First lock on a name                      | `locks.set(name, lockAtMostUntil)` → `InMemoryLock`                          |
-| `unlock()` with `lockAtLeastFor=0`        | `locks.set(name, createdAt)` (past) → effectively released                   |
-| `unlock()` with `lockAtLeastFor>0`        | `locks.set(name, lockAtLeastUntil)` (future) → held until `lockAtLeastUntil` |
-| `extend()` on a still-held lock           | `locks.set(name, newLockAtMostUntil)` → new `InMemoryLock`                   |
-| `extend()` on an expired lock             | `isLocked` returns false → `undefined`                                       |
-| `extend()` after `unlock()`               | `AbstractSimpleLock.checkValidity()` throws `LockException`                  |
-| Multiple `InMemoryLockProvider` instances | Independent — no shared state. Each has its own `Map`.                       |
-| Process restart                           | All locks lost (in-memory). Acceptable for test/local.                       |
+| Situation | Behavior |
+|---|---|
+| Lock held by another (same process) | `isLocked` returns true → `undefined` |
+| First lock on a name | `locks.set(name, lockAtMostUntil)` → `InMemoryLock` |
+| `unlock()` with `lockAtLeastFor=0` | `locks.set(name, createdAt)` (past) → effectively released |
+| `unlock()` with `lockAtLeastFor>0` | `locks.set(name, lockAtLeastUntil)` (future) → held until `lockAtLeastUntil` |
+| `extend()` on a still-held lock | `locks.set(name, newLockAtMostUntil)` → new `InMemoryLock` |
+| `extend()` on an expired lock | `isLocked` returns false → `undefined` |
+| `extend()` after `unlock()` | `AbstractSimpleLock.checkValidity()` throws `LockException` |
+| Multiple `InMemoryLockProvider` instances | Independent — no shared state. Each has its own `Map`. |
+| Process restart | All locks lost (in-memory). Acceptable for test/local. |
 
 ## Dependencies
 

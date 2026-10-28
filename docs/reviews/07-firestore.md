@@ -38,12 +38,10 @@ The Firestore provider implements `StorageAccessor` over the `@google-cloud/fire
 ## Gaps and Issues
 
 1. **`unlock` missing `lockUntil >= now` check — deviation from ShedLock's `updateOwn`.** The ShedLock `FirestoreLockProvider` uses `updateOwn` for both unlock and extend, which checks `lockedBy == hostname AND lockUntil >= now`. The TSLock spec's `unlock` only checks `lockedBy`:
-
    ```typescript
    if (snap.get(this.fieldNames.lockedBy) !== this.lockedByValue) return;
    txn.update(ref, { [this.fieldNames.lockUntil]: this.toFieldValue(unlockTime(config)) });
    ```
-
    Missing: `if (current < ClockProvider.now()) return;` (the `lockUntil >= now` guard).
 
    **Consequence:** If a task overruns `lockAtMostFor` (lock expires, `lockUntil < now`), and the lock was NOT taken by another instance (lockedBy still ours), the unlock sets `lockUntil = unlockTime = max(now, lockAtLeastUntil)`. Since the lock expired past `lockAtMostFor` > `lockAtLeastFor`, `now > lockAtLeastUntil`, so `unlockTime = now`. Setting `lockUntil = now` (from `< now`) is a negligible millisecond extension — nearly harmless in practice. However, it deviates from ShedLock's behavior, where `updateOwn` would no-op (the `lockUntil >= now` check fails).

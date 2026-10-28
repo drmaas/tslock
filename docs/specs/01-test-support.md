@@ -8,12 +8,12 @@ This is a direct port of ShedLock's `shedlock-test-support` module: `AbstractLoc
 
 ## Package
 
-| Field             | Value                                 |
-| ----------------- | ------------------------------------- |
-| **Name**          | `@tslock/test-support`                |
-| **Dependencies**  | `@tslock/core` (peer), `vitest` (dev) |
-| **Node.js**       | >= 22                                 |
-| **Module format** | Dual ESM + CJS                        |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/test-support` |
+| **Dependencies** | `@tslock/core` (peer), `vitest` (dev) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
 
 ## Design
 
@@ -39,33 +39,28 @@ describe('MongoLockProvider', () => {
 ## Test Contract: lockProviderIntegrationTests
 
 ### setup
-
 - Each test gets a fresh `LockProvider` via `getProvider()`.
 - Each test uses a unique lock name (UUID or incrementing counter) to avoid cross-test interference.
 - `ClockProvider.resetClock()` before each test.
 
 ### shouldLockOnce
-
 1. `const lock = await provider.lock(config('test', '1m'))`
 2. Assert: `lock` is not `undefined`.
 3. `await lock!.unlock()`
 
 ### shouldSkipIfLocked
-
 1. `const lock1 = await provider.lock(config('test', '1m'))`
 2. `const lock2 = await provider.lock(config('test', '1m'))`
 3. Assert: `lock1` is not `undefined`, `lock2` is `undefined`.
 4. `await lock1!.unlock()`
 
 ### shouldUnlock
-
 1. `await provider.lock(config('test', '1m'))` → unlock
 2. `const lock2 = await provider.lock(config('test', '1m'))`
 3. Assert: `lock2` is not `undefined` (lock was released).
 4. `await lock2!.unlock()`
 
 ### shouldLockAtLeastFor
-
 1. `const lock1 = await provider.lock(config('test', '10s', '5s'))` — lockAtLeastFor=5s
 2. `await lock1!.unlock()` — unlock immediately
 3. `const lock2 = await provider.lock(config('test', '10s'))`
@@ -75,7 +70,6 @@ describe('MongoLockProvider', () => {
 7. Assert: `lock3` is not `undefined`.
 
 ### shouldNotExtendIfNotExtensible
-
 1. `const lock = await provider.lock(config('test', '1m'))`
 2. `const result = await lock!.extend('1m', 0)`
 3. Assert: `result` is `undefined` OR throws `LockException`.
@@ -86,7 +80,6 @@ describe('MongoLockProvider', () => {
 Extends `lockProviderIntegrationTests` (all above tests) and adds:
 
 ### shouldExtendLock
-
 1. `const lock = await provider.lock(config('test', '10s'))`
 2. Advance time 6s (lock is 4s from expiry).
 3. `const extended = await lock!.extend('10s', 0)`
@@ -97,7 +90,6 @@ Extends `lockProviderIntegrationTests` (all above tests) and adds:
 8. `await extended!.unlock()`
 
 ### shouldNotExtendIfExpired
-
 1. `const lock = await provider.lock(config('test', '1s'))`
 2. Advance time 2s (lock expired).
 3. `const extended = await lock!.extend('10s', 0)`
@@ -108,18 +100,15 @@ Extends `lockProviderIntegrationTests` (all above tests) and adds:
 Extends `extensibleLockProviderIntegrationTests` and adds:
 
 ### shouldCreateLockRecord
-
 1. `await provider.lock(config('test', '1m'))` → unlock
 2. Verify: lock record exists in storage (provider-specific verification via `StorageAccessor` or direct query).
 
 ### shouldNotCreateDuplicateRecord
-
 1. `await provider.lock(config('test', '1m'))`
 2. Attempt insert directly via accessor → should fail (record exists).
 3. `await lock!.unlock()`
 
 ### shouldUpdateRecordIfExpired
-
 1. `await provider.lock(config('test', '1s'))` → unlock
 2. Advance time 2s (lock expired).
 3. `const lock2 = await provider.lock(config('test', '1m'))`
@@ -129,7 +118,6 @@ Extends `extensibleLockProviderIntegrationTests` and adds:
 ## Test Contract: fuzzTests
 
 ### shouldHandleConcurrentLockAttempts
-
 1. Launch N=50 concurrent `provider.lock(config('fuzz', '30s'))` calls.
 2. Assert: exactly 1 returns a `SimpleLock`, the other 49 return `undefined`.
 3. Unlock the winning lock.
@@ -137,7 +125,6 @@ Extends `extensibleLockProviderIntegrationTests` and adds:
 5. Each iteration: exactly 1 winner.
 
 ### shouldHandleFuzzWithExtend (extensible providers only)
-
 1. Launch N=20 concurrent tasks that:
    a. Try to lock.
    b. If acquired: sleep random 10-50ms, extend, sleep random 10-50ms, unlock.
@@ -148,14 +135,16 @@ Extends `extensibleLockProviderIntegrationTests` and adds:
 ## Helper Utilities
 
 ### config helper
-
 ```typescript
-function config(name: string, lockAtMostFor: string | number, lockAtLeastFor?: string | number): LockConfiguration;
+function config(
+  name: string,
+  lockAtMostFor: string | number,
+  lockAtLeastFor?: string | number,
+): LockConfiguration;
 ```
 Wraps `createLockConfig(name, parseDuration(lockAtMostFor), lockAtLeastFor ? parseDuration(lockAtLeastFor) : 0)`.
 
 ### time advancement
-
 For unit tests (InMemory): `ClockProvider.setClock(() => fixedTime)` to advance time.
 For integration tests (real backends): use `setTimeout` / `await sleep(ms)` to wait real time.
 
@@ -164,7 +153,6 @@ function sleep(ms: number): Promise<void>;
 ```
 
 ### cleanup
-
 ```typescript
 function cleanupLock(provider: LockProvider, name: string): Promise<void>;
 ```

@@ -67,6 +67,7 @@ export default defineConfig({
 ### Step 2: Implement LockException + subclasses
 
 **File:** `src/lock-exception.ts`
+
 - `LockException extends Error` with `name = 'LockException'`
 - `NoActiveLockException extends LockException`
 - `LockCanNotBeExtendedException extends LockException`
@@ -74,18 +75,21 @@ export default defineConfig({
 ### Step 3: Implement ClockProvider
 
 **File:** `src/clock-provider.ts`
+
 - Private `clock: () => number` field, default `() => Date.now()`
 - `static now()`, `static setClock()`, `static resetClock()`
 
 ### Step 4: Implement Utils
 
 **File:** `src/utils.ts`
+
 - `getHostname()`: `os.hostname()` with try/catch fallback to `'unknown'`
 - `toIsoString(epochMillis)`: `new Date(epochMillis).toISOString()` (Node.js already produces 3-digit millis)
 
 ### Step 5: Implement Duration parsing
 
 **File:** `src/duration.ts`
+
 - Type `DurationInput = number | string | { hours?, minutes?, seconds?, millis? }`
 - `parseDuration(input)`:
   - If `number` → return as-is (millis)
@@ -97,6 +101,7 @@ export default defineConfig({
 ### Step 6: Implement LockConfiguration
 
 **File:** `src/lock-configuration.ts`
+
 - `LockConfiguration` interface (readonly fields)
 - `createLockConfig(name, lockAtMostFor, lockAtLeastFor = 0)`: validates and returns config with `createdAt: ClockProvider.now()`
 - Derived helpers: `lockAtMostUntil()`, `lockAtLeastUntil()`, `unlockTime()`
@@ -104,6 +109,7 @@ export default defineConfig({
 ### Step 7: Implement SimpleLock + AbstractSimpleLock
 
 **File:** `src/simple-lock.ts`
+
 - `SimpleLock` interface
 - `AbstractSimpleLock` abstract class:
   - `protected valid = true`
@@ -117,12 +123,14 @@ export default defineConfig({
 ### Step 8: Implement LockProvider interfaces
 
 **File:** `src/lock-provider.ts`
+
 - `LockProvider` interface
 - `ExtensibleLockProvider` (extends `LockProvider`, empty — marker type)
 
 ### Step 9: Implement LockAssert
 
 **File:** `src/lock-assert.ts`
+
 - `import { AsyncLocalStorage } from 'node:async_hooks'`
 - Private `storage = new AsyncLocalStorage<string[]>()`
 - `assertLocked()`: get store, throw if empty/undefined
@@ -136,6 +144,7 @@ export default defineConfig({
 ### Step 10: Implement LockExtender
 
 **File:** `src/lock-extender.ts`
+
 - Private `storage = new AsyncLocalStorage<SimpleLock[]>()`
 - `extendActiveLock(lockAtMostFor, lockAtLeastFor)`:
   - Get store, throw `NoActiveLockException` if empty/undefined
@@ -151,12 +160,14 @@ export default defineConfig({
 ### Step 11: Implement LockingTaskExecutorListener
 
 **File:** `src/locking-task-executor-listener.ts`
+
 - Interface with 5 methods
 - `NO_OP_LISTENER` constant with empty implementations
 
 ### Step 12: Implement LockingTaskExecutor + DefaultLockingTaskExecutor
 
 **File:** `src/locking-task-executor.ts`
+
 - `TaskResult<T>` interface + `result()` / `notExecuted()` factories
 - `LockingTaskExecutor` interface
 - `DefaultLockingTaskExecutor` class:
@@ -181,12 +192,14 @@ export default defineConfig({
 ### Step 13: Implement Scheduler
 
 **File:** `src/scheduler.ts`
+
 - `Scheduler` interface: `setInterval(callback, ms): { clear(): void }`
 - `DefaultScheduler`: uses Node.js `setInterval`/`clearInterval`
 
 ### Step 14: Implement KeepAliveLockProvider
 
 **File:** `src/keep-alive-lock-provider.ts`
+
 - `MIN_LOCK_AT_MOST_FOR = 30_000`
 - Constructor: `(provider: ExtensibleLockProvider, scheduler = new DefaultScheduler())`
 - `async lock(config)`:
@@ -212,6 +225,7 @@ export default defineConfig({
 ### Step 15: Implement StorageBasedLockProvider + StorageAccessor
 
 **File:** `src/storage-based-lock-provider.ts`
+
 - `StorageAccessor` interface
 - `AbstractStorageAccessor` abstract class (getHostname via Utils)
 - `LockRecordRegistry` class (Set-based)
@@ -236,6 +250,7 @@ export default defineConfig({
 ### Step 16: Implement TrackingLockProviderWrapper
 
 **File:** `src/tracking-lock-provider.ts`
+
 - `TrackingLockProviderWrapper` class:
   - `private activeLocks = new Set<SimpleLock>()`
   - `async lock(config)` → delegate, if lock acquired wrap in `TrackingSimpleLock`
@@ -248,6 +263,7 @@ export default defineConfig({
 ### Step 17: Implement SimpleLockWithConfiguration
 
 **File:** `src/simple-lock-with-configuration.ts`
+
 - Interface extending `SimpleLock` with `getLockConfiguration(): LockConfiguration`
 
 ### Step 18: Wire up index.ts
@@ -342,13 +358,13 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk                                                                | Mitigation                                                                                                                                |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Risk | Mitigation |
+|---|---|
 | `AsyncLocalStorage` behavior differs from ThreadLocal in edge cases | Write thorough tests for `LockAssert` and `LockExtender` covering nested async contexts, parallel async operations, and context isolation |
-| `enterWith` vs `run` for `makeAllAssertsPass`                       | Research Node.js docs; prefer `run()` where possible, `enterWith()` for push/pop semantics. Test thoroughly.                              |
-| KeepAliveLock extend race conditions                                | Single-threaded event loop makes `active` flag safe. Document the single-threaded assumption.                                             |
-| `LockRecordRegistry` interleaving across async operations           | Acceptable — it's an optimization. Storage operations are atomic. Document this.                                                          |
-| `performance.now()` availability                                    | Available since Node 8. No concern for Node 22+.                                                                                          |
+| `enterWith` vs `run` for `makeAllAssertsPass` | Research Node.js docs; prefer `run()` where possible, `enterWith()` for push/pop semantics. Test thoroughly. |
+| KeepAliveLock extend race conditions | Single-threaded event loop makes `active` flag safe. Document the single-threaded assumption. |
+| `LockRecordRegistry` interleaving across async operations | Acceptable — it's an optimization. Storage operations are atomic. Document this. |
+| `performance.now()` availability | Available since Node 8. No concern for Node 22+. |
 
 ## Estimation
 

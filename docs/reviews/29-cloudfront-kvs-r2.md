@@ -10,6 +10,7 @@
 ## Summary
 
 Round-1 blockers and majors were addressed:
+
 1. ISO fixtures use `Utils.toIsoString` — held/expired/corrupt-value unit paths pass (12/12).
 2. Integration harness calls only `extensibleLockProviderIntegrationTests` + `fuzzTests`.
 3. Unlock no-ops when `lockedBy` ≠ hostname; unit coverage for foreign unlock; README notes ownership.

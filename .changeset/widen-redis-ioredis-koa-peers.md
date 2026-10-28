@@ -1,5 +1,4 @@
 ---
-
 '@tslock/redis': patch
 '@tslock/redis-ioredis': patch
 '@tslock/koa': patch

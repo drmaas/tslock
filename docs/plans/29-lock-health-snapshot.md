@@ -7,11 +7,13 @@ Implement `docs/specs/29-lock-health-snapshot.md` in `@tslock/core`: extend `Tra
 ## Files
 
 Create:
+
 - `packages/core/src/lock-health.ts` — types, `createLockHealthMonitor`, `formatSnapshot` helper
 - `packages/core/__tests__/lock-health.test.ts`
 - `.changeset/lock-health-snapshot.md`
 
 Update:
+
 - `packages/core/src/tracking-lock-provider.ts` — `ActiveLockRecord`, `getActiveLockRecords()`, acquire/extend/unlock metadata
 - `packages/core/src/index.ts` — export new types and factory
 - `packages/core/__tests__/tracking-lock-provider.test.ts` — record / extend metadata cases
@@ -70,5 +72,5 @@ Revert the listed files. No persistence and no migration.
 
 - Exposing `SimpleLock` on the snapshot would invite admin unlock — keep metadata-only.
 - `overdueLocks` false positives if `updatedAt` is not refreshed on extend — extend path must update.
-- Keep-alive renews through the tracking wrapper only when tracking wraps the storage provider _inside_ keep-alive, or when keep-alive's inner extend goes through tracking. Document wiring: `KeepAliveLockProvider(tracking)` so renewals update tracking; if tracking wraps keep-alive instead, renewals on the inner handle are invisible to tracking (same pitfall as otel instrumentation order). Spec README must show `KeepAliveLockProvider(tracking, …)`.
+- Keep-alive renews through the tracking wrapper only when tracking wraps the storage provider *inside* keep-alive, or when keep-alive's inner extend goes through tracking. Document wiring: `KeepAliveLockProvider(tracking)` so renewals update tracking; if tracking wraps keep-alive instead, renewals on the inner handle are invisible to tracking (same pitfall as otel instrumentation order). Spec README must show `KeepAliveLockProvider(tracking, …)`.
 - Sorting and freeze must not mutate the live tracking store.

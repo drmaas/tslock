@@ -69,6 +69,7 @@ export default defineConfig({
 ### Step 2: Define options + constants
 
 **File:** `src/etcd-lock-provider-options.ts`
+
 - `DEFAULT_ENV = 'default'`
 - `MILLIS_IN_SECOND = 1000`
 - Interface `EtcdLockProviderOptions` with `env?: string`.
@@ -77,6 +78,7 @@ export default defineConfig({
 ### Step 3: Implement EtcdAccessor
 
 **File:** `src/etcd-accessor.ts`
+
 - Imports from `etcd3`: `Etcd3`, `Cmp`, `Op` (and `LeaseId` type if exported).
 - Constructor: `(client, env)`.
 - `lock(config)`:
@@ -91,6 +93,7 @@ export default defineConfig({
 ### Step 4: Implement EtcdLock
 
 **File:** `src/etcd-lock.ts`
+
 - `import { AbstractSimpleLock, LockConfiguration, SimpleLock } from '@tslock/core'`
 - `class EtcdLock extends AbstractSimpleLock`:
   - `constructor(private readonly accessor: EtcdAccessor, private readonly leaseId: number | bigint, config: LockConfiguration)` — pass `config` to `super(config)`.
@@ -100,6 +103,7 @@ export default defineConfig({
 ### Step 5: Implement EtcdLockProvider
 
 **File:** `src/etcd-lock-provider.ts`
+
 - `import type { Etcd3 } from 'etcd3'`
 - `class EtcdLockProvider implements LockProvider`:
   - `private readonly accessor: EtcdAccessor`
@@ -165,8 +169,8 @@ const provider = new EtcdLockProvider(client, { env: 'test' });
 ### Step 8: Write integration tests (etcd testcontainer)
 
 **File:** `__tests__/integration/etcd-lock-provider.integration.test.ts`
-- Use the etcd Docker image via testcontainers:
 
+- Use the etcd Docker image via testcontainers:
   ```typescript
   import { GenericContainer } from 'testcontainers';
   const container = await new GenericContainer('quay.io/coreos/etcd:v3.5.0')
@@ -203,19 +207,19 @@ All must pass with zero errors.
 
 ## Risks & Mitigations
 
-| Risk                                                                  | Mitigation                                                                                                                                                                                                                                                                                        |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `etcd3` API drift on `txn` / `lease` chaining                         | The `etcd3` v1 API is stable: `client.txn().if(Cmp...).then(Op...).else(Op...).commit()`, `client.lease(ttl)` returns `Lease` with `.id` and `.revoke()`. Pin `^1.0.0` in `peerDependencies`. The unit test's mock chain catches signature regressions.                                           |
-| `lease.id` available before grant (lazy)                              | The `etcd3` client returns a `Lease` object whose `.id` is assigned synchronously (a generated ID), and the lease is granted on the next await (the txn commit). Document this in a comment. The unit test mocks `lease.id = 12345` to verify the flow.                                           |
-| `Math.ceil(lockAtMostFor / 1000)` for sub-second TTL                  | Sub-second `lockAtMostFor` (e.g. 500ms) → TTL 1 second. Document the rounding behavior. The integration test's `shouldLockAtLeastFor` and `shouldLockOnce` tests use multi-second durations to avoid sub-second edge cases.                                                                       |
-| Lease orphaned on `lock()` failure                                    | The `catch` block revokes the lease (best-effort). If the revoke itself fails (network down), the lease expires after `lockAtMostFor` seconds — no permanent orphan. Document this.                                                                                                               |
-| `unlock()` with `lockAtLeastFor > 0` revokes the wrong lease          | The order matters: re-put with the new lease FIRST, then revoke the OLD lease. If the order is reversed, revoking the old lease deletes the key before the new put attaches the new lease. The unit test asserts the order.                                                                       |
-| `lease(0, { id: leaseId })` wraps an existing lease for revoke        | The `etcd3` API: `client.lease(ttl, { id })` returns a `Lease` wrapper around the existing ID. `.revoke()` on it revokes that lease. If the API differs in a future version, the unit test catches it. Alternative: `client.leaseClient.revoke(leaseId)` — confirm against the installed version. |
-| `Op.put(key, value, { lease: leaseId })` — lease option name          | The `etcd3` `Op.put` options use `lease` (or `leaseId`) as the key. Confirm against the installed version. The unit test asserts the option name.                                                                                                                                                 |
-| etcd testcontainer image / startup args                               | The `quay.io/coreos/etcd` image requires explicit `--advertise-client-urls` and `--listen-client-urls` to listen on all interfaces. The integration test setup documents this.                                                                                                                    |
-| Lease keepalive keeps the lease alive forever                         | The `etcd3` client auto-keeps-alive active leases. This is correct: the lease should not expire while the holder is alive. On process crash, the keepalive stops and the lease expires. Document this.                                                                                            |
-| Concurrent acquirers on the same key                                  | The transaction's `if(version === 0)` ensures only one `put` succeeds. The others see `!succeeded` and revoke their leases. No orphaned keys. The integration test's fuzz test (`shouldHandleConcurrentLockAttempts`) exercises this.                                                             |
-| `lockAtMostFor` exceeds etcd max TTL (5,000,000 seconds ≈ 5,400 days) | Document the etcd max TTL. TSLock's default `lockAtMostFor` is much shorter.                                                                                                                                                                                                                      |
+| Risk | Mitigation |
+|---|---|
+| `etcd3` API drift on `txn` / `lease` chaining | The `etcd3` v1 API is stable: `client.txn().if(Cmp...).then(Op...).else(Op...).commit()`, `client.lease(ttl)` returns `Lease` with `.id` and `.revoke()`. Pin `^1.0.0` in `peerDependencies`. The unit test's mock chain catches signature regressions. |
+| `lease.id` available before grant (lazy) | The `etcd3` client returns a `Lease` object whose `.id` is assigned synchronously (a generated ID), and the lease is granted on the next await (the txn commit). Document this in a comment. The unit test mocks `lease.id = 12345` to verify the flow. |
+| `Math.ceil(lockAtMostFor / 1000)` for sub-second TTL | Sub-second `lockAtMostFor` (e.g. 500ms) → TTL 1 second. Document the rounding behavior. The integration test's `shouldLockAtLeastFor` and `shouldLockOnce` tests use multi-second durations to avoid sub-second edge cases. |
+| Lease orphaned on `lock()` failure | The `catch` block revokes the lease (best-effort). If the revoke itself fails (network down), the lease expires after `lockAtMostFor` seconds — no permanent orphan. Document this. |
+| `unlock()` with `lockAtLeastFor > 0` revokes the wrong lease | The order matters: re-put with the new lease FIRST, then revoke the OLD lease. If the order is reversed, revoking the old lease deletes the key before the new put attaches the new lease. The unit test asserts the order. |
+| `lease(0, { id: leaseId })` wraps an existing lease for revoke | The `etcd3` API: `client.lease(ttl, { id })` returns a `Lease` wrapper around the existing ID. `.revoke()` on it revokes that lease. If the API differs in a future version, the unit test catches it. Alternative: `client.leaseClient.revoke(leaseId)` — confirm against the installed version. |
+| `Op.put(key, value, { lease: leaseId })` — lease option name | The `etcd3` `Op.put` options use `lease` (or `leaseId`) as the key. Confirm against the installed version. The unit test asserts the option name. |
+| etcd testcontainer image / startup args | The `quay.io/coreos/etcd` image requires explicit `--advertise-client-urls` and `--listen-client-urls` to listen on all interfaces. The integration test setup documents this. |
+| Lease keepalive keeps the lease alive forever | The `etcd3` client auto-keeps-alive active leases. This is correct: the lease should not expire while the holder is alive. On process crash, the keepalive stops and the lease expires. Document this. |
+| Concurrent acquirers on the same key | The transaction's `if(version === 0)` ensures only one `put` succeeds. The others see `!succeeded` and revoke their leases. No orphaned keys. The integration test's fuzz test (`shouldHandleConcurrentLockAttempts`) exercises this. |
+| `lockAtMostFor` exceeds etcd max TTL (5,000,000 seconds ≈ 5,400 days) | Document the etcd max TTL. TSLock's default `lockAtMostFor` is much shorter. |
 
 ## Estimation
 

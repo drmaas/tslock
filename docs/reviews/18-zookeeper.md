@@ -15,7 +15,7 @@ The ZooKeeper provider implements a DIRECT `LockProvider` using PERSISTENT znode
 
 **Correct as DIRECT LockProvider.** Architecture §6.5 states: "PERSISTENT znodes (not ephemeral). Lock = znode whose data is the ISO timestamp of `lockAtMostUntil`. Acquire = create-or-set-version. No extend. Uses optimistic concurrency via `version` check." The spec implements `LockProvider` directly — correct. The optimistic-concurrency pattern (getData/setData/create) does not fit the `StorageAccessor` insert/update/unlock/extend contract.
 
-The spec's Non-Goals section explicitly and correctly explains why PERSISTENT (not EPHEMERAL) and why not the classic sequential-ephemeral lock recipe (which is a _blocking_ lock; TSLock is skip-if-held). This is well-reasoned.
+The spec's Non-Goals section explicitly and correctly explains why PERSISTENT (not EPHEMERAL) and why not the classic sequential-ephemeral lock recipe (which is a *blocking* lock; TSLock is skip-if-held). This is well-reasoned.
 
 ## Spec Completeness
 

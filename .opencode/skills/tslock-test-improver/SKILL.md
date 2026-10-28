@@ -1,5 +1,4 @@
 ---
-
 name: tslock-test-improver
 description: Test-coverage and test-quality workflow for TSLock. Use this skill whenever the user asks to add, improve, strengthen, repair, review, or expand tests, integration coverage, fuzz coverage, shared contracts, assertions, or test infrastructure without making a new feature the primary goal. Review coverage, implement meaningful tests, verify, independently review, and repeat until done. Do not use it for a production bug fix, new feature design, or documentation-only task; route those to tslock-bugfix, tslock-sdd, or tslock-doc-improver.
 ---
@@ -19,6 +18,7 @@ Tests should expose behavioral contracts and failure modes, not inflate counts. 
 ## 2. Design useful tests
 
 Choose the narrowest test level that proves the behavior:
+
 - unit tests for pure logic, configuration, time, error mapping, and mocked driver interactions;
 - provider tests for atomic operations, ownership, CAS, and driver error translation;
 - shared contract tests for common provider behavior;

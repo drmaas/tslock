@@ -22,13 +22,13 @@
 
 ## Architecture fit
 
-| Item                  | Choice                                                                                                                   |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Package               | `@tslock/core`                                                                                                           |
-| Related type          | Extends `TrackingLockProviderWrapper`; uses `LockingTaskExecutorListener` and `KeepAliveLockProvider`'s failure callback |
-| Complementary package | `@tslock/otel` for continuous metrics                                                                                    |
-| Provider category     | N/A (core wrapper / ops helper)                                                                                          |
-| Compatibility         | Additive. Existing `getActiveLocks()` remains. New APIs are additive exports.                                            |
+| Item | Choice |
+|---|---|
+| Package | `@tslock/core` |
+| Related type | Extends `TrackingLockProviderWrapper`; uses `LockingTaskExecutorListener` and `KeepAliveLockProvider`'s failure callback |
+| Complementary package | `@tslock/otel` for continuous metrics |
+| Provider category | N/A (core wrapper / ops helper) |
+| Compatibility | Additive. Existing `getActiveLocks()` remains. New APIs are additive exports. |
 
 ## Public API
 
@@ -40,7 +40,7 @@ interface ActiveLockRecord {
   readonly lockAtMostFor: number;
   readonly lockAtLeastFor: number;
   readonly acquiredAt: number; // epoch millis when this process first held the lock
-  readonly updatedAt: number; // epoch millis of acquire or last successful extend
+  readonly updatedAt: number;  // epoch millis of acquire or last successful extend
 }
 ```
 
@@ -56,6 +56,7 @@ class TrackingLockProviderWrapper implements LockProvider {
 ```
 
 Behavior:
+
 - On successful `lock`, store an `ActiveLockRecord` with `acquiredAt = updatedAt = ClockProvider.now()`, using the lock configuration's name and durations. Add a tracking wrapper to the active set as today.
 - On successful `extend` of a tracked lock, remove the old wrapper, add a new wrapper, keep the original `acquiredAt`, and set `updatedAt` to `ClockProvider.now()` with the requested `lockAtMostFor` / `lockAtLeastFor`.
 - On `unlock`, remove the wrapper and its record.
@@ -94,6 +95,7 @@ interface LockHealthSnapshot {
 ```
 
 Invariants:
+
 - `takenAt` is `ClockProvider.now()` when `snapshot()` runs.
 - `activeLocks` is the current `getActiveLockRecords()` result, sorted by `name` ascending (stable, deterministic for dumps).
 - `lastAcquired` / `lastSkipped` are the most recent corresponding listener events, or `undefined` if none since construction.
@@ -119,6 +121,7 @@ function createLockHealthMonitor(options: LockHealthMonitorOptions): LockHealthM
 ```
 
 Behavior:
+
 - `tracking` is required.
 - `maxKeepAliveFailures` defaults to 16. Values less than 1 throw `LockException`.
 - Listener methods:
@@ -135,6 +138,7 @@ Returned monitor methods do not depend on `this` binding (arrow methods or bound
 ## Operator examples (documentation only)
 
 Core README documents:
+
 1. **HTTP health** — Node `http.createServer` (or Express one-liner) that returns `JSON.stringify(monitor.snapshot())` on `GET /health/locks` with status 200. Read-only.
 2. **CLI dump** — `console.log(monitor.formatSnapshot())` for an operator script.
 
@@ -151,12 +155,12 @@ When also using `@tslock/otel`, instrument the storage provider before tracking,
 
 ## Errors
 
-| Condition                      | Behavior                                                                                  |
-| ------------------------------ | ----------------------------------------------------------------------------------------- |
-| `maxKeepAliveFailures < 1`     | Throw `LockException` at factory time                                                     |
-| Missing `tracking`             | TypeScript-required; no runtime default                                                   |
-| Monitor internal update throws | Swallowed; task / keep-alive path continues                                               |
-| Lock not acquired              | Unchanged (`undefined` / skip); monitor records via listener only when the executor emits |
+| Condition | Behavior |
+|---|---|
+| `maxKeepAliveFailures < 1` | Throw `LockException` at factory time |
+| Missing `tracking` | TypeScript-required; no runtime default |
+| Monitor internal update throws | Swallowed; task / keep-alive path continues |
+| Lock not acquired | Unchanged (`undefined` / skip); monitor records via listener only when the executor emits |
 
 ## Compatibility
 
@@ -168,6 +172,7 @@ When also using `@tslock/otel`, instrument the storage provider before tracking,
 ## Tests
 
 Unit tests in `packages/core/__tests__/`:
+
 - Tracking: acquire records metadata; unlock removes record; extend preserves `acquiredAt`, updates `updatedAt` and durations; double unlock safe.
 - Monitor: last acquired / last skipped; ring buffer capacity and order; overdue when `updatedAt` is stale relative to `lockAtMostFor`; keep-alive failure records `errorType`; `snapshot()` is frozen and `JSON.stringify`-able; `formatSnapshot` includes active lock names.
 - Monitor listener methods do not throw into the caller when state update is forced to fail (optional if awkward; at least verify no-op listener methods exist).

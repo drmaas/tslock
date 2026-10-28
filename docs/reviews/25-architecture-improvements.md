@@ -5,6 +5,7 @@
 This review covers the approved v1.x architecture-hardening work in `docs/specs/25-architecture-improvements.md` and `docs/plans/25-architecture-improvements.md`.
 
 Implemented areas include:
+
 - core hostname, TTL, lock-name, registry, reentrancy, keep-alive, and unlock-observability hardening;
 - Redis ownership-token and `lockAtLeastFor` correctness;
 - provider configuration error taxonomy and missing-record behavior;
@@ -40,6 +41,7 @@ Implemented areas include:
 ## Validation
 
 Passed:
+
 - Biome repository check;
 - `git diff --check`;
 - package metadata assertions for all 33 workspace packages;

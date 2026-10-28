@@ -7,7 +7,19 @@
     "defaultBranch": "main"
   },
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/dist"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!.changeset",
+      "!.opencode/commands",
+      "!.cursor/skills/**/SKILL.md",
+      "!.opencode/skills/**/SKILL.md",
+      "!docs/specs",
+      "!docs/plans",
+      "!docs/reviews",
+      "!pnpm-lock.yaml"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -42,13 +54,5 @@
     "formatter": {
       "enabled": true
     }
-  },
-  "overrides": [
-    {
-      "includes": ["docs/specs/25-architecture-improvements.md"],
-      "formatter": {
-        "enabled": false
-      }
-    }
-  ]
+  }
 }

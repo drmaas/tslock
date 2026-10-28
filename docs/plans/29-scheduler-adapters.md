@@ -16,12 +16,12 @@ Implement `docs/specs/29-scheduler-adapters.md`: shared `@tslock/scheduler-core`
 
 Create four packages under `packages/` with the standard dual-format layout (mirror `packages/otel` / `packages/nestjs`):
 
-| Path                       | Package name             |
-| -------------------------- | ------------------------ |
+| Path | Package name |
+|---|---|
 | `packages/scheduler-core/` | `@tslock/scheduler-core` |
-| `packages/node-cron/`      | `@tslock/node-cron`      |
-| `packages/bree/`           | `@tslock/bree`           |
-| `packages/aws-lambda/`     | `@tslock/aws-lambda`     |
+| `packages/node-cron/` | `@tslock/node-cron` |
+| `packages/bree/` | `@tslock/bree` |
+| `packages/aws-lambda/` | `@tslock/aws-lambda` |
 
 Each package gets: `package.json` (version `2.0.1`, `engines.node >= 22`, dual exports, `sideEffects: false`, repository directory), `tsconfig.json` extending `../../tsconfig.base.json`, `tsup.config.ts` (`format: ['esm','cjs']`, `dts`, `clean`, `sourcemap`, `target: 'node20'`), `src/`, `__tests__/`, `README.md`.
 
@@ -29,29 +29,32 @@ Each package gets: `package.json` (version `2.0.1`, `engines.node >= 22`, dual e
 
 Peer / dependency matrix:
 
-| Package        | dependencies                             | peerDependencies         | devDependencies (extra)                       |
-| -------------- | ---------------------------------------- | ------------------------ | --------------------------------------------- |
-| scheduler-core | `@tslock/core` workspace                 | —                        | vitest, tsup, typescript, `@tslock/in-memory` |
-| node-cron      | `@tslock/core`, `@tslock/scheduler-core` | `node-cron` `^3 \|\| ^4` | `node-cron` ^4, in-memory                     |
-| bree           | `@tslock/core`, `@tslock/scheduler-core` | `bree` `^9`              | `bree` ^9, in-memory                          |
-| aws-lambda     | `@tslock/core`, `@tslock/scheduler-core` | —                        | in-memory                                     |
+| Package | dependencies | peerDependencies | devDependencies (extra) |
+|---|---|---|---|
+| scheduler-core | `@tslock/core` workspace | — | vitest, tsup, typescript, `@tslock/in-memory` |
+| node-cron | `@tslock/core`, `@tslock/scheduler-core` | `node-cron` `^3 \|\| ^4` | `node-cron` ^4, in-memory |
+| bree | `@tslock/core`, `@tslock/scheduler-core` | `bree` `^9` | `bree` ^9, in-memory |
+| aws-lambda | `@tslock/core`, `@tslock/scheduler-core` | — | in-memory |
 
 Use `workspace:*` for internal `@tslock/*` deps (same as express/nestjs).
 
 ### 2. Implement `@tslock/scheduler-core`
 
 Files:
+
 - `src/scheduler-lock-config.ts` — `SchedulerLockConfig`, `ResolvedSchedulerLockConfig`, `JobLockOptions`, `resolveSchedulerLockConfig`, `validateJobLockOptions`.
 - `src/scheduler-lock-lifecycle.ts` — `createSchedulerLock`, `SchedulerLockLifecycle` (`wrap` / `run`).
 - `src/index.ts` — public exports.
 
 Implementation notes:
+
 - Validation mirrors `packages/nestjs/src/tslock-module.ts` / `scheduler-lock.ts`.
 - `wrap` closes over executor + resolved defaults; builds `createLockConfig` per call; returns `result.wasExecuted ? result.getResult() : undefined`.
 - No comments in source.
 - Do not export Nest-specific runtime binding.
 
 Tests (`__tests__/scheduler-lock.unit.test.ts`):
+
 - config validation (missing provider, inverted durations, missing defaultLockAtMostFor)
 - wrap acquire / skip / unlock-on-throw / provider error
 - duration override vs defaults
@@ -61,12 +64,14 @@ Tests (`__tests__/scheduler-lock.unit.test.ts`):
 ### 3. Implement `@tslock/node-cron`
 
 Files:
+
 - `src/node-cron-lock.ts` — `createNodeCronLock`, `createRunCoordinator` helper (or colocated).
 - `src/index.ts`
 
 `createNodeCronLock` delegates wrap to `createSchedulerLock`. `schedule(cron, expression, task, job)` calls `cron.schedule(expression, wrap(task, job), job.taskOptions)`.
 
 `createRunCoordinator`:
+
 - Hold `Map<string, SimpleLock>`.
 - `shouldRun(key, ttlMs)` → lock with `createLockConfig(prefix+key, ttlMs, lockAtLeastForMs)`; store on success.
 - `onComplete(key)` → unlock + delete.
@@ -74,6 +79,7 @@ Files:
 Use `import type` for `RunCoordinator` from `node-cron` so v3 installs still typecheck when types are optional; if v3 has no `RunCoordinator` type, define a local structural interface matching the v4 shape and document it.
 
 Tests:
+
 - wrap acquire/skip (reuse mock provider pattern from nestjs unit tests)
 - schedule invokes `cron.schedule` with wrapped fn (mock cron module)
 - RunCoordinator acquire / miss / onComplete unlock / keyPrefix
@@ -81,6 +87,7 @@ Tests:
 ### 4. Implement `@tslock/bree`
 
 Files:
+
 - `src/bree-lock.ts` — `createBreeLock` → thin facade over `createSchedulerLock`.
 - `src/index.ts`
 
@@ -91,6 +98,7 @@ Tests: wrap acquire/skip; factory exposes config/executor.
 ### 5. Implement `@tslock/aws-lambda`
 
 Files:
+
 - `src/aws-lambda-lock.ts` — `createAwsLambdaLock` with `wrapHandler`.
 - `src/index.ts`
 
@@ -107,7 +115,6 @@ Tests: handler called with args when locked; skipped when not; unlock after thro
 
 ```md
 ---
-
 '@tslock/scheduler-core': minor
 '@tslock/node-cron': minor
 '@tslock/bree': minor
@@ -139,6 +146,7 @@ Integration suite is out of scope (no containers). Record if any unrelated packa
 ## File checklist
 
 Create:
+
 - `docs/specs/29-scheduler-adapters.md` (done in Stage 2)
 - `docs/plans/29-scheduler-adapters.md` (this file)
 - `docs/reviews/29-scheduler-adapters.md` (Stage 6)
@@ -149,6 +157,7 @@ Create:
 - `.changeset/scheduler-adapters.md`
 
 Modify:
+
 - `README.md` (package matrix)
 - `AGENTS.md` (integration note)
 - `pnpm-lock.yaml` (via install)

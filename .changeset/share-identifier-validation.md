@@ -1,5 +1,4 @@
 ---
-
 '@tslock/core': minor
 '@tslock/sql-support': patch
 '@tslock/sql': patch

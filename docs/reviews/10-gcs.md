@@ -40,24 +40,24 @@ The unit-tests-only approach is consistent with architecture §7.4: "For cloud-o
 **`insertRecord` logic:**
 1. `file.exists()` → if `true`, return `false`.
 2. `file.save('', { metadata, precondition: { doesNotExist: true } })` → if 412, return `false`. Success → `true`.
-   Correct. The `doesNotExist` precondition handles the TOCTOU race. The `file.exists()` is an optimization. ✅
+Correct. The `doesNotExist` precondition handles the TOCTOU race. The `file.exists()` is an optimization. ✅
 
 **`updateRecord` logic:**
 1. `file.get()` → if 404, **return `false`**.
 2. Parse `lockUntil` → if > now, return `false` (still locked).
 3. `file.save('', { metadata, precondition: { generationMatch } })` → if 412, return `false`. Success → `true`.
-   The conditional put and expiry check are correct. **But the 404 handling is incorrect** — see Issue 1 below.
+The conditional put and expiry check are correct. **But the 404 handling is incorrect** — see Issue 1 below.
 
 **`unlock` logic:**
 1. `file.get()` → if 404, no-op return.
 2. `file.setMetadata({ lockUntil: unlockTime, ...preserved }, { precondition: { generationMatch } })` → if 412, swallow (best-effort). Success → void.
-   Correct. Best-effort unlock with `lockAtLeastFor` honored via `unlockTime(config)`. Uses `setMetadata` (not `save`) — smaller operation. ✅
+Correct. Best-effort unlock with `lockAtLeastFor` honored via `unlockTime(config)`. Uses `setMetadata` (not `save`) — smaller operation. ✅
 
 **`extend` logic:**
 1. `file.get()` → if 404, return `false`.
 2. Parse `lockUntil` and `lockedBy` → if `lockedBy !== hostname`, return `false`. If `lockUntil <= now`, return `false`.
 3. `file.setMetadata({ lockUntil: lockAtMostUntil, lockedAt: preserved, lockedBy: preserved }, { precondition: { generationMatch } })` → if 412, return `false`. Success → `true`.
-   Correct. Ownership and validity checks in the right order. `lockedAt` and `lockedBy` preserved from existing metadata. Uses `setMetadata` (not `save`). ✅
+Correct. Ownership and validity checks in the right order. `lockedAt` and `lockedBy` preserved from existing metadata. Uses `setMetadata` (not `save`). ✅
 
 **GCS metadata casing — not an issue (unlike S3):** GCS custom metadata keys are stored as-is and returned as-is (case-sensitive). So `lockUntil` stays `lockUntil` on read. The camelCase keys used in the spec/plan are fine for GCS. ✅ (This is the key difference from the S3 spec, where metadata keys are lowercased by the server.)
 
@@ -84,7 +84,7 @@ The unit-tests-only approach is consistent with architecture §7.4: "For cloud-o
 
 3. **No integration tests — reliance on manual verification.** The spec and plan correctly justify the unit-tests-only approach (no GCS emulator with correct precondition semantics). However, this means the provider has less automated test coverage than other providers. The manual verification procedure (Step 8) is the release gate, but manual procedures risk being skipped. Consider:
    - Adding a CI workflow (manually triggered, using GCP credentials stored as CI secrets) that runs the manual verification procedure against a real GCS bucket. This automates the release gate.
-   - Using `fake-gcs-server` for a _smoke_ test (not the canonical contract) — at least verifies that the SDK calls are well-formed and the provider doesn't crash against a GCS-like API. The spec correctly notes fake-gcs-server's precondition semantics differ, but a smoke test would catch gross errors.
+   - Using `fake-gcs-server` for a *smoke* test (not the canonical contract) — at least verifies that the SDK calls are well-formed and the provider doesn't crash against a GCS-like API. The spec correctly notes fake-gcs-server's precondition semantics differ, but a smoke test would catch gross errors.
 
 4. **`objectPrefix` trailing slash convention.** The default is `'shedlock/'` (with trailing slash). If a user sets `objectPrefix: 'shedlock'` (no trailing slash), the object key would be `'shedlockmy-task'` — no separator. This could be surprising. The plan says "Keep as user-specified." The spec doesn't mention this. Recommend documenting: "If you want a separator between the prefix and the lock name, include the trailing `/` in `objectPrefix`."
 

@@ -16,6 +16,7 @@ This review covers the implementation of `docs/specs/27-verification-follow-up.m
 ## Validation
 
 Passed:
+
 - frozen workspace install;
 - `pnpm check`;
 - `git diff --check`;

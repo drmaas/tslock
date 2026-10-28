@@ -29,12 +29,12 @@ Cloudflare Workers / Pages applications need at-most-once scheduled or cron-trig
 
 ## Architecture fit
 
-| Field        | Value                                                         |
-| ------------ | ------------------------------------------------------------- |
+| Field | Value |
+|---|---|
 | **Category** | **J — Cloudflare Durable Objects** (new specialized category) |
-| **Package**  | `@tslock/cloudflare-do`                                       |
-| **Peers**    | `@tslock/core`                                                |
-| **Node.js**  | >= 22 (client); Workers runtime for the DO class              |
+| **Package** | `@tslock/cloudflare-do` |
+| **Peers** | `@tslock/core` |
+| **Node.js** | >= 22 (client); Workers runtime for the DO class |
 
 ```
 @tslock/core
@@ -100,7 +100,9 @@ class CloudflareDoLockProvider implements ExtensibleLockProvider {
   lock(config: LockConfiguration): Promise<SimpleLock | undefined>;
 }
 
-function createCloudflareDoLockProvider(options: CloudflareDoLockProviderOptions): CloudflareDoLockProvider;
+function createCloudflareDoLockProvider(
+  options: CloudflareDoLockProviderOptions,
+): CloudflareDoLockProvider;
 ```
 
 `lockedBy` uses `Utils.getHostname()`.
@@ -121,6 +123,7 @@ interface DoLockStorage {
 ### lock
 
 Inside the DO (serialized):
+
 1. Read record for key.
 2. If present and `lockUntil > now` → `{ ok: false, reason: 'held' }`.
 3. Else put new record with `lockUntil = createdAt + lockAtMostFor`, `lockedAt = createdAt`, `lockedBy` → `{ ok: true, acquired: true }`.
@@ -142,10 +145,10 @@ Client ignores failures that still return HTTP 200 with ok.
 
 ## Workers KV (deferred)
 
-| Option          | Verdict                                                                                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Workers KV      | **Deferred.** Eventually consistent; no atomic compare-and-swap across regions suitable for ShedLock-style locks. Document in README + vision as follow-up only if a coordination pattern is designed. |
-| Durable Objects | **In scope** — strong consistency + input gates.                                                                                                                                                       |
+| Option | Verdict |
+|---|---|
+| Workers KV | **Deferred.** Eventually consistent; no atomic compare-and-swap across regions suitable for ShedLock-style locks. Document in README + vision as follow-up only if a coordination pattern is designed. |
+| Durable Objects | **In scope** — strong consistency + input gates. |
 
 ## Tests
 

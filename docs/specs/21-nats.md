@@ -8,14 +8,14 @@ The KV bucket is auto-created (default `shedlock-locks`, `StorageType.Memory`) o
 
 ## Package
 
-| Field             | Value                                                   |
-| ----------------- | ------------------------------------------------------- |
-| **Name**          | `@tslock/nats`                                          |
-| **Driver**        | `nats` (official NATS Node.js client) — peer dependency |
-| **Dependencies**  | `@tslock/core` (peer), `nats` (peer)                    |
-| **Node.js**       | >= 22                                                   |
-| **Module format** | Dual ESM + CJS                                          |
-| **Build**         | tsup                                                    |
+| Field | Value |
+|---|---|
+| **Name** | `@tslock/nats` |
+| **Driver** | `nats` (official NATS Node.js client) — peer dependency |
+| **Dependencies** | `@tslock/core` (peer), `nats` (peer) |
+| **Node.js** | >= 22 |
+| **Module format** | Dual ESM + CJS |
+| **Build** | tsup |
 
 ## Public API
 
@@ -46,9 +46,9 @@ Connects to NATS, obtains the JetStream manager, gets-or-creates the KV bucket, 
 import type { StorageType, ConnectionOptions } from 'nats';
 
 interface NatsLockProviderOptions {
-  servers: string; // required, e.g. "nats://localhost:4222"
-  bucketName?: string; // default: 'shedlock-locks'
-  storage?: StorageType; // default: StorageType.Memory
+  servers: string;                       // required, e.g. "nats://localhost:4222"
+  bucketName?: string;                   // default: 'shedlock-locks'
+  storage?: StorageType;                 // default: StorageType.Memory
   connectionOptions?: ConnectionOptions; // passed to nats.connect()
 }
 ```
@@ -141,7 +141,7 @@ async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
 function isNatsConflictError(e: unknown): boolean {
   if (e && typeof e === 'object') {
     const err = e as { code?: number; message?: string };
-    if (err.code === 10071) return true; // KV update/create conflict
+    if (err.code === 10071) return true;                    // KV update/create conflict
     if (err.message && err.message.includes('stream name already in use')) return true;
   }
   return false;
@@ -220,20 +220,20 @@ packages/nats/
 
 ## Error Handling Summary
 
-| Situation                                                             | Behavior                                                                |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Lock held by another instance (key exists, not expired)               | `kv.get` returns entry with `lockUntil > now` → `undefined`             |
-| First lock on a key (key absent)                                      | `kv.create` succeeds → `NatsLock`                                       |
-| Concurrent create on same key                                         | `kv.create` throws conflict error → `undefined`                         |
-| Expired lock, no contention                                           | `kv.get` returns entry, `kv.update` with revision succeeds → `NatsLock` |
-| Expired lock, contention (revision mismatch)                          | `kv.update` throws conflict error → `undefined`                         |
-| `unlock()` with `lockAtLeastFor=0`                                    | `kv.delete` → void                                                      |
-| `unlock()` with `lockAtLeastFor>0` and still in window                | `kv.update` with `lockAtLeastUntil` → void                              |
-| `unlock()` on already-deleted key                                     | `kv.get` returns `null` → return (no-op)                                |
-| `unlock()` on a lock whose stored `lockUntil` > our `lockAtMostUntil` | Skip (lock was taken/extended) → return                                 |
-| `extend()`                                                            | Throws `LockException('Extend not supported')`                          |
-| Connection error / network failure                                    | Propagate the nats error to the caller                                  |
-| Bucket auto-create fails (e.g. JetStream not enabled)                 | Propagate the error from `createNatsLockProvider`                       |
+| Situation | Behavior |
+|---|---|
+| Lock held by another instance (key exists, not expired) | `kv.get` returns entry with `lockUntil > now` → `undefined` |
+| First lock on a key (key absent) | `kv.create` succeeds → `NatsLock` |
+| Concurrent create on same key | `kv.create` throws conflict error → `undefined` |
+| Expired lock, no contention | `kv.get` returns entry, `kv.update` with revision succeeds → `NatsLock` |
+| Expired lock, contention (revision mismatch) | `kv.update` throws conflict error → `undefined` |
+| `unlock()` with `lockAtLeastFor=0` | `kv.delete` → void |
+| `unlock()` with `lockAtLeastFor>0` and still in window | `kv.update` with `lockAtLeastUntil` → void |
+| `unlock()` on already-deleted key | `kv.get` returns `null` → return (no-op) |
+| `unlock()` on a lock whose stored `lockUntil` > our `lockAtMostUntil` | Skip (lock was taken/extended) → return |
+| `extend()` | Throws `LockException('Extend not supported')` |
+| Connection error / network failure | Propagate the nats error to the caller |
+| Bucket auto-create fails (e.g. JetStream not enabled) | Propagate the error from `createNatsLockProvider` |
 
 ## Dependencies
 
