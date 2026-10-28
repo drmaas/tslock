@@ -1,10 +1,18 @@
-import { ClockProvider, createLockConfig, type StorageAccessor, StorageBasedLockProvider } from '@tslock/core';
+import type { Database } from '@google-cloud/spanner';
+import {
+  ClockProvider,
+  createLockConfig,
+  LockException,
+  type StorageAccessor,
+  StorageBasedLockProvider,
+} from '@tslock/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SpannerColumnNames } from '../src/spanner-configuration.js';
+import { createSpannerProvider } from '../src/spanner-lock-provider.js';
 
 const NOW = 1_000_000;
 
-function _cols(overrides?: Partial<SpannerColumnNames>): SpannerColumnNames {
+function cols(overrides?: Partial<SpannerColumnNames>): SpannerColumnNames {
   return { name: 'name', lockUntil: 'lockUntil', lockedAt: 'lockedAt', lockedBy: 'lockedBy', ...overrides };
 }
 
@@ -28,6 +36,20 @@ function makeAccessor(overrides?: Record<string, unknown>): MockStorageAccessor 
   const extend = vi.fn();
   return { insertRecord, updateRecord, unlock, extend, ...overrides } as MockStorageAccessor;
 }
+
+describe('createSpannerProvider identifier validation', () => {
+  const database = {} as Database;
+
+  it('throws LockException on invalid tableName', () => {
+    expect(() => createSpannerProvider(database, 'shedlock;drop', cols(), 'host')).toThrow(LockException);
+  });
+
+  it('throws LockException on invalid column name', () => {
+    expect(() => createSpannerProvider(database, 'shedlock', cols({ lockedBy: 'bad name' }), 'host')).toThrow(
+      'Invalid columnNames.lockedBy',
+    );
+  });
+});
 
 describe('SpannerLockProvider', () => {
   let accessor: MockStorageAccessor;

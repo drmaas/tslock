@@ -62,6 +62,20 @@ async function runTx(tx: MockTransaction, fn: (t: MockTransaction) => Promise<un
 }
 
 describe('SpannerStorageAccessor', () => {
+  describe('identifier validation', () => {
+    const database = {} as Database;
+
+    it('throws LockException on invalid tableName', () => {
+      expect(() => new SpannerStorageAccessor(database, 'shedlock;drop', cols(), 'host')).toThrow(LockException);
+    });
+
+    it('throws LockException on invalid column name', () => {
+      expect(() => new SpannerStorageAccessor(database, 'shedlock', cols({ name: 'bad name' }), 'host')).toThrow(
+        'Invalid columnNames.name',
+      );
+    });
+  });
+
   describe('insertRecord', () => {
     it('returns true on success', async () => {
       const tx = makeTx();
