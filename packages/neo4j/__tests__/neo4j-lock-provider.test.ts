@@ -20,15 +20,15 @@ describe('resolveOptions', () => {
   });
 
   it('throws on invalid label', () => {
-    expect(() => resolveOptions({ label: 'bad-label!' })).toThrow('not a valid Neo4j identifier');
+    expect(() => resolveOptions({ label: 'bad-label!' })).toThrow('Invalid label');
   });
 
   it('throws on invalid column name', () => {
-    expect(() => resolveOptions({ columnNames: { name: 'bad name' } })).toThrow('not a valid Neo4j identifier');
+    expect(() => resolveOptions({ columnNames: { name: 'bad name' } })).toThrow('Invalid columnNames.name');
   });
 
   it('throws on empty label', () => {
-    expect(() => resolveOptions({ label: '' })).toThrow('not a valid Neo4j identifier');
+    expect(() => resolveOptions({ label: '' })).toThrow('Invalid label');
   });
 });
 

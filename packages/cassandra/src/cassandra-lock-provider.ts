@@ -5,11 +5,12 @@ import {
   type SimpleLock,
   StorageBasedLockProvider,
   Utils,
+  validateIdentifier,
 } from '@tslock/core';
 import type cassandra from 'cassandra-driver';
 import type { ResolvedCassandraOptions, ResolvedColumnNames } from './cassandra-cql.js';
 import { CassandraStorageAccessor } from './cassandra-storage-accessor.js';
-import { validateIdentifier, validateSerialConsistency } from './validation.js';
+import { validateSerialConsistency } from './validation.js';
 
 export interface CassandraColumnNames {
   readonly name: string;
@@ -90,15 +91,12 @@ export async function createLockTable(
   client: cassandra.Client,
   options: { keyspace: string; tableName?: string; columnNames?: Partial<CassandraColumnNames> },
 ): Promise<void> {
-  const tableName = options.tableName ?? DEFAULT_TABLE_NAME;
-  const columnNames: ResolvedColumnNames = { ...DEFAULT_COLUMN_NAMES, ...options.columnNames };
-  validateIdentifier(options.keyspace, 'keyspace');
-  validateIdentifier(tableName, 'tableName');
-  validateIdentifier(columnNames.name, 'columnNames.name');
-  validateIdentifier(columnNames.lockUntil, 'columnNames.lockUntil');
-  validateIdentifier(columnNames.lockedAt, 'columnNames.lockedAt');
-  validateIdentifier(columnNames.lockedBy, 'columnNames.lockedBy');
+  const opts = resolveOptions({
+    keyspace: options.keyspace,
+    tableName: options.tableName,
+    columnNames: options.columnNames,
+  });
 
-  const cql = `CREATE TABLE IF NOT EXISTS ${options.keyspace}.${tableName} (${columnNames.name} text PRIMARY KEY, ${columnNames.lockUntil} timestamp, ${columnNames.lockedAt} timestamp, ${columnNames.lockedBy} text)`;
+  const cql = `CREATE TABLE IF NOT EXISTS ${opts.keyspace}.${opts.tableName} (${opts.columnNames.name} text PRIMARY KEY, ${opts.columnNames.lockUntil} timestamp, ${opts.columnNames.lockedAt} timestamp, ${opts.columnNames.lockedBy} text)`;
   await client.execute(cql);
 }

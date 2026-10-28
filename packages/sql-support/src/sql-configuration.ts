@@ -1,4 +1,4 @@
-import { LockException, Utils } from '@tslock/core';
+import { LockException, Utils, validateIdentifier } from '@tslock/core';
 import { DatabaseProduct } from './database-product.js';
 
 export interface ColumnNames {
@@ -37,11 +37,18 @@ export class SqlConfiguration {
 
   constructor(options: SqlConfigurationOptions) {
     this.databaseProduct = options.databaseProduct;
-    this.tableName = options.tableName ?? SqlConfiguration.DEFAULT_TABLE_NAME;
-    this.columnNames = {
+    const tableName = options.tableName ?? SqlConfiguration.DEFAULT_TABLE_NAME;
+    validateIdentifier(tableName, 'tableName');
+    const columnNames: ColumnNames = {
       ...SqlConfiguration.DEFAULT_COLUMN_NAMES,
       ...options.columnNames,
     };
+    validateIdentifier(columnNames.name, 'columnNames.name');
+    validateIdentifier(columnNames.lockUntil, 'columnNames.lockUntil');
+    validateIdentifier(columnNames.lockedAt, 'columnNames.lockedAt');
+    validateIdentifier(columnNames.lockedBy, 'columnNames.lockedBy');
+    this.tableName = tableName;
+    this.columnNames = columnNames;
     this.lockedByValue = options.lockedByValue ?? Utils.getHostname();
     this.timeZone = options.timeZone;
     this.useDbTime = options.useDbTime ?? false;

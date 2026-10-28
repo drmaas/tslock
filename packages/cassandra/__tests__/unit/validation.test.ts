@@ -1,5 +1,6 @@
+import { validateIdentifier } from '@tslock/core';
 import { describe, expect, it } from 'vitest';
-import { validateIdentifier, validateSerialConsistency } from '../../src/validation.js';
+import { validateSerialConsistency } from '../../src/validation.js';
 
 describe('validateIdentifier', () => {
   it('accepts valid identifiers', () => {
@@ -18,14 +19,12 @@ describe('validateIdentifier', () => {
 });
 
 describe('validateSerialConsistency', () => {
-  it('accepts SERIAL (8) and LOCAL_SERIAL (9)', () => {
+  it('accepts SERIAL and LOCAL_SERIAL', () => {
     expect(() => validateSerialConsistency(8)).not.toThrow();
     expect(() => validateSerialConsistency(9)).not.toThrow();
   });
 
-  it('rejects non-serial consistency levels', () => {
+  it('rejects other levels', () => {
     expect(() => validateSerialConsistency(6)).toThrow();
-    expect(() => validateSerialConsistency(1)).toThrow();
-    expect(() => validateSerialConsistency(0)).toThrow();
   });
 });

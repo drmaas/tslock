@@ -52,3 +52,4 @@ export {
 export type { ActiveLockRecord } from './tracking-lock-provider.js';
 export { TrackingLockProviderWrapper } from './tracking-lock-provider.js';
 export { Utils } from './utils.js';
+export { IDENTIFIER_RE, validateIdentifier } from './validate-identifier.js';
