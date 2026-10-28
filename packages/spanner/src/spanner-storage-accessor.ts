@@ -8,7 +8,7 @@ import {
   Utils,
   unlockTime,
 } from '@tslock/core';
-import type { SpannerColumnNames } from './spanner-configuration.js';
+import { type SpannerColumnNames, validateSpannerIdentifiers } from './spanner-configuration.js';
 
 function isTimestampValue(value: unknown): value is { getTime(): number } {
   return (
@@ -38,6 +38,7 @@ export class SpannerStorageAccessor extends AbstractStorageAccessor {
 
   constructor(database: Database, tableName: string, columnNames: SpannerColumnNames, lockedByValue: string) {
     super();
+    validateSpannerIdentifiers(tableName, columnNames);
     this.database = database;
     this.tableName = tableName;
     this.colNames = columnNames;

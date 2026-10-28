@@ -29,13 +29,19 @@ const DEFAULT_COLUMN_NAMES: SpannerColumnNames = {
   lockedBy: 'lockedBy',
 };
 
+export function validateSpannerIdentifiers(tableName: string, columnNames: SpannerColumnNames): void {
+  validateIdentifier(tableName, 'tableName');
+  for (const [key, value] of Object.entries(columnNames)) {
+    validateIdentifier(value, `columnNames.${key}`);
+  }
+}
+
 export function resolveSpannerConfiguration(input: SpannerConfiguration): ResolvedSpannerConfiguration {
   if (!input.database) {
     throw new LockException('SpannerConfiguration: database is required');
   }
 
   const tableName = input.tableName ?? 'shedlock';
-  validateIdentifier(tableName, 'tableName');
 
   const merged: SpannerColumnNames = {
     name: input.columnNames?.name ?? DEFAULT_COLUMN_NAMES.name,
@@ -44,9 +50,7 @@ export function resolveSpannerConfiguration(input: SpannerConfiguration): Resolv
     lockedBy: input.columnNames?.lockedBy ?? DEFAULT_COLUMN_NAMES.lockedBy,
   };
 
-  for (const [key, value] of Object.entries(merged)) {
-    validateIdentifier(value, `columnNames.${key}`);
-  }
+  validateSpannerIdentifiers(tableName, merged);
 
   const lockedByValue = input.lockedByValue ?? Utils.getHostname();
 
