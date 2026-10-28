@@ -32,10 +32,10 @@ await executor.executeWithLock(
 
 `new HazelcastLockProvider(client, options?)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `lockStoreKey` | `'shedlock_storage'` | The name of the Hazelcast `IMap` holding lock records. |
-| `lockLeaseTimeMs` | `30000` | TTL (ms) Hazelcast applies to the entry-level lock during `unlock()`. |
+| Option            | Default              | Description                                                           |
+| ----------------- | -------------------- | --------------------------------------------------------------------- |
+| `lockStoreKey`    | `'shedlock_storage'` | The name of the Hazelcast `IMap` holding lock records.                |
+| `lockLeaseTimeMs` | `30000`              | TTL (ms) Hazelcast applies to the entry-level lock during `unlock()`. |
 
 > **Lock-name safety:** Lock names must be non-empty, contain no control characters, and be at most 1024 UTF-8 bytes because the name is used as the Hazelcast map key.
 

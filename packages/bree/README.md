@@ -23,9 +23,12 @@ const lock = createBreeLock({
   defaultLockAtMostFor: '5m',
 });
 
-export default lock.wrap(async () => {
-  // one instance runs this body
-}, { name: 'cleanup', lockAtMostFor: '5m' });
+export default lock.wrap(
+  async () => {
+    // one instance runs this body
+  },
+  { name: 'cleanup', lockAtMostFor: '5m' },
+);
 ```
 
 Register the job with Bree as you normally would (`path`, `cron`, `interval`, and so on). When the lock is held elsewhere, the wrapper skips and resolves `undefined`.

@@ -1,8 +1,8 @@
 packages:
-  - 'packages/*'
+  - "packages/*"
 minimumReleaseAge: 0
 allowBuilds:
-  '@biomejs/biome': true
+  "@biomejs/biome": true
   couchbase: true
   cpu-features: false
   esbuild: true
@@ -10,11 +10,11 @@ allowBuilds:
   ssh2: false
   zookeeper: false
 overrides:
-  '@babel/core': 7.29.7
-  '@types/mssql>tedious': 20.0.0
+  "@babel/core": 7.29.7
+  "@types/mssql>tedious": 20.0.0
   adm-zip: 0.6.1
-  'fast-xml-parser@': 5.11.1
-  'qs@': 6.16.0
-  'tar@': 7.5.22
-  'undici@^6': 6.29.0
-  'undici@^8': 8.11.2
+  "fast-xml-parser@": 5.11.1
+  "qs@": 6.16.0
+  "tar@": 7.5.22
+  "undici@^6": 6.29.0
+  "undici@^8": 8.11.2

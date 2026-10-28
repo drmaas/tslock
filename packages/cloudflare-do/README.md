@@ -43,15 +43,11 @@ import { createLockConfig, DefaultLockingTaskExecutor } from '@tslock/core';
 import { createCloudflareDoLockProvider } from '@tslock/cloudflare-do';
 
 const provider = createCloudflareDoLockProvider({
-  fetch: (lockName, init) =>
-    fetch(`https://locks.example.workers.dev/?name=${encodeURIComponent(lockName)}`, init),
+  fetch: (lockName, init) => fetch(`https://locks.example.workers.dev/?name=${encodeURIComponent(lockName)}`, init),
 });
 
 const executor = new DefaultLockingTaskExecutor(provider);
-await executor.executeWithLock(
-  () => myScheduledTask(),
-  createLockConfig('my-task', '5m', '1m'),
-);
+await executor.executeWithLock(() => myScheduledTask(), createLockConfig('my-task', '5m', '1m'));
 ```
 
 Inside a Worker with a binding:
@@ -81,12 +77,12 @@ The client runs on Node.js >= 22 (and Bun when Node-compatible `fetch` is availa
 
 ## Exports
 
-| Export | Description |
-|---|---|
-| `createCloudflareDoLockProvider`, `CloudflareDoLockProvider` | Client `ExtensibleLockProvider` |
-| `TslockLockDurableObject` | Deployable DO class (duck-typed storage) |
-| `handleTslockLockRequest`, `applyLockOp` | Protocol helpers for custom DO classes |
-| `createMemoryDoLockStorage` | In-memory storage for tests |
+| Export                                                       | Description                              |
+| ------------------------------------------------------------ | ---------------------------------------- |
+| `createCloudflareDoLockProvider`, `CloudflareDoLockProvider` | Client `ExtensibleLockProvider`          |
+| `TslockLockDurableObject`                                    | Deployable DO class (duck-typed storage) |
+| `handleTslockLockRequest`, `applyLockOp`                     | Protocol helpers for custom DO classes   |
+| `createMemoryDoLockStorage`                                  | In-memory storage for tests              |
 
 ## Requirements
 

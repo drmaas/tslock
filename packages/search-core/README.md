@@ -14,14 +14,14 @@ pnpm add @tslock/search-core
 
 ## Exports
 
-| Export | Description |
-|---|---|
-| `SearchLockAccessor` | Shared lock, extend, and unlock flow. |
+| Export                                              | Description                                                               |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| `SearchLockAccessor`                                | Shared lock, extend, and unlock flow.                                     |
 | `SearchUpdateRequest`, `SearchUpdateClient` (types) | Driver-neutral document update envelope. Adapters map this onto a client. |
-| `LOCK_SCRIPT`, `UNLOCK_SCRIPT`, `EXTEND_SCRIPT` | Shared Painless scripts. |
-| `SearchFieldNames` (type) | `{ lockUntil, lockedAt, lockedBy }`. |
-| `FieldNames` | `DEFAULT` and `SNAKE_CASE` presets. |
-| `isConflictError`, `isNotFoundError` | HTTP 409 / 404 classifiers for client SDK errors. |
+| `LOCK_SCRIPT`, `UNLOCK_SCRIPT`, `EXTEND_SCRIPT`     | Shared Painless scripts.                                                  |
+| `SearchFieldNames` (type)                           | `{ lockUntil, lockedAt, lockedBy }`.                                      |
+| `FieldNames`                                        | `DEFAULT` and `SNAKE_CASE` presets.                                       |
+| `isConflictError`, `isNotFoundError`                | HTTP 409 / 404 classifiers for client SDK errors.                         |
 
 ## Requirements
 

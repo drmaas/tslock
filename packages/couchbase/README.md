@@ -34,11 +34,11 @@ await executor.executeWithLock(
 
 `new CouchbaseLockProvider(collection, options?)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `documentIdPrefix` | `'shedlock:'` | Prefix for lock document IDs. |
-| `columnNames` | see below | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`. |
-| `lockedByValue` | `'unknown'` | Identifier written to `lockedBy`. |
+| Option             | Default       | Description                                                  |
+| ------------------ | ------------- | ------------------------------------------------------------ |
+| `documentIdPrefix` | `'shedlock:'` | Prefix for lock document IDs.                                |
+| `columnNames`      | see below     | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`. |
+| `lockedByValue`    | `'unknown'`   | Identifier written to `lockedBy`.                            |
 
 Default field names: `name`, `lockUntil`, `lockedAt`, `lockedBy`. A lock document's ID is `${documentIdPrefix}${lockName}`.
 

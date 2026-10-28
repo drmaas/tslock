@@ -55,14 +55,14 @@ await executor.executeWithLock(
 
 `new CassandraLockProvider(client, options)` accepts a required `options`:
 
-| Option | Default | Description |
-|---|---|---|
-| `keyspace` | — (required) | The Cassandra keyspace. |
-| `tableName` | `'shedlock'` | Lock table name. |
-| `columnNames` | see below | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`. |
-| `lockedByValue` | `os.hostname()` | Identifier written to `locked_by`. |
-| `consistencyLevel` | `LOCAL_QUORUM` (6) | Consistency for non-LWT statements. |
-| `serialConsistencyLevel` | `SERIAL` (9) | Consistency for LWT. |
+| Option                   | Default            | Description                                                  |
+| ------------------------ | ------------------ | ------------------------------------------------------------ |
+| `keyspace`               | — (required)       | The Cassandra keyspace.                                      |
+| `tableName`              | `'shedlock'`       | Lock table name.                                             |
+| `columnNames`            | see below          | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`. |
+| `lockedByValue`          | `os.hostname()`    | Identifier written to `locked_by`.                           |
+| `consistencyLevel`       | `LOCAL_QUORUM` (6) | Consistency for non-LWT statements.                          |
+| `serialConsistencyLevel` | `SERIAL` (9)       | Consistency for LWT.                                         |
 
 Default column names: `name`, `lock_until`, `locked_at`, `locked_by`.
 

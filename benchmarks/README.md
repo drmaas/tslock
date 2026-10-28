@@ -9,7 +9,6 @@ pnpm bench
 ```
 
 The command builds the workspace and measures:
-
 - in-memory lock/unlock round trips;
 - `DefaultLockingTaskExecutor.executeWithLock` overhead;
 - middleware lifecycle per-request overhead.

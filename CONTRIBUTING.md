@@ -76,20 +76,19 @@ If all of those pass, you're good to go.
 
 The repository provides OpenCode skills under [`.opencode/skills/`](./.opencode/skills/) for repeatable contribution workflows. Use the skill that matches the primary intent:
 
-| Contribution | Skill | Use when | Do not use when |
-|---|---|---|---|
-| Fix a bug | `tslock-bugfix` | A reproducible defect, regression, race, or incorrect behavior needs a focused fix | The primary work is a new feature, docs audit, or test-only coverage improvement |
-| Add a feature/provider | `tslock-sdd` | New behavior, public API, provider, concept, cross-package contract, or substantial refactor | The change is an isolated bug, docs-only update, or test-only improvement |
-| Improve docs | `tslock-doc-improver` | Docs, READMEs, newcomer guides (ShedLock migration, Redlock/BullMQ comparison), specs/plans references, examples, links, or contributor guidance need reconciliation | The primary problem is incorrect runtime behavior or a new design |
-| Improve tests | `tslock-test-improver` | Coverage, assertions, integration tests, fuzz tests, or test infrastructure need improvement | The primary task is fixing production behavior or designing a new feature |
-| Refactor | `tslock-sdd` for substantial changes; fast track for local mechanical changes | The refactor changes architecture, public contracts, or multiple packages | Do not use SDD for a trivial rename or mechanical cleanup |
+| Contribution           | Skill                                                                         | Use when                                                                                                                                                             | Do not use when                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Fix a bug              | `tslock-bugfix`                                                               | A reproducible defect, regression, race, or incorrect behavior needs a focused fix                                                                                   | The primary work is a new feature, docs audit, or test-only coverage improvement |
+| Add a feature/provider | `tslock-sdd`                                                                  | New behavior, public API, provider, concept, cross-package contract, or substantial refactor                                                                         | The change is an isolated bug, docs-only update, or test-only improvement        |
+| Improve docs           | `tslock-doc-improver`                                                         | Docs, READMEs, newcomer guides (ShedLock migration, Redlock/BullMQ comparison), specs/plans references, examples, links, or contributor guidance need reconciliation | The primary problem is incorrect runtime behavior or a new design                |
+| Improve tests          | `tslock-test-improver`                                                        | Coverage, assertions, integration tests, fuzz tests, or test infrastructure need improvement                                                                         | The primary task is fixing production behavior or designing a new feature        |
+| Refactor               | `tslock-sdd` for substantial changes; fast track for local mechanical changes | The refactor changes architecture, public contracts, or multiple packages                                                                                            | Do not use SDD for a trivial rename or mechanical cleanup                        |
 
 The skill names are canonical. `tsock-doc-improver` and `tslock-sd` are treated as typos; use `tslock-doc-improver` and `tslock-sdd`. If you are not using an agent, follow the workflow below directly.
 
 ## Development workflow
 
 TSLock uses two levels of rigor:
-
 - **Fast track:** a small, well-understood change that follows existing patterns—such as a typo, isolated mechanical cleanup, or one-function bug fix. Reproduce or characterize the issue, implement the smallest change, run targeted verification, and review the diff.
 - **Full SDD:** a new concept, feature/provider, public or cross-package contract, architectural change, or substantial refactor. Use the `tslock-sdd` skill when working with an agent.
 
@@ -166,7 +165,6 @@ Dependabot security logs can say `VulnerabilityAuditor: missing lockfile` and st
 `overrides` in `pnpm-workspace.yaml` force a patched transitive version when the parent range will not accept it and the replacement stays on a compatible line. pnpm reads that file, not a `pnpm` key in `package.json`. Do not delete an override to silence a resolution. These overrides apply to this workspace install. They are not published inside `@tslock/*` packages; driver peers stay the caller's choice.
 
 Some advisories stay open because the patched release is a major the parent does not allow:
-
 - `@opentelemetry/core@1.30.1` ([GHSA-8988-4f7v-96qf](https://github.com/advisories/GHSA-8988-4f7v-96qf), fixed in 2.8.0) comes from `@google-cloud/spanner` 8 via `@opentelemetry/sdk-metrics@1.30.1` and `@opentelemetry/resources@1.30.1`, which pin core exactly. No 1.x fix exists. `@tslock/otel` already uses metrics 2.x. Spanner 9 moves to OpenTelemetry 2.x and is a peer major.
 - `file-type@16.5.4` ([GHSA-5v7r-6r5c-r473](https://github.com/advisories/GHSA-5v7r-6r5c-r473), fixed in 21.3.1) comes from `arangojs` 8 → `multi-part` → `mime-kind` (`file-type` ^16). file-type 21 is a different API. `arangojs` 10 drops that chain and is a peer major.
 - `uuid@9` ([GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq), fixed in 11.1.1; 8.x and 9.x have no patched release) comes from `gaxios` 6, `google-gax` 4, and `teeny-request` 9 under the Google Cloud 7.x clients. Those parents do not allow uuid 11+.

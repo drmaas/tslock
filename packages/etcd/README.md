@@ -32,9 +32,9 @@ await executor.executeWithLock(
 
 `new EtcdLockProvider(client, options?)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `env` | `'default'` | Namespace segment of the key (enables multi-tenancy). |
+| Option | Default     | Description                                           |
+| ------ | ----------- | ----------------------------------------------------- |
+| `env`  | `'default'` | Namespace segment of the key (enables multi-tenancy). |
 
 The full key is `shedlock:${env}:${lockName}`.
 

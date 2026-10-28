@@ -55,24 +55,24 @@ await executor.executeWithLock(
 
 ### Adapters
 
-| Class | Driver | `DatabaseProduct` |
-|---|---|---|
-| `PgConnection` | `pg` | `POSTGRES` |
+| Class              | Driver   | `DatabaseProduct`    |
+| ------------------ | -------- | -------------------- |
+| `PgConnection`     | `pg`     | `POSTGRES`           |
 | `Mysql2Connection` | `mysql2` | `MYSQL` / `MARIA_DB` |
-| `MssqlConnection` | `mssql` | `SQL_SERVER` |
+| `MssqlConnection`  | `mssql`  | `SQL_SERVER`         |
 
 ## Configuration
 
 `SqlConfiguration` (from `@tslock/sql-support`) accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `databaseProduct` | — (required) | The DB flavor, drives SQL dialect. |
-| `tableName` | `'shedlock'` | Lock table name. |
-| `columnNames` | see below | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`. |
-| `lockedByValue` | `os.hostname()` | Identifier written to `locked_by`. |
-| `timeZone` | `undefined` | Store timestamps in a specific timezone. |
-| `useDbTime` | `false` | Use the DB server's clock (`now()` / `GETUTCDATE()`). Cannot be combined with `timeZone`. |
+| Option            | Default         | Description                                                                               |
+| ----------------- | --------------- | ----------------------------------------------------------------------------------------- |
+| `databaseProduct` | — (required)    | The DB flavor, drives SQL dialect.                                                        |
+| `tableName`       | `'shedlock'`    | Lock table name.                                                                          |
+| `columnNames`     | see below       | Override any of `name`, `lockUntil`, `lockedAt`, `lockedBy`.                              |
+| `lockedByValue`   | `os.hostname()` | Identifier written to `locked_by`.                                                        |
+| `timeZone`        | `undefined`     | Store timestamps in a specific timezone.                                                  |
+| `useDbTime`       | `false`         | Use the DB server's clock (`now()` / `GETUTCDATE()`). Cannot be combined with `timeZone`. |
 
 Default column names: `name`, `lockUntil`, `lockedAt`, `lockedBy`.
 

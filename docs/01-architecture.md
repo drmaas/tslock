@@ -172,26 +172,28 @@ const config: LockConfiguration = {
 };
 
 // Helper (recommended):
-const lock = await lockProvider.lock(
-  lockConfig('my-task').atMostFor('30m').atLeastFor('5s').build()
-);
+const lock = await lockProvider.lock(lockConfig('my-task').atMostFor('30m').atLeastFor('5s').build());
 ```
 
 ### 3.3 Duration Parsing
 
 ```typescript
-// Accepts: number (millis), string ("30s", "5m", "1h", "1d", "500ms"), 
+// Accepts: number (millis), string ("30s", "5m", "1h", "1d", "500ms"),
 // or { hours, minutes, seconds, millis } object
-function parseDuration(input: number | string | DurationParts): number  // returns millis
+function parseDuration(input: number | string | DurationParts): number; // returns millis
 ```
 
 ### 3.4 ClockProvider
 
 ```typescript
 class ClockProvider {
-  private static clock: () => number = () => Date.now();  // epoch millis
-  static now(): number { return ClockProvider.clock(); }
-  static setClock(clock: () => number): void { ClockProvider.clock = clock; }
+  private static clock: () => number = () => Date.now(); // epoch millis
+  static now(): number {
+    return ClockProvider.clock();
+  }
+  static setClock(clock: () => number): void {
+    ClockProvider.clock = clock;
+  }
 }
 ```
 
@@ -245,7 +247,7 @@ class LockExtender {
     const currentLock = stack[stack.length - 1];
     const newLock = await currentLock.extend(lockAtMostFor, lockAtLeastFor);
     if (!newLock) throw new LockCanNotBeExtendedException();
-    stack[stack.length - 1] = newLock;  // swap in-place
+    stack[stack.length - 1] = newLock; // swap in-place
   }
 
   // Called by DefaultLockingTaskExecutor
@@ -268,10 +270,7 @@ class DefaultLockingTaskExecutor implements LockingTaskExecutor {
     private readonly listener: LockingTaskExecutorListener = NO_OP_LISTENER,
   ) {}
 
-  async executeWithLock<T>(
-    task: () => Promise<T>,
-    config: LockConfiguration,
-  ): Promise<TaskResult<T>> {
+  async executeWithLock<T>(task: () => Promise<T>, config: LockConfiguration): Promise<TaskResult<T>> {
     // Reentrancy: if already locked by this name in this async context, just run
     if (LockAssert.alreadyLockedBy(config.name)) {
       return this.executeTask(task, config);
@@ -288,25 +287,19 @@ class DefaultLockingTaskExecutor implements LockingTaskExecutor {
     this.listener.onLockAcquired(config);
 
     // Run task within a new AsyncLocalStorage context that has the lock stack
-    return await LockAssert.storage.run(
-      LockAssert.startLock(config.name),
-      async () => {
-        return await LockExtender.storage.run(
-          LockExtender.startLock(lock),
-          async () => {
-            try {
-              return await this.executeTask(task, config);
-            } finally {
-              try {
-                await lock.unlock();
-              } catch (e) {
-                // log warning, don't suppress task result
-              }
-            }
-          },
-        );
-      },
-    );
+    return await LockAssert.storage.run(LockAssert.startLock(config.name), async () => {
+      return await LockExtender.storage.run(LockExtender.startLock(lock), async () => {
+        try {
+          return await this.executeTask(task, config);
+        } finally {
+          try {
+            await lock.unlock();
+          } catch (e) {
+            // log warning, don't suppress task result
+          }
+        }
+      });
+    });
   }
 
   private async executeTask<T>(task: () => Promise<T>, config: LockConfiguration): Promise<TaskResult<T>> {
@@ -358,10 +351,10 @@ Wraps an `ExtensibleLockProvider` and auto-extends locks on a timer.
 class KeepAliveLockProvider implements LockProvider {
   constructor(
     private readonly provider: ExtensibleLockProvider,
-    private readonly scheduler: Scheduler,  // wraps setInterval/setTimeout
+    private readonly scheduler: Scheduler, // wraps setInterval/setTimeout
   ) {}
 
-  static readonly MIN_LOCK_AT_MOST_FOR = 30_000;  // 30s
+  static readonly MIN_LOCK_AT_MOST_FOR = 30_000; // 30s
 
   async lock(config: LockConfiguration): Promise<SimpleLock | undefined> {
     if (config.lockAtMostFor < KeepAliveLockProvider.MIN_LOCK_AT_MOST_FOR) {
@@ -430,11 +423,13 @@ interface StorageAccessor {
   insertRecord(config: LockConfiguration): Promise<boolean>;
   updateRecord(config: LockConfiguration): Promise<boolean>;
   unlock(config: LockConfiguration): Promise<void>;
-  extend(config: LockConfiguration): Promise<boolean>;  // default: throw
+  extend(config: LockConfiguration): Promise<boolean>; // default: throw
 }
 
 abstract class AbstractStorageAccessor implements StorageAccessor {
-  protected getHostname(): string { return Utils.getHostname(); }
+  protected getHostname(): string {
+    return Utils.getHostname();
+  }
   // insertRecord, updateRecord, unlock, extend implemented by subclasses
 }
 
@@ -455,9 +450,15 @@ In-memory cache of lock names known to exist. Prevents redundant `insertRecord` 
 ```typescript
 class LockRecordRegistry {
   private readonly records = new Set<string>();
-  lockRecordRecentlyCreated(name: string): boolean { return this.records.has(name); }
-  addRecord(name: string): void { this.records.add(name); }
-  clearCache(name: string): void { this.records.delete(name); }
+  lockRecordRecentlyCreated(name: string): boolean {
+    return this.records.has(name);
+  }
+  addRecord(name: string): void {
+    this.records.add(name);
+  }
+  clearCache(name: string): void {
+    this.records.delete(name);
+  }
 }
 ```
 
@@ -792,13 +793,13 @@ Each provider maps driver-specific errors to TSLock semantics:
 The public API accepts durations in user-friendly formats via `parseDuration()`:
 
 ```typescript
-parseDuration(30000)              // → 30000 (millis)
-parseDuration('30s')              // → 30000
-parseDuration('5m')               // → 300000
-parseDuration('1h')               // → 3600000
-parseDuration('1d')               // → 86400000
-parseDuration('500ms')            // → 500
-parseDuration({ minutes: 5 })     // → 300000
+parseDuration(30000); // → 30000 (millis)
+parseDuration('30s'); // → 30000
+parseDuration('5m'); // → 300000
+parseDuration('1h'); // → 3600000
+parseDuration('1d'); // → 86400000
+parseDuration('500ms'); // → 500
+parseDuration({ minutes: 5 }); // → 300000
 ```
 
 **No ISO-8601 duration parsing** (`PT15M`) in v1 — it's a Java idiom rarely used in TS. Can add later if requested.
@@ -819,14 +820,14 @@ This means: if task A holds lock "foo" and calls task B which also needs lock "f
 
 Node.js is single-threaded (ignoring worker threads). This simplifies several ShedLock concepts:
 
-| ShedLock (Java) | TSLock (Node.js) |
-|---|---|
-| `synchronized` methods | Not needed (single-threaded event loop) |
-| `ConcurrentHashMap` | Plain `Map` (no concurrent access) |
-| `ThreadLocal` | `AsyncLocalStorage` |
-| `WeakHashMap` | `Map` or `Set` (no concern about thread safety) |
-| `ScheduledExecutorService` | `setInterval` / `setTimeout` |
-| `volatile` | Not needed |
+| ShedLock (Java)            | TSLock (Node.js)                                |
+| -------------------------- | ----------------------------------------------- |
+| `synchronized` methods     | Not needed (single-threaded event loop)         |
+| `ConcurrentHashMap`        | Plain `Map` (no concurrent access)              |
+| `ThreadLocal`              | `AsyncLocalStorage`                             |
+| `WeakHashMap`              | `Map` or `Set` (no concern about thread safety) |
+| `ScheduledExecutorService` | `setInterval` / `setTimeout`                    |
+| `volatile`                 | Not needed                                      |
 
 **Async interleaving caveat:** While there's no true parallelism, async operations interleave at `await` points. This means:
 - `LockRecordRegistry` state can change between check and use. This is acceptable — it's an optimization, not a correctness mechanism.
@@ -834,15 +835,15 @@ Node.js is single-threaded (ignoring worker threads). This simplifies several Sh
 
 ## 13. Resolved Design Decisions
 
-| Decision | Choice |
-|---|---|
-| **Monorepo tool** | pnpm workspaces |
-| **SQL packages** | `@tslock/sql-support` (shared infra) + `@tslock/sql` (raw: pg/mysql2/mssql) + `@tslock/kysely` + `@tslock/drizzle` |
-| **Redis packages** | `@tslock/redis-core` (shared logic) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` (ioredis) |
-| **Ignite** | Deferred to v2 |
-| **Test framework** | Vitest |
-| **Cloud integration tests** | LocalStack (S3, DynamoDB) + GCP emulators (Firestore, Datastore). Spanner/GCS: unit tests only. |
-| **Package scope** | `@tslock/*` |
-| **Module format** | Dual ESM + CJS (tsup) |
-| **Node.js minimum** | Node 22+ |
-| **Config API** | Plain typed object + `parseDuration()` |
+| Decision                    | Choice                                                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Monorepo tool**           | pnpm workspaces                                                                                                    |
+| **SQL packages**            | `@tslock/sql-support` (shared infra) + `@tslock/sql` (raw: pg/mysql2/mssql) + `@tslock/kysely` + `@tslock/drizzle` |
+| **Redis packages**          | `@tslock/redis-core` (shared logic) + `@tslock/redis` (node-redis) + `@tslock/redis-ioredis` (ioredis)             |
+| **Ignite**                  | Deferred to v2                                                                                                     |
+| **Test framework**          | Vitest                                                                                                             |
+| **Cloud integration tests** | LocalStack (S3, DynamoDB) + GCP emulators (Firestore, Datastore). Spanner/GCS: unit tests only.                    |
+| **Package scope**           | `@tslock/*`                                                                                                        |
+| **Module format**           | Dual ESM + CJS (tsup)                                                                                              |
+| **Node.js minimum**         | Node 22+                                                                                                           |
+| **Config API**              | Plain typed object + `parseDuration()`                                                                             |

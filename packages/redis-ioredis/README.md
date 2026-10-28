@@ -32,11 +32,11 @@ await executor.executeWithLock(
 
 `createIoRedisLockProvider(client, config?)` accepts an optional config:
 
-| Option | Default | Description |
-|---|---|---|
-| `keyPrefix` | `'job-lock'` | Redis key namespace. |
-| `env` | `'default'` | Environment segment of the key (enables multi-tenancy). |
-| `safeUpdate` | `true` | When `true`, unlock/extend use a Lua script that verifies the lock value first. Set `false` for plain `DEL`/`SET XX`. |
+| Option       | Default      | Description                                                                                                           |
+| ------------ | ------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `keyPrefix`  | `'job-lock'` | Redis key namespace.                                                                                                  |
+| `env`        | `'default'`  | Environment segment of the key (enables multi-tenancy).                                                               |
+| `safeUpdate` | `true`       | When `true`, unlock/extend use a Lua script that verifies the lock value first. Set `false` for plain `DEL`/`SET XX`. |
 
 The full key is `${keyPrefix}:${env}:${lockName}`.
 
@@ -58,10 +58,10 @@ TSLOCK_REDIS_INTEGRATION=1 REDIS_URL=redis://127.0.0.1:6379 pnpm --filter @tsloc
 
 ## Exports
 
-| Export | Description |
-|---|---|
-| `createIoRedisLockProvider`, `IoRedisLockProvider` | Factory + class. |
-| `IoRedisTemplate` | The `RedisTemplate` adapter for ioredis. |
+| Export                                             | Description                              |
+| -------------------------------------------------- | ---------------------------------------- |
+| `createIoRedisLockProvider`, `IoRedisLockProvider` | Factory + class.                         |
+| `IoRedisTemplate`                                  | The `RedisTemplate` adapter for ioredis. |
 
 ## Requirements
 

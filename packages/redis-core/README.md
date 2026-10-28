@@ -32,13 +32,13 @@ const provider = new InternalRedisLockProvider(new MyRedisTemplate(), {
 
 ## Exports
 
-| Export | Description |
-|---|---|
-| `InternalRedisLockProvider` | The shared lock provider (takes a `RedisTemplate`). |
-| `RedisTemplate` (type) | The interface a client adapter implements. |
-| `RedisLockProviderConfig` (type) | `{ keyPrefix?, env?, safeUpdate? }`. |
-| `DEL_SCRIPT`, `DEL_IF_EQUALS_SCRIPT`, `EXTEND_SCRIPT`, `EXTEND_IF_EQUALS_SCRIPT` | The Lua scripts. |
-| `DEFAULT_KEY_PREFIX`, `ENV_DEFAULT` | Defaults (`'job-lock'`, `'default'`). |
+| Export                                                                           | Description                                         |
+| -------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `InternalRedisLockProvider`                                                      | The shared lock provider (takes a `RedisTemplate`). |
+| `RedisTemplate` (type)                                                           | The interface a client adapter implements.          |
+| `RedisLockProviderConfig` (type)                                                 | `{ keyPrefix?, env?, safeUpdate? }`.                |
+| `DEL_SCRIPT`, `DEL_IF_EQUALS_SCRIPT`, `EXTEND_SCRIPT`, `EXTEND_IF_EQUALS_SCRIPT` | The Lua scripts.                                    |
+| `DEFAULT_KEY_PREFIX`, `ENV_DEFAULT`                                              | Defaults (`'job-lock'`, `'default'`).               |
 
 ## Requirements
 

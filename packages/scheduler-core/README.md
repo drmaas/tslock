@@ -23,9 +23,12 @@ const lock = createSchedulerLock({
   defaultLockAtMostFor: '5m',
 });
 
-const job = lock.wrap(async () => {
-  // runs on at most one instance
-}, { name: 'nightly-cleanup' });
+const job = lock.wrap(
+  async () => {
+    // runs on at most one instance
+  },
+  { name: 'nightly-cleanup' },
+);
 
 await job();
 ```

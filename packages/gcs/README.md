@@ -33,11 +33,11 @@ await executor.executeWithLock(
 
 `createGcsProviderConfig({ bucket, objectPrefix?, lockedBy? })` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `bucket` | — (required) | The GCS bucket to store lock objects in. |
-| `objectPrefix` | `'shedlock/'` | Prefix applied to every lock object key. |
-| `lockedBy` | `os.hostname()` | Identifier written to the lock object. |
+| Option         | Default         | Description                              |
+| -------------- | --------------- | ---------------------------------------- |
+| `bucket`       | — (required)    | The GCS bucket to store lock objects in. |
+| `objectPrefix` | `'shedlock/'`   | Prefix applied to every lock object key. |
+| `lockedBy`     | `os.hostname()` | Identifier written to the lock object.   |
 
 The object key for a lock is `${objectPrefix}${lockName}`.
 

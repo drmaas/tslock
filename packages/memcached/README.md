@@ -31,11 +31,11 @@ await executor.executeWithLock(
 
 `createMemcachedLockProvider(options)` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `servers` | — (required) | Comma-separated memcached server addresses (e.g. `'host:port,host:port'`). |
-| `env` | `'default'` | Namespace segment of the key. |
-| `clientOptions` | `undefined` | Extra `memjs.Client.create()` options. |
+| Option          | Default      | Description                                                                |
+| --------------- | ------------ | -------------------------------------------------------------------------- |
+| `servers`       | — (required) | Comma-separated memcached server addresses (e.g. `'host:port,host:port'`). |
+| `env`           | `'default'`  | Namespace segment of the key.                                              |
+| `clientOptions` | `undefined`  | Extra `memjs.Client.create()` options.                                     |
 
 The full key is `shedlock:${env}:${lockName}`.
 

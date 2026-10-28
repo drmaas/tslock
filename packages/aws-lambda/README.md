@@ -21,10 +21,13 @@ const lock = createAwsLambdaLock({
   defaultLockAtMostFor: '5m',
 });
 
-export const handler = lock.wrapHandler(async (event) => {
-  // one concurrent execution runs this body
-  return { ok: true, event };
-}, { name: 'eventbridge-job', lockAtMostFor: '5m' });
+export const handler = lock.wrapHandler(
+  async (event) => {
+    // one concurrent execution runs this body
+    return { ok: true, event };
+  },
+  { name: 'eventbridge-job', lockAtMostFor: '5m' },
+);
 ```
 
 When the lock is held elsewhere, the wrapper skips the handler and resolves `undefined` (Lambda treats that as a successful empty response). Use a shared TSLock provider (Redis, DynamoDB, SQL, …) across instances.

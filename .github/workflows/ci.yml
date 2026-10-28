@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -73,7 +73,7 @@ jobs:
       - run: pnpm build
       - run: pnpm test:integration
         env:
-          TSLOCK_REDIS_INTEGRATION: '1'
+          TSLOCK_REDIS_INTEGRATION: "1"
           REDIS_URL: redis://127.0.0.1:6379
 
   pack:

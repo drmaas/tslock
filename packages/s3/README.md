@@ -33,9 +33,9 @@ await executor.executeWithLock(
 
 `createS3ProviderConfig({ bucket, objectPrefix? })` accepts:
 
-| Option | Default | Description |
-|---|---|---|
-| `bucket` | — (required) | The S3 bucket to store lock objects in. |
+| Option         | Default       | Description                              |
+| -------------- | ------------- | ---------------------------------------- |
+| `bucket`       | — (required)  | The S3 bucket to store lock objects in.  |
 | `objectPrefix` | `'shedlock/'` | Prefix applied to every lock object key. |
 
 The object key for a lock is `${objectPrefix}${lockName}`.
