@@ -14,6 +14,10 @@ export function buildInsertCypher(o: ResolvedOptions): string {
   return `CREATE (lock:${q(o.label)} {${q(o.nameCol)}: $name, ${q(o.lockUntilCol)}: $lockUntil, ${q(o.lockedAtCol)}: $lockedAt, ${q(o.lockedByCol)}: $lockedBy})`;
 }
 
+export function buildProbeLockExpiryCypher(o: ResolvedOptions): string {
+  return `MATCH (lock:${q(o.label)} {${q(o.nameCol)}: $name}) RETURN lock.${q(o.lockUntilCol)} <= $now AS expired`;
+}
+
 export function buildUpdateCypher(o: ResolvedOptions): string {
   return `MATCH (lock:${q(o.label)} {${q(o.nameCol)}: $name}) WHERE lock.${q(o.lockUntilCol)} <= $now SET lock.${q(o.lockUntilCol)} = $lockUntil, lock.${q(o.lockedAtCol)} = $lockedAt, lock.${q(o.lockedByCol)} = $lockedBy RETURN lock`;
 }

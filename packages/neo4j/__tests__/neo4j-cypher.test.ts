@@ -3,6 +3,7 @@ import {
   buildCreateConstraintCypher,
   buildExtendCypher,
   buildInsertCypher,
+  buildProbeLockExpiryCypher,
   buildUnlockCypher,
   buildUpdateCypher,
   type ResolvedOptions,
@@ -32,6 +33,15 @@ describe('buildInsertCypher', () => {
       lockedByCol: 'owner',
     };
     expect(buildInsertCypher(opts)).toContain(':`MyLock` {`id`: $name, `expires`: $lockUntil');
+  });
+});
+
+describe('buildProbeLockExpiryCypher', () => {
+  it('builds probe cypher without SET', () => {
+    const result = buildProbeLockExpiryCypher(defaultOpts);
+    expect(result).toContain('MATCH (lock:`ShedLock` {`name`: $name})');
+    expect(result).toContain('lock.`lockUntil` <= $now AS expired');
+    expect(result).not.toContain('SET');
   });
 });
 

@@ -2,6 +2,7 @@ import {
   AbstractStorageAccessor,
   ClockProvider,
   type LockConfiguration,
+  LockException,
   lockAtMostUntil,
   Utils,
   unlockTime,
@@ -10,6 +11,7 @@ import type { Driver, ManagedTransaction } from 'neo4j-driver';
 import {
   buildExtendCypher,
   buildInsertCypher,
+  buildProbeLockExpiryCypher,
   buildUnlockCypher,
   buildUpdateCypher,
   type ResolvedOptions,
@@ -27,6 +29,7 @@ function isConstraintViolation(error: unknown, lockName: string): boolean {
 
 export class Neo4jStorageAccessor extends AbstractStorageAccessor {
   private readonly insertCypher: string;
+  private readonly probeLockExpiryCypher: string;
   private readonly updateCypher: string;
   private readonly unlockCypher: string;
   private readonly extendCypher: string;
@@ -40,6 +43,7 @@ export class Neo4jStorageAccessor extends AbstractStorageAccessor {
   ) {
     super();
     this.insertCypher = buildInsertCypher(opts);
+    this.probeLockExpiryCypher = buildProbeLockExpiryCypher(opts);
     this.updateCypher = buildUpdateCypher(opts);
     this.unlockCypher = buildUnlockCypher(opts);
     this.extendCypher = buildExtendCypher(opts);
@@ -75,16 +79,27 @@ export class Neo4jStorageAccessor extends AbstractStorageAccessor {
   }
 
   async updateRecord(config: LockConfiguration): Promise<boolean> {
-    const result = await this.withSession((tx) =>
-      tx.run(this.updateCypher, {
+    return await this.withSession(async (tx) => {
+      const now = ClockProvider.now();
+      const probe = await tx.run(this.probeLockExpiryCypher, { name: config.name, now });
+      if (probe.records.length === 0) {
+        throw new LockException(`Lock record not found: ${config.name}`);
+      }
+      if (probe.records[0]!.get('expired') !== true) {
+        return false;
+      }
+      const result = await tx.run(this.updateCypher, {
         name: config.name,
-        now: ClockProvider.now(),
+        now,
         lockUntil: lockAtMostUntil(config),
         lockedAt: ClockProvider.now(),
         lockedBy: this.lockedByValue,
-      }),
-    );
-    return result.records.length > 0;
+      });
+      if (result.records.length === 0) {
+        throw new LockException(`Lock record not found: ${config.name}`);
+      }
+      return true;
+    });
   }
 
   async unlock(config: LockConfiguration): Promise<void> {
