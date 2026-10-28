@@ -2,9 +2,9 @@ import {
   type ExtensibleLockProvider,
   extensibleLockProvider,
   type LockConfiguration,
-  LockException,
   type SimpleLock,
   StorageBasedLockProvider,
+  validateIdentifier,
 } from '@tslock/core';
 import type { ResolvedOptions } from './neo4j-cypher.js';
 import { Neo4jStorageAccessor } from './neo4j-storage-accessor.js';
@@ -31,14 +31,6 @@ const DEFAULT_COLUMN_NAMES: Neo4jColumnNames = {
   lockedAt: 'lockedAt',
   lockedBy: 'lockedBy',
 };
-
-const VALID_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
-
-function validateIdentifier(name: string, field: string): void {
-  if (!VALID_IDENTIFIER.test(name)) {
-    throw new LockException(`Neo4jConfiguration: ${field} "${name}" is not a valid Neo4j identifier`);
-  }
-}
 
 export function resolveOptions(options?: Neo4jLockProviderOptions): ResolvedOptions {
   const label = options?.label ?? DEFAULT_LABEL;
