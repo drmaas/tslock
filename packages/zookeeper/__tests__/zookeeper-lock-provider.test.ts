@@ -6,7 +6,7 @@ import {
   LockException,
 } from '@tslock/core';
 import { describe, expect, it, vi } from 'vitest';
-import { isBadVersionException, isNoNodeException } from '../src/zookeeper-errors.js';
+import { isBadVersionException, isNodeExistsException, isNoNodeException } from '../src/zookeeper-errors.js';
 import { ZooKeeperLockProvider } from '../src/zookeeper-lock-provider.js';
 import type { ZooKeeperClient } from '../src/zookeeper-types.js';
 
@@ -109,6 +109,25 @@ describe('ZooKeeperLockProvider', () => {
     const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
     const lock = await provider.lock(config());
     expect(lock).toBeUndefined();
+  });
+
+  it('lock() returns undefined when create rejects with message-form NodeExists', async () => {
+    const client = makeClient({
+      get: vi.fn().mockRejectedValue(new Error('-101 no node')),
+      create: vi.fn().mockRejectedValue(new Error('-110 node exists')),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    const lock = await provider.lock(config());
+    expect(lock).toBeUndefined();
+  });
+
+  it('lock() rejects message-form connection loss during create', async () => {
+    const client = makeClient({
+      get: vi.fn().mockRejectedValue(new Error('-101 no node')),
+      create: vi.fn().mockRejectedValue(new Error('-4 connection loss')),
+    });
+    const provider = new ZooKeeperLockProvider(client as unknown as ZooKeeperClient, { basePath: '/shedlock-test' });
+    await expect(provider.lock(config())).rejects.toThrow('-4 connection loss');
   });
 
   it('lock() returns undefined on BadVersion during setData CAS', async () => {
@@ -454,12 +473,15 @@ describe('ZooKeeperLockProvider', () => {
 describe('ZooKeeper result-code matchers', () => {
   const syncNoNode = 'fn: "a_get" args: "/shedlock/test,false" result: "ZNONODE -101"';
   const syncBadVersion = 'fn: "a_set" args: "/shedlock/test,<buffer>,6" result: "ZBADVERSION -103"';
+  const syncNodeExists = 'fn: "a_create" args: "/shedlock/test,<buffer>,0" result: "ZNODEEXISTS -110"';
 
   it('matches numeric codes and the promisified message form', () => {
     expect(isNoNodeException(Object.assign(new Error('No node'), { code: -101 }))).toBe(true);
     expect(isNoNodeException(new Error('-101 no node'))).toBe(true);
     expect(isBadVersionException(Object.assign(new Error('Bad version'), { code: -103 }))).toBe(true);
     expect(isBadVersionException(new Error('-103 bad version'))).toBe(true);
+    expect(isNodeExistsException(Object.assign(new Error('Node exists'), { code: -110 }))).toBe(true);
+    expect(isNodeExistsException(new Error('-110 node exists'))).toBe(true);
   });
 
   it('does not match other result codes or the synchronous fn result form', () => {
@@ -475,6 +497,10 @@ describe('ZooKeeper result-code matchers', () => {
     expect(isBadVersionException({ code: -4 })).toBe(false);
     expect(isNoNodeException(null)).toBe(false);
     expect(isBadVersionException(undefined)).toBe(false);
+    expect(isNodeExistsException(new Error('-1100 node exists'))).toBe(false);
+    expect(isNodeExistsException(new Error('-101 no node'))).toBe(false);
+    expect(isNodeExistsException(null)).toBe(false);
+    expect(isNodeExistsException(new Error(syncNodeExists))).toBe(false);
   });
 });
 

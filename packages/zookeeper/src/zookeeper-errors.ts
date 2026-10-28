@@ -16,5 +16,5 @@ export function isBadVersionException(e: unknown): boolean {
 }
 
 export function isNodeExistsException(e: unknown): boolean {
-  return (e as { code?: number })?.code === -110;
+  return matchesResultCode(e, -110);
 }
