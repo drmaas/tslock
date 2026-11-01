@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { CreateBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import { LocalstackContainer, type StartedLocalStackContainer } from '@testcontainers/localstack';
+import type { StorageBasedLockProvider } from '@tslock/core';
 import { fuzzTests, storageBasedLockProviderIntegrationTests } from '@tslock/test-support';
 import { afterAll, beforeAll } from 'vitest';
 import { S3LockProvider } from '../../src/s3-lock-provider.js';
@@ -41,9 +42,9 @@ beforeAll(async () => {
   }
 }, 120_000);
 
-const getProvider = async () => {
+const getProvider = async (): Promise<StorageBasedLockProvider> => {
   if (!provider) throw new Error('S3 integration provider was not initialized');
-  return provider;
+  return provider as unknown as StorageBasedLockProvider;
 };
 
 const getAccessor = async () => {
