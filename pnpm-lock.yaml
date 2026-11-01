@@ -1013,9 +1013,6 @@ importers:
       '@types/node':
         specifier: ^26.6.3
         version: 26.6.5
-      testcontainers:
-        specifier: ^12.0.4
-        version: 12.2.1(supports-color@7.2.0)
       tsup:
         specifier: ^9.0.0
         version: 9.0.0(jiti@2.7.0)(postcss@8.5.26)(typescript@7.0.2)(yaml@2.9.1)
