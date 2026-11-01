@@ -1001,9 +1001,15 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.600.0
         version: 3.1158.0
+      '@testcontainers/localstack':
+        specifier: ^12.2.1
+        version: 12.2.1(supports-color@7.2.0)
       '@tslock/core':
         specifier: workspace:*
         version: link:../core
+      '@tslock/test-support':
+        specifier: workspace:*
+        version: link:../test-support
       '@types/node':
         specifier: ^26.6.3
         version: 26.6.5
@@ -2797,6 +2803,9 @@ packages:
 
   '@tediousjs/connection-string@1.1.0':
     resolution: {integrity: sha512-z9ZBWEG+8pIB5V1zYzlRPXx0oRJ5H7coPnMQK8EZOw03UTPI9Umn6viL36f5w+CuqkKsnCM50RVStpjZmR0Bng==}
+
+  '@testcontainers/localstack@12.2.1':
+    resolution: {integrity: sha512-STZXqPkXHvYdK73HgZxFzSaZEdpp+8BxiepYGzA2c749bZow0T/TtxsrXqjLDNK6+HN9uFqeKbMiM+1P65mYgA==}
 
   '@testcontainers/mongodb@12.2.1':
     resolution: {integrity: sha512-63fM+g33Bi8jyeVZFHVUxbu5SyGOEnUhK5IMjSfovzKvK8XhgxrYAqEHd14IkiObjrjN36EeMbZvXNQM9mOvvg==}
@@ -7249,6 +7258,15 @@ snapshots:
     optional: true
 
   '@tediousjs/connection-string@1.1.0': {}
+
+  '@testcontainers/localstack@12.2.1(supports-color@7.2.0)':
+    dependencies:
+      testcontainers: 12.2.1(supports-color@7.2.0)
+    transitivePeerDependencies:
+      - bare-abort-controller
+      - bare-buffer
+      - react-native-b4a
+      - supports-color
 
   '@testcontainers/mongodb@12.2.1(supports-color@7.2.0)':
     dependencies:

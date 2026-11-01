@@ -26,6 +26,7 @@
   "scripts": {
     "build": "node ../../scripts/tsup.cjs",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
@@ -46,6 +47,8 @@
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
+    "@tslock/test-support": "workspace:*",
+    "@testcontainers/localstack": "^12.2.1",
     "@aws-sdk/client-s3": "^3.600.0",
     "vitest": "^5.0.3",
     "typescript": "^7.0.2",
