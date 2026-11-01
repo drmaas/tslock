@@ -14,7 +14,7 @@ let provider: S3LockProvider | undefined;
 let accessor: S3StorageAccessor | undefined;
 
 beforeAll(async () => {
-  container = await new LocalstackContainer('localstack/localstack:3.0.0').withEnvironment({ SERVICES: 's3' }).start();
+  container = await new LocalstackContainer('localstack/localstack:4.2.0').withEnvironment({ SERVICES: 's3' }).start();
   try {
     const endpoint = container.getConnectionUri();
     s3 = new S3Client({
