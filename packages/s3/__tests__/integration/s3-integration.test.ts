@@ -42,7 +42,7 @@ beforeAll(async () => {
 
 const getProvider = async (): Promise<StorageBasedLockProvider> => {
   if (!provider) throw new Error('S3 integration provider was not initialized');
-  return provider as unknown as StorageBasedLockProvider;
+  return provider;
 };
 
 const getAccessor = async () => {
