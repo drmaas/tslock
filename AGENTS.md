@@ -33,6 +33,7 @@ The `NN-` prefix on spec/plan/review files is a 2-digit number that matches acro
 ## Read these first
 
 Before implementing anything, read in this order:
+
 1. `docs/00-vision.md` — what TSLock is and isn't, provider matrix, resolved design decisions.
 2. `docs/01-architecture.md` — monorepo structure, core abstractions with TS types, `AsyncLocalStorage`-based `LockAssert`/`LockExtender`, provider categories (A/B/C/D/E/F/G/H/I), test architecture.
 3. `docs/specs/00-core.md` — the core abstractions spec. Everything else depends on this.
@@ -94,6 +95,7 @@ A tiny typo, formatting-only change, or obvious local mechanical edit can use th
 ### Full SDD workflow
 
 Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) for substantial changes. It runs these stages sequentially:
+
 1. **Interview and discovery** — resolve scope, constraints, compatibility, edge cases, and tests.
 2. **Spec** — create immutable `docs/specs/<NN>-<name>.md` with behavior, API, errors, invariants, and test expectations.
 3. **Plan** — create immutable `docs/plans/<NN>-<name>.md` with ordered files, implementation steps, verification, and docs.
@@ -108,6 +110,7 @@ The focused skills apply the same verify/review/repeat discipline without creati
 ## Implementation conventions
 
 When implementing a provider package:
+
 1. **Package structure:** `src/index.ts` (exports), `src/<provider>-configuration.ts` (config + resolver), `src/<provider>-storage-accessor.ts` (or direct provider), `src/<provider>-lock-provider.ts` (factory), `__tests__/` (unit + integration).
 
 2. **Peer dependencies:** `@tslock/core` (required) + the canonical driver (required). Never bundle the driver — users install the version they need.
@@ -127,6 +130,7 @@ When implementing a provider package:
 ## Review findings to address during implementation
 
 The reviews in `docs/reviews/` identified issues to fix. Key ones:
+
 - **S3 (09) — NEEDS REVISION:** `updateRecord` returns `false` on 404, preventing `LockRecordRegistry` cache clear. Should throw to self-heal (matching Couchbase). Same issue in GCS (10) and Spanner (06).
 - **Firestore (07):** `unlock` missing `lockUntil >= now` check (ShedLock's `updateOwn` checks both `lockedBy` AND `lockUntil`). Datastore (08) correctly omits it (ShedLock's Datastore `updateOwn` only checks `lockedBy`).
 - **ArangoDB (11):** `extend` is non-transactional with no CAS — TOCTOU race. Use `ifMatch: existing._rev` or wrap in a stream transaction. Also: `exclusiveCollections` is Enterprise-only — implement `writeCollections` fallback for Community Edition.

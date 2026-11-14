@@ -29,12 +29,14 @@ Related: [`02-migration-from-shedlock.md`](./02-migration-from-shedlock.md), roo
 **Use when:** several Node processes all fire the same cron (or similar), and only one should do the work; a missed tick is acceptable.
 
 **Properties:**
+
 - Non-blocking acquire: held lock → task not executed.
 - `lockAtMostFor` / `lockAtLeastFor` match ShedLock.
 - Providers vary; Redis is **not** Redlock (see below).
 - Does **not** schedule work, does **not** queue skipped runs, does **not** provide distributed transactions or leader election.
 
 **Correctness bounds you should assume:**
+
 - Clocks must be close enough for your lease margins (NTP), unless the provider uses server time.
 - If a task runs longer than `lockAtMostFor` without extend/keep-alive, another instance may start.
 - “At most one” applies to overlapping executions under the lock protocol — it is **not** a guarantee that every scheduled tick runs exactly once.
@@ -44,6 +46,7 @@ Related: [`02-migration-from-shedlock.md`](./02-migration-from-shedlock.md), roo
 **What it is:** an algorithm that tries to take a lock on a **majority** of independent Redis masters (quorum), with TTLs, aimed at mutual exclusion when you distrust a single Redis failure domain.
 
 **How TSLock differs:**
+
 - `@tslock/redis` / `@tslock/redis-ioredis` follow ShedLock: **one** Redis logical keyspace, `SET key NX PX <ttl>`, unlock/extend via Lua that checks ownership. See [`packages/redis/README.md`](../packages/redis/README.md).
 - TSLock does **not** implement Redlock and does **not** claim Redlock’s (or stronger) multi-master properties.
 - Vision doc non-goal: _“Not a replacement for Redis Redlock.”_ ([`00-vision.md`](./00-vision.md) §9).
@@ -83,6 +86,7 @@ Need "Redlock quorum across Redis masters"?
 ## Explicit non-claims
 
 TSLock does **not** claim:
+
 - Exactly-once execution of every schedule tick.
 - Wait/fair queuing for lock waiters.
 - Redlock quorum safety.

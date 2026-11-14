@@ -316,6 +316,7 @@ class DefaultLockingTaskExecutor implements LockingTaskExecutor {
 ```
 
 **Key differences from ShedLock Java:**
+
 1. **`AsyncLocalStorage.run()`** replaces ThreadLocal push/pop. The context is automatically inherited by all async continuations of the task.
 2. **`performance.now()`** for timing instead of `System.nanoTime()`.
 3. **Listener calls are synchronous** (no `safeEmit` async wrapper needed — just try/catch). Listener is still best-effort: failures are caught and logged, never block lock release.
@@ -529,6 +530,7 @@ interface SqlConnection {
 ```
 
 Users create a `SqlConnection` adapter for their driver:
+
 - `pg`: `const conn = new PgConnection(pool);`
 - `mysql2`: `const conn = new Mysql2Connection(pool);`
 - `mssql`: `const conn = new MssqlConnection(pool);`
@@ -567,6 +569,7 @@ All implement `StorageAccessor` and delegate to `StorageBasedLockProvider`. The 
 ```
 
 Each implements `LockProvider` directly (not via `StorageBasedLockProvider`) because their locking mechanism doesn't fit the insert-or-update pattern. Examples:
+
 - **Mongo**: `findOneAndUpdate` with upsert (single atomic operation).
 - **DynamoDB**: `UpdateItem` with `ConditionExpression`.
 - **ES/OpenSearch**: Painless script + upsert.
@@ -676,6 +679,7 @@ Each provider's test suite extends these abstract tests and provides the `LockPr
 ### 7.3 Integration Tests
 
 Each provider package has an `__tests__/integration/` directory with:
+
 - A `docker-compose.yml` (or Testcontainers config) for the backend.
 - A test file extending `AbstractLockProviderIntegrationTest`.
 - Setup: start container, create schema/collection/index, instantiate provider.
@@ -692,6 +696,7 @@ Each provider package has an `__tests__/integration/` directory with:
 ### 8.1 Build Tool
 
 **`tsup`** (esbuild-based, fast, dual ESM/CJS output, zero config). Each package:
+
 - `src/` → `dist/` (ESM + CJS + type declarations)
 - `package.json` with `exports` field for conditional imports
 - `tsconfig.json` extending root `tsconfig.base.json`
@@ -718,6 +723,7 @@ Each provider package has an `__tests__/integration/` directory with:
 ### 8.3 Package.json Exports
 
 Each provider package:
+
 ```json
 {
   "name": "@tslock/neo4j",
@@ -776,6 +782,7 @@ Error
 ### 9.3 Driver Error Mapping
 
 Each provider maps driver-specific errors to TSLock semantics:
+
 - **Duplicate key / conflict / conditional check failed** → lock not acquired (return `undefined`), not an error.
 - **Connection errors** → propagate.
 - **Key/column not found** → propagate (indicates misconfiguration).
@@ -830,6 +837,7 @@ Node.js is single-threaded (ignoring worker threads). This simplifies several Sh
 | `volatile`                 | Not needed                                      |
 
 **Async interleaving caveat:** While there's no true parallelism, async operations interleave at `await` points. This means:
+
 - `LockRecordRegistry` state can change between check and use. This is acceptable — it's an optimization, not a correctness mechanism.
 - `StorageBasedLockProvider.lock()` is not atomic across the insert-then-update sequence. But each individual storage operation IS atomic, so correctness is maintained at the storage layer.
 

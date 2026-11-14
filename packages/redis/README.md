@@ -46,6 +46,7 @@ The full key is `${keyPrefix}:${env}:${lockName}`.
 ## Valkey and Redis-compatible managed services
 
 This package speaks the Redis protocol (`SET NX PX` + Lua). It works against:
+
 - **Valkey** (Redis-compatible OSS)
 - **Amazon ElastiCache** (Redis or Valkey engine)
 - **Amazon MemoryDB** (Redis OSS or Valkey)

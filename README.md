@@ -289,13 +289,13 @@ These are OpenCode skills; contributors working without an agent can follow the 
 ### Adding a new provider
 
 Use [`tslock-sdd`](./.opencode/skills/tslock-sdd/SKILL.md) or follow the equivalent process manually:
+
 1. Open an issue to claim the provider and confirm it is in scope.
 2. Read `docs/00-vision.md`, `docs/01-architecture.md`, and an existing provider's spec/plan/review as a template.
 3. Create immutable `docs/specs/<NN>-<name>.md` and `docs/plans/<NN>-<name>.md`.
 4. Implement under `packages/<name>/` following the package conventions in `AGENTS.md`.
 5. Add the shared integration test contract from `@tslock/test-support`.
 6. Run the full verification suite above and fix any failures.
-
 
 ### Project layout
 
