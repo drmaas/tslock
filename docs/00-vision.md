@@ -5,12 +5,14 @@
 ## 1. Problem Statement
 
 When you run multiple instances of a Node.js or TypeScript application — in Kubernetes, ECS, Lambda, or behind a load balancer — scheduled tasks fire on **every** instance simultaneously. This causes:
+
 - **Duplicate work**: every node processes the same batch job, sends the same webhook, runs the same cleanup.
 - **Data corruption**: concurrent writes to the same record from multiple instances.
 - **Wasted resources**: redundant API calls, database scans, third-party charges.
 - **Inconsistent state**: race conditions when multiple instances mutate shared state.
 
 The Node.js/TypeScript ecosystem today offers:
+
 - **Framework-coupled solutions** (NestJS `@nestjs/schedule`, BullMQ) — lock you into a framework.
 - **Single-backend solutions** (Redis-only lock libraries like `redlock`) — limit your storage choices.
 - **DIY implementations** — fragile, untested, rarely handle edge cases (clock drift, lock extension, `lockAtLeastFor`).
@@ -173,6 +175,7 @@ TSLock supports all 24 ShedLock providers. Each uses the canonical or most widel
 ### 6.7 Summary: 24 ShedLock providers → 25+ TSLock packages
 
 The mapping:
+
 - R2DBC merges into `@tslock/sql` (async distinction doesn't apply in Node).
 - Spring Redis has no TS equivalent (no Spring). The 2 remaining Redis variants (Jedis→`redis`, Lettuce→`ioredis`) become 2 packages sharing `@tslock/redis-core`.
 - jOOQ → Kysely (`@tslock/kysely`). Drizzle added as `@tslock/drizzle` (no ShedLock equivalent, user-requested).
