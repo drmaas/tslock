@@ -1,5 +1,29 @@
 # @tslock/core
 
+## 2.4.0
+
+### Minor Changes
+
+- [#127](https://github.com/drmaas/tslock/pull/127) [`e20e15b`](https://github.com/drmaas/tslock/commit/e20e15b800b11f7e1297a23e9c150559b9124d95) Thanks [@drmaas](https://github.com/drmaas)! - Brand `ExtensibleLockProvider` so `KeepAliveLockProvider` only accepts providers that can extend a lock. `TrackingLockProviderWrapper` and OpenTelemetry `instrument` keep that brand only when the wrapped provider is extensible. Constructing keep-alive around a provider that omits the brand throws `LockException` instead of failing on the first renewal. Custom classes that implement `ExtensibleLockProvider` must set `readonly [extensibleLockProvider]: true`.
+
+- [#171](https://github.com/drmaas/tslock/pull/171) [`76988b1`](https://github.com/drmaas/tslock/commit/76988b168a725fafab6b39d5ee98005ce938c11a) Thanks [@drmaas](https://github.com/drmaas)! - Add shared `validateIdentifier()` in core and use it for SQL table/column names plus Cassandra, Neo4j, and Spanner configuration so unsafe identifiers cannot be interpolated into generated SQL.
+
+### Patch Changes
+
+- [#145](https://github.com/drmaas/tslock/pull/145) [`b47b809`](https://github.com/drmaas/tslock/commit/b47b80932c8ecec7b235bc7d59402cb825c961c7) Thanks [@drmaas](https://github.com/drmaas)! - Publish internal `@tslock/*` dependencies and peer dependencies as caret ranges (`^x.y.z`) instead of exact versions. An app can install a newer patch of `@tslock/core` alongside another `@tslock` package without an `ERESOLVE` failure or a second copy of core. A second copy breaks `LockAssert`, because its lock stack lives on a class-static `AsyncLocalStorage`.
+
+- [#115](https://github.com/drmaas/tslock/pull/115) [`9f8aabf`](https://github.com/drmaas/tslock/commit/9f8aabf356b04c87ad2524d0c387b75acdfff4ac) Thanks [@drmaas](https://github.com/drmaas)! - Expose CommonJS and ESM type declarations on separate `require` and `import` export conditions so `node16` CommonJS projects can import every package.
+
+- [#138](https://github.com/drmaas/tslock/pull/138) [`fb35207`](https://github.com/drmaas/tslock/commit/fb35207a91a77c4dfb5a35eeda7aef9d2ae91fc8) Thanks [@drmaas](https://github.com/drmaas)! - Keep-alive renewals continue past the original `lockAtMostFor`. The interval stops only after the deadline from the latest successful extend has passed, and that stop reports `Keep-alive lock was lost`.
+
+- [#153](https://github.com/drmaas/tslock/pull/153) [`add6d2e`](https://github.com/drmaas/tslock/commit/add6d2e20be64e7503002782f5fa917cf809b13e) Thanks [@drmaas](https://github.com/drmaas)! - `DefaultLockingTaskExecutor` unlocks the lock `LockExtender.extendActiveLock` installed, so a task that extends its lease does not hold it until the new deadline after `executeWithLock` returns. A failed `extend()` leaves the original handle valid so that unlock still runs. `unlock()` on the original handle still throws after a successful `extend()`.
+
+  `KeepAliveLock` skips the wrapped `unlock()` after a renewal returns no lock or the local deadline has already passed, so a later holder keeps the lease. A thrown `extend()` still unlocks.
+
+- [#163](https://github.com/drmaas/tslock/pull/163) [`b38203b`](https://github.com/drmaas/tslock/commit/b38203be0006bd5bff243da6d8d7193d07db8032) Thanks [@drmaas](https://github.com/drmaas)! - Ignore a stale unlock or extend after another process on the same host reacquires the lock. Search (Elasticsearch and OpenSearch), DynamoDB, and ArangoDB now require the stored deadline to match this acquisition. Delegating locks pass the deadline from the acquisition being extended.
+
+- [#155](https://github.com/drmaas/tslock/pull/155) [`a56e460`](https://github.com/drmaas/tslock/commit/a56e460e5997bbb0a729cd246c75bdff7f2b78d2) Thanks [@drmaas](https://github.com/drmaas)! - Ignore a stale unlock or extend after another process on the same host reacquires the lock. S3, GCS, and CloudFront KeyValueStore now require the stored deadline to match this acquisition. `StorageAccessor.extend` takes an optional previous deadline, and storage locks pass the deadline they acquired.
+
 ## 2.3.1
 
 No changes in this release.

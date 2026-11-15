@@ -1,5 +1,19 @@
 # @tslock/mongo
 
+## 2.4.0
+
+### Patch Changes
+
+- [#145](https://github.com/drmaas/tslock/pull/145) [`b47b809`](https://github.com/drmaas/tslock/commit/b47b80932c8ecec7b235bc7d59402cb825c961c7) Thanks [@drmaas](https://github.com/drmaas)! - Publish internal `@tslock/*` dependencies and peer dependencies as caret ranges (`^x.y.z`) instead of exact versions. An app can install a newer patch of `@tslock/core` alongside another `@tslock` package without an `ERESOLVE` failure or a second copy of core. A second copy breaks `LockAssert`, because its lock stack lives on a class-static `AsyncLocalStorage`.
+
+- [#115](https://github.com/drmaas/tslock/pull/115) [`9f8aabf`](https://github.com/drmaas/tslock/commit/9f8aabf356b04c87ad2524d0c387b75acdfff4ac) Thanks [@drmaas](https://github.com/drmaas)! - Expose CommonJS and ESM type declarations on separate `require` and `import` export conditions so `node16` CommonJS projects can import every package.
+
+- [#158](https://github.com/drmaas/tslock/pull/158) [`f9dded4`](https://github.com/drmaas/tslock/commit/f9dded4f6d3520f30dc3dddbda1b7f30eadd7df1) Thanks [@drmaas](https://github.com/drmaas)! - Ignore a stale unlock or extend after another process on the same host reacquires a MongoDB lock. Unlock and extend now require the stored deadline to match this acquisition.
+
+- [#128](https://github.com/drmaas/tslock/pull/128) [`f3e8951`](https://github.com/drmaas/tslock/commit/f3e895193ed3fb1c7d509305ebfc7f561c04b02c) Thanks [@drmaas](https://github.com/drmaas)! - Unlock updates `lockUntil` only when the stored owner is this caller. Mongo filters the update by `lockedBy`. DynamoDB conditions the update on `lockedBy`. ArangoDB skips a different owner and updates with the document revision. Elasticsearch and OpenSearch unlock scripts set `lockUntil` only when `lockedBy` matches.
+- Updated dependencies [[`b47b809`](https://github.com/drmaas/tslock/commit/b47b80932c8ecec7b235bc7d59402cb825c961c7), [`9f8aabf`](https://github.com/drmaas/tslock/commit/9f8aabf356b04c87ad2524d0c387b75acdfff4ac), [`e20e15b`](https://github.com/drmaas/tslock/commit/e20e15b800b11f7e1297a23e9c150559b9124d95), [`fb35207`](https://github.com/drmaas/tslock/commit/fb35207a91a77c4dfb5a35eeda7aef9d2ae91fc8), [`add6d2e`](https://github.com/drmaas/tslock/commit/add6d2e20be64e7503002782f5fa917cf809b13e), [`76988b1`](https://github.com/drmaas/tslock/commit/76988b168a725fafab6b39d5ee98005ce938c11a), [`b38203b`](https://github.com/drmaas/tslock/commit/b38203be0006bd5bff243da6d8d7193d07db8032), [`a56e460`](https://github.com/drmaas/tslock/commit/a56e460e5997bbb0a729cd246c75bdff7f2b78d2)]:
+  - @tslock/core@2.4.0
+
 ## 2.3.1
 
 ### Patch Changes
