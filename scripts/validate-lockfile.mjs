@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const LOCKFILE_NAME = 'pnpm-lock.yaml';
+const WORKSPACE_NAME = 'pnpm-workspace.yaml';
 
 export function findDuplicateMappingKeys(text) {
   const duplicates = [];
@@ -226,6 +227,204 @@ export function validateLockfileFile(filePath) {
   return validateLockfileText(text);
 }
 
+function readTextFile(filePath) {
+  try {
+    return { text: readFileSync(filePath, 'utf8') };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return { error: `unable to read ${filePath}: ${detail}` };
+  }
+}
+
+function parseOverrideEntry(trimmed) {
+  let index = 0;
+  let quote = '';
+  let key = '';
+
+  if (trimmed[0] === "'" || trimmed[0] === '"') {
+    quote = trimmed[0];
+    index = 1;
+  }
+
+  for (; index < trimmed.length; index += 1) {
+    const character = trimmed[index];
+    if (quote) {
+      if (character === '\\') {
+        key += trimmed[index + 1] ?? '';
+        index += 1;
+        continue;
+      }
+      if (character === quote) {
+        quote = '';
+        continue;
+      }
+      key += character;
+      continue;
+    }
+    if (character === ':') {
+      if (key.length === 0) return undefined;
+      const value = trimmed.slice(index + 1).trim();
+      return { key, value };
+    }
+    if (character === ' ' || character === '#' || character === '{' || character === '[') return undefined;
+    key += character;
+  }
+
+  return undefined;
+}
+
+export function parseBareWorkspaceOverrides(workspaceText) {
+  const overrides = [];
+  const lines = workspaceText.split(/\r?\n/);
+  let inOverrides = false;
+
+  for (const line of lines) {
+    if (/^overrides:\s*$/.test(line)) {
+      inOverrides = true;
+      continue;
+    }
+    if (inOverrides && /^[^\s#]/.test(line)) break;
+    if (!inOverrides || !line.startsWith('  ')) continue;
+
+    const parsed = parseOverrideEntry(line.trimStart());
+    if (!parsed?.key.endsWith('@')) continue;
+
+    overrides.push({
+      overrideKey: parsed.key,
+      name: parsed.key.slice(0, -1),
+      expectedVersion: parsed.value,
+    });
+  }
+
+  return overrides;
+}
+
+function lockfileMainDocument(lockfileText) {
+  const parts = lockfileText.split(/\r?\n---\r?\n/);
+  if (parts.length >= 2) return parts.slice(1).join('\n---\n');
+  return lockfileText;
+}
+
+export function collectLockfilePackageKeys(lockfileText) {
+  const keys = [];
+  const lines = lockfileMainDocument(lockfileText).split(/\r?\n/);
+  let inPackages = false;
+
+  for (const line of lines) {
+    if (/^packages:\s*$/.test(line)) {
+      inPackages = true;
+      continue;
+    }
+    if (inPackages && /^snapshots:\s*$/.test(line)) break;
+    if (inPackages && /^[^\s#]/.test(line)) break;
+    if (!inPackages || !/^ {2}[^:\s]/.test(line)) continue;
+
+    const colon = line.indexOf(':', 2);
+    if (colon < 0) continue;
+    const rest = line.slice(colon + 1).trim();
+    if (rest !== '' && !rest.startsWith('{')) continue;
+
+    keys.push(line.slice(2, colon).trim());
+  }
+
+  return keys;
+}
+
+function collectSnapshotDependencyVersions(lockfileText) {
+  const versionsByName = new Map();
+  const lines = lockfileMainDocument(lockfileText).split(/\r?\n/);
+  let inSnapshots = false;
+
+  for (const line of lines) {
+    if (/^snapshots:\s*$/.test(line)) {
+      inSnapshots = true;
+      continue;
+    }
+    if (!inSnapshots) continue;
+
+    const match = /^ {6}([^:\s]+): ([^\s]+)\s*$/.exec(line);
+    if (!match) continue;
+
+    const [, name, version] = match;
+    if (!/^\d/.test(version) && !/^[\d.]+/.test(version)) continue;
+
+    const bucket = versionsByName.get(name) ?? new Set();
+    bucket.add(version);
+    versionsByName.set(name, bucket);
+  }
+
+  return versionsByName;
+}
+
+export function validateWorkspaceOverrides(workspaceText, lockfileText) {
+  const errors = [];
+  const bareOverrides = parseBareWorkspaceOverrides(workspaceText);
+  if (bareOverrides.length === 0) return errors;
+
+  const packageKeys = collectLockfilePackageKeys(lockfileText);
+  const snapshotVersions = collectSnapshotDependencyVersions(lockfileText);
+
+  for (const { overrideKey, name, expectedVersion } of bareOverrides) {
+    const matches = packageKeys.filter((key) => key.startsWith(`${name}@`));
+    const expectedKey = `${name}@${expectedVersion}`;
+
+    if (matches.length === 0) {
+      errors.push(
+        `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: has no ${JSON.stringify(expectedKey)} entry.`,
+      );
+      continue;
+    }
+
+    if (matches.length > 1) {
+      errors.push(
+        `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: has multiple versions: ${matches.map((key) => JSON.stringify(key)).join(', ')}.`,
+      );
+      continue;
+    }
+
+    if (matches[0] !== expectedKey) {
+      errors.push(
+        `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: only has ${JSON.stringify(matches[0])}.`,
+      );
+    }
+
+    const snapshotSet = snapshotVersions.get(name);
+    if (!snapshotSet) continue;
+
+    for (const version of snapshotSet) {
+      if (version !== expectedVersion) {
+        errors.push(
+          `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but snapshots: references ${name}@${version}.`,
+        );
+      }
+    }
+  }
+
+  return errors;
+}
+
+export function validateRepoLockfile(rootDir) {
+  const lockfilePath = join(rootDir, LOCKFILE_NAME);
+  const workspacePath = join(rootDir, WORKSPACE_NAME);
+  const errors = [];
+
+  const lockfileRead = readTextFile(lockfilePath);
+  if (lockfileRead.error) {
+    errors.push(lockfileRead.error);
+    return errors;
+  }
+
+  const workspaceRead = readTextFile(workspacePath);
+  if (workspaceRead.error) {
+    errors.push(workspaceRead.error);
+    return errors;
+  }
+
+  errors.push(...validateLockfileText(lockfileRead.text));
+  errors.push(...validateWorkspaceOverrides(workspaceRead.text, lockfileRead.text));
+  return errors;
+}
+
 function splitMappingKey(trimmed) {
   let index = 0;
   let quote = '';
@@ -269,15 +468,18 @@ function isDirectRun() {
 }
 
 if (isDirectRun()) {
-  const lockfilePath = join(process.cwd(), LOCKFILE_NAME);
-  const errors = validateLockfileFile(lockfilePath);
+  const errors = validateRepoLockfile(process.cwd());
   if (errors.length > 0) {
     console.error(
-      `${LOCKFILE_NAME} is broken and will fail \`pnpm install --frozen-lockfile\` with ERR_PNPM_BROKEN_LOCKFILE.`,
+      `${LOCKFILE_NAME} is broken and will fail \`pnpm install --frozen-lockfile\` with ERR_PNPM_BROKEN_LOCKFILE, or workspace overrides are out of sync with lockfile package pins.`,
     );
     for (const error of errors) console.error(error);
-    console.error('Regenerate it with `pnpm install` and commit one copy of each package and snapshot key.');
+    console.error(
+      'Regenerate it with `pnpm install` and commit one copy of each package and snapshot key. When a lockfile bump changes a bare override target, update the matching entry in pnpm-workspace.yaml overrides too.',
+    );
     process.exit(1);
   }
-  console.log(`${LOCKFILE_NAME} has unique mapping keys and lockfileVersion 9.0.`);
+  console.log(
+    `${LOCKFILE_NAME} has unique mapping keys, lockfileVersion 9.0, and bare workspace overrides match package pins.`,
+  );
 }

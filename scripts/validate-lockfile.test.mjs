@@ -3,7 +3,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { findDuplicateMappingKeys, validateLockfileText } from './validate-lockfile.mjs';
+import {
+  findDuplicateMappingKeys,
+  validateLockfileText,
+  validateRepoLockfile,
+  validateWorkspaceOverrides,
+} from './validate-lockfile.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -11,6 +16,10 @@ describe('validate-lockfile', () => {
   it('accepts the committed pnpm-lock.yaml', () => {
     const text = readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8');
     assert.deepEqual(validateLockfileText(text), []);
+  });
+
+  it('accepts committed lockfile and bare workspace overrides together', () => {
+    assert.deepEqual(validateRepoLockfile(root), []);
   });
 
   it('rejects the duplicated package key that broke frozen install', () => {
@@ -102,5 +111,59 @@ snapshots:
   it('rejects a missing lockfileVersion', () => {
     const errors = validateLockfileText('importers:\npackages:\n');
     assert.match(errors.join('\n'), /lockfileVersion/);
+  });
+});
+
+describe('workspace overrides vs lockfile pins', () => {
+  const workspaceTwoPin = `packages:
+  - "packages/*"
+overrides:
+  "qs@": 6.16.0
+`;
+
+  const lockfileTwoQsVersions = `---
+lockfileVersion: '9.0'
+
+importers:
+  .: {}
+
+packages:
+  qs@6.16.0:
+    resolution: {integrity: sha512-a}
+  qs@6.17.1:
+    resolution: {integrity: sha512-b}
+
+snapshots:
+  qs@6.17.1: {}
+`;
+
+  const lockfileAlignedQs = `---
+lockfileVersion: '9.0'
+
+importers:
+  .: {}
+
+packages:
+  qs@6.17.1:
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  express@4.0.0:
+    dependencies:
+      qs: 6.17.1
+`;
+
+  it('rejects multiple package pins for one bare override', () => {
+    const errors = validateWorkspaceOverrides(workspaceTwoPin, lockfileTwoQsVersions);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"qs@"/);
+    assert.match(errors.join('\n'), /multiple versions/i);
+    assert.match(errors.join('\n'), /qs@6\.16\.0/);
+    assert.match(errors.join('\n'), /qs@6\.17\.1/);
+  });
+
+  it('accepts a single lockfile pin that matches the bare override', () => {
+    const workspaceAligned = workspaceTwoPin.replace('6.16.0', '6.17.1');
+    assert.deepEqual(validateWorkspaceOverrides(workspaceAligned, lockfileAlignedQs), []);
   });
 });
