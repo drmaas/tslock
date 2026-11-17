@@ -166,4 +166,54 @@ snapshots:
     const workspaceAligned = workspaceTwoPin.replace('6.16.0', '6.17.1');
     assert.deepEqual(validateWorkspaceOverrides(workspaceAligned, lockfileAlignedQs), []);
   });
+
+  it('accepts snapshot peer suffixes when the base version matches the override', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "qs@": 6.17.1
+`;
+    const lockfile = `---
+lockfileVersion: '9.0'
+
+importers:
+  .: {}
+
+packages:
+  qs@6.17.1:
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  express@4.0.0:
+    dependencies:
+      qs: 6.17.1(supports-color@7.2.0)
+`;
+    assert.deepEqual(validateWorkspaceOverrides(workspace, lockfile), []);
+  });
+
+  it('rejects snapshot peer suffixes when the base version differs from the override', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "qs@": 6.17.1
+`;
+    const lockfile = `---
+lockfileVersion: '9.0'
+
+importers:
+  .: {}
+
+packages:
+  qs@6.17.1:
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  express@4.0.0:
+    dependencies:
+      qs: 6.16.0(supports-color@7.2.0)
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /6\.16\.0/);
+  });
 });

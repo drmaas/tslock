@@ -330,6 +330,15 @@ export function collectLockfilePackageKeys(lockfileText) {
   return keys;
 }
 
+function normalizeSnapshotDependencyVersion(version) {
+  const trimmed = version.trim();
+  if (trimmed.startsWith('workspace:') || trimmed.startsWith('link:')) {
+    return undefined;
+  }
+  const paren = trimmed.indexOf('(');
+  return (paren >= 0 ? trimmed.slice(0, paren) : trimmed).trim();
+}
+
 function collectSnapshotDependencyVersions(lockfileText) {
   const versionsByName = new Map();
   const lines = lockfileMainDocument(lockfileText).split(/\r?\n/);
@@ -346,10 +355,13 @@ function collectSnapshotDependencyVersions(lockfileText) {
     if (!match) continue;
 
     const [, name, version] = match;
-    if (!/^\d/.test(version) && !/^[\d.]+/.test(version)) continue;
+    const normalized = normalizeSnapshotDependencyVersion(version);
+    if (normalized === undefined || (!/^\d/.test(normalized) && !/^[\d.]+/.test(normalized))) {
+      continue;
+    }
 
     const bucket = versionsByName.get(name) ?? new Set();
-    bucket.add(version);
+    bucket.add(normalized);
     versionsByName.set(name, bucket);
   }
 
