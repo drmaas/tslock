@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import semver from 'semver';
+import { versionSatisfiesRange } from './check-peer-dev-ranges.mjs';
 
 const LOCKFILE_NAME = 'pnpm-lock.yaml';
 const WORKSPACE_NAME = 'pnpm-workspace.yaml';
@@ -397,7 +397,7 @@ export function validateWorkspaceOverrides(workspaceText, lockfileText) {
       if (!key.startsWith(prefix)) return false;
       const version = key.slice(prefix.length);
       if (range === undefined) return true;
-      return semver.satisfies(version, range);
+      return versionSatisfiesRange(version, range);
     });
     const expectedKey = `${name}@${expectedVersion}`;
 
@@ -427,7 +427,7 @@ export function validateWorkspaceOverrides(workspaceText, lockfileText) {
     if (!snapshotSet) continue;
 
     for (const version of snapshotSet) {
-      if (range !== undefined && !semver.satisfies(version, range)) continue;
+      if (range !== undefined && !versionSatisfiesRange(version, range)) continue;
       if (version !== expectedVersion) {
         errors.push(
           `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but snapshots: references ${name}@${version}.`,
