@@ -300,4 +300,48 @@ snapshots:
 `;
     assert.deepEqual(validateWorkspaceOverrides(workspaceUndiciRanges, lockfile), []);
   });
+
+  it('rejects ranged override when packages has no in-range pin but snapshots reference the pinned version', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "undici@^6": 6.29.0
+`;
+    const lockfile = `${lockfilePrefix}
+  undici@8.11.2:
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  express@4.0.0:
+    dependencies:
+      undici: 6.29.0
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"undici@\^6"/);
+    assert.match(errors.join('\n'), /no in-range/i);
+    assert.match(errors.join('\n'), /6\.29\.0/);
+  });
+
+  it('rejects in-range snapshot version mismatch when packages only has an out-of-range pin', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "undici@^6": 6.29.0
+`;
+    const lockfile = `${lockfilePrefix}
+  undici@8.11.2:
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  express@4.0.0:
+    dependencies:
+      undici: 6.28.0
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"undici@\^6"/);
+    assert.match(errors.join('\n'), /snapshots: references undici@6\.28\.0/);
+    assert.match(errors.join('\n'), /no in-range/i);
+  });
 });
