@@ -198,6 +198,38 @@ export function rangesIntersect(leftRange, rightRange) {
   return false;
 }
 
+function parseVersion(version) {
+  const match = /^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/.exec(String(version).trim());
+  if (!match) return null;
+  return [
+    Number(match[1]),
+    match[2] !== undefined ? Number(match[2]) : 0,
+    match[3] !== undefined ? Number(match[3]) : 0,
+  ];
+}
+
+function versionInInterval(version, interval) {
+  if (interval.min) {
+    const order = cmpVersion(version, interval.min);
+    if (order < 0) return false;
+    if (order === 0 && !interval.minInclusive) return false;
+  }
+  if (interval.max) {
+    const order = cmpVersion(version, interval.max);
+    if (order > 0) return false;
+    if (order === 0 && !interval.maxInclusive) return false;
+  }
+  return true;
+}
+
+export function versionSatisfiesRange(version, range) {
+  const parsed = parseVersion(version);
+  if (!parsed) return false;
+  const intervals = parseRange(range);
+  if (!intervals || intervals.length === 0) return false;
+  return intervals.some((interval) => versionInInterval(parsed, interval));
+}
+
 export function peerDevRangeProblems(packageJson) {
   const packageName = packageJson?.name ?? '<unknown>';
   const peers = packageJson?.peerDependencies;

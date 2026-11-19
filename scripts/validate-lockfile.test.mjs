@@ -5,6 +5,7 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   findDuplicateMappingKeys,
+  parseBareWorkspaceOverrides,
   validateLockfileText,
   validateRepoLockfile,
   validateWorkspaceOverrides,
@@ -215,5 +216,88 @@ snapshots:
     const errors = validateWorkspaceOverrides(workspace, lockfile);
     assert.notEqual(errors.length, 0);
     assert.match(errors.join('\n'), /6\.16\.0/);
+  });
+});
+
+describe('ranged bare workspace overrides', () => {
+  const workspaceUndiciRanges = `packages:
+  - "packages/*"
+overrides:
+  "undici@^6": 6.29.0
+  "undici@^8": 8.11.2
+`;
+
+  it('parses pkgname@ and pkgname@<range> override keys', () => {
+    const parsed = parseBareWorkspaceOverrides(workspaceUndiciRanges);
+    assert.equal(parsed.length, 2);
+    assert.deepEqual(
+      parsed.map(({ overrideKey, name, range, expectedVersion }) => ({
+        overrideKey,
+        name,
+        range,
+        expectedVersion,
+      })),
+      [
+        { overrideKey: 'undici@^6', name: 'undici', range: '^6', expectedVersion: '6.29.0' },
+        { overrideKey: 'undici@^8', name: 'undici', range: '^8', expectedVersion: '8.11.2' },
+      ],
+    );
+  });
+
+  const lockfilePrefix = `---
+lockfileVersion: '9.0'
+
+importers:
+  .: {}
+
+packages:
+`;
+
+  it('rejects multiple in-range package pins for one ranged override', () => {
+    const lockfile = `${lockfilePrefix}
+  undici@6.28.0:
+    resolution: {integrity: sha512-a}
+  undici@6.29.0:
+    resolution: {integrity: sha512-b}
+
+snapshots:
+  undici@6.29.0: {}
+`;
+    const errors = validateWorkspaceOverrides(workspaceUndiciRanges, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"undici@\^6"/);
+    assert.match(errors.join('\n'), /multiple versions/i);
+  });
+
+  it('accepts snapshot peer suffixes for ranged overrides', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "undici@^6": 6.29.0
+`;
+    const lockfile = `${lockfilePrefix}
+  undici@6.29.0:
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  express@4.0.0:
+    dependencies:
+      undici: 6.29.0(supports-color@7.2.0)
+`;
+    assert.deepEqual(validateWorkspaceOverrides(workspace, lockfile), []);
+  });
+
+  it('ignores lockfile versions outside every ranged override', () => {
+    const lockfile = `${lockfilePrefix}
+  undici@7.30.2:
+    resolution: {integrity: sha512-a}
+  undici@8.11.2:
+    resolution: {integrity: sha512-b}
+
+snapshots:
+  undici@7.30.2: {}
+  undici@8.11.2: {}
+`;
+    assert.deepEqual(validateWorkspaceOverrides(workspaceUndiciRanges, lockfile), []);
   });
 });

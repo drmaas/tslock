@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { versionSatisfiesRange } from './check-peer-dev-ranges.mjs';
 
 const LOCKFILE_NAME = 'pnpm-lock.yaml';
 const WORKSPACE_NAME = 'pnpm-workspace.yaml';
@@ -287,11 +288,25 @@ export function parseBareWorkspaceOverrides(workspaceText) {
     if (!inOverrides || !line.startsWith('  ')) continue;
 
     const parsed = parseOverrideEntry(line.trimStart());
-    if (!parsed?.key.endsWith('@')) continue;
+    if (!parsed) continue;
+
+    let name;
+    let range;
+    if (parsed.key.endsWith('@')) {
+      name = parsed.key.slice(0, -1);
+      range = undefined;
+    } else {
+      const at = parsed.key.lastIndexOf('@');
+      if (at <= 0) continue;
+      name = parsed.key.slice(0, at);
+      range = parsed.key.slice(at + 1);
+      if (!range) continue;
+    }
 
     overrides.push({
       overrideKey: parsed.key,
-      name: parsed.key.slice(0, -1),
+      name,
+      range,
       expectedVersion: parsed.value,
     });
   }
@@ -376,14 +391,22 @@ export function validateWorkspaceOverrides(workspaceText, lockfileText) {
   const packageKeys = collectLockfilePackageKeys(lockfileText);
   const snapshotVersions = collectSnapshotDependencyVersions(lockfileText);
 
-  for (const { overrideKey, name, expectedVersion } of bareOverrides) {
-    const matches = packageKeys.filter((key) => key.startsWith(`${name}@`));
+  for (const { overrideKey, name, range, expectedVersion } of bareOverrides) {
+    const matches = packageKeys.filter((key) => {
+      const prefix = `${name}@`;
+      if (!key.startsWith(prefix)) return false;
+      const version = key.slice(prefix.length);
+      if (range === undefined) return true;
+      return versionSatisfiesRange(version, range);
+    });
     const expectedKey = `${name}@${expectedVersion}`;
 
     if (matches.length === 0) {
-      errors.push(
-        `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: has no ${JSON.stringify(expectedKey)} entry.`,
-      );
+      if (range === undefined) {
+        errors.push(
+          `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: has no ${JSON.stringify(expectedKey)} entry.`,
+        );
+      }
       continue;
     }
 
@@ -404,6 +427,7 @@ export function validateWorkspaceOverrides(workspaceText, lockfileText) {
     if (!snapshotSet) continue;
 
     for (const version of snapshotSet) {
+      if (range !== undefined && !versionSatisfiesRange(version, range)) continue;
       if (version !== expectedVersion) {
         errors.push(
           `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but snapshots: references ${name}@${version}.`,
