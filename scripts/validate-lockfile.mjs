@@ -406,24 +406,33 @@ export function validateWorkspaceOverrides(workspaceText, lockfileText) {
         errors.push(
           `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: has no ${JSON.stringify(expectedKey)} entry.`,
         );
+        continue;
       }
-      continue;
-    }
-
-    if (matches.length > 1) {
+    } else if (matches.length > 1) {
       errors.push(
         `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: has multiple versions: ${matches.map((key) => JSON.stringify(key)).join(', ')}.`,
       );
       continue;
-    }
-
-    if (matches[0] !== expectedKey) {
+    } else if (matches[0] !== expectedKey) {
       errors.push(
         `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: only has ${JSON.stringify(matches[0])}.`,
       );
     }
 
     const snapshotSet = snapshotVersions.get(name);
+    const inRangeSnapshotVersions =
+      snapshotSet === undefined
+        ? []
+        : [...snapshotSet].filter((version) => range === undefined || versionSatisfiesRange(version, range));
+
+    if (matches.length === 0 && range !== undefined) {
+      if (inRangeSnapshotVersions.length > 0) {
+        errors.push(
+          `workspace override ${JSON.stringify(overrideKey)} pins ${expectedVersion}, but pnpm-lock.yaml packages: has no in-range ${JSON.stringify(name)} pin for ${JSON.stringify(range)} (expected ${JSON.stringify(expectedKey)}).`,
+        );
+      }
+    }
+
     if (!snapshotSet) continue;
 
     for (const version of snapshotSet) {
