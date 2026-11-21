@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import { Storage } from '@google-cloud/storage';
+import { Storage, type StorageOptions } from '@google-cloud/storage';
 import { ClockProvider } from '@tslock/core';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { GcsProviderConfig } from '../src/gcs-provider-config.js';
@@ -7,6 +7,56 @@ import { createGcsProviderConfig } from '../src/gcs-provider-config.js';
 import { GcsStorageAccessor } from '../src/gcs-storage-accessor.js';
 
 const EMPTY_CRC32C = 'AAAAAA==';
+
+function createLocalApiStorage(port: number): Storage {
+  const unauthenticatedClient = {
+    async getProjectId(): Promise<string> {
+      return 'test-project';
+    },
+    async request<T>(opts: {
+      url?: string | URL;
+      method?: string;
+      headers?: Record<string, string>;
+      data?: unknown;
+      params?: Record<string, unknown>;
+      adapter?: (options: unknown) => Promise<{ data: T; status: number; headers: Record<string, string> }>;
+      validateStatus?: (status: number) => boolean;
+    }): Promise<{ data: T; status: number; headers: Record<string, string> }> {
+      if (typeof opts.adapter === 'function') {
+        return opts.adapter(opts);
+      }
+      const url = new URL(String(opts.url));
+      if (opts.params) {
+        for (const [key, value] of Object.entries(opts.params)) {
+          url.searchParams.set(key, String(value));
+        }
+      }
+      const response = await fetch(url, {
+        method: opts.method ?? 'GET',
+        headers: opts.headers,
+        body: opts.data === undefined ? undefined : JSON.stringify(opts.data),
+      });
+      const text = await response.text();
+      const data = text.length > 0 ? (JSON.parse(text) as T) : (null as T);
+      const headers = Object.fromEntries(response.headers);
+      const ok = opts.validateStatus ? opts.validateStatus(response.status) : response.ok;
+      if (!ok) {
+        const error = Object.assign(new Error('request failed'), {
+          code: response.status,
+          response: { status: response.status, data },
+        });
+        throw error;
+      }
+      return { data, status: response.status, headers };
+    },
+  };
+
+  return new Storage({
+    projectId: 'test-project',
+    apiEndpoint: `http://127.0.0.1:${port}`,
+    authClient: unauthenticatedClient as unknown as StorageOptions['authClient'],
+  });
+}
 
 const lockConfig = {
   name: 'test-lock',
@@ -80,10 +130,7 @@ describe('GcsStorageAccessor metadata and generation preconditions', () => {
     pendingCustom = {};
     reportedMetageneration = null;
     requests = [];
-    const storage = new Storage({
-      projectId: 'test-project',
-      apiEndpoint: `http://127.0.0.1:${port}`,
-    });
+    const storage = createLocalApiStorage(port);
     const providerConfig: GcsProviderConfig = createGcsProviderConfig({
       bucket: 'test-bucket',
       lockedBy: 'test-host',
@@ -234,10 +281,7 @@ describe('GcsStorageAccessor metadata and generation preconditions', () => {
   });
 
   function accessorFor(lockedBy: string): GcsStorageAccessor {
-    const storage = new Storage({
-      projectId: 'test-project',
-      apiEndpoint: `http://127.0.0.1:${port}`,
-    });
+    const storage = createLocalApiStorage(port);
     return new GcsStorageAccessor(storage, createGcsProviderConfig({ bucket: 'test-bucket', lockedBy }));
   }
 
