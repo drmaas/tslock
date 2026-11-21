@@ -34,7 +34,7 @@
   },
   "peerDependencies": {
     "@tslock/core": "workspace:^",
-    "@google-cloud/storage": "^8.2.0"
+    "@google-cloud/storage": "^9.0.0"
   },
   "peerDependenciesMeta": {
     "@tslock/core": {
@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@tslock/core": "workspace:*",
-    "@google-cloud/storage": "^8.2.0",
+    "@google-cloud/storage": "^9.0.0",
     "vitest": "^5.0.3",
     "typescript": "^7.0.2",
     "tsup": "^9.0.0",
