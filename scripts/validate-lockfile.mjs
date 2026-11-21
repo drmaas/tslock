@@ -391,7 +391,8 @@ function collectSnapshotDependencyVersions(lockfileText) {
     const match = /^ {6}([^:\s]+): ([^\s]+)\s*$/.exec(line);
     if (!match) continue;
 
-    const [, name, version] = match;
+    const [, rawName, version] = match;
+    const name = stripYamlQuotes(rawName);
     const normalized = normalizeSnapshotDependencyVersion(version);
     if (normalized === undefined || (!/^\d/.test(normalized) && !/^[\d.]+/.test(normalized))) {
       continue;
