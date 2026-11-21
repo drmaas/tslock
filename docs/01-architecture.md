@@ -755,8 +755,8 @@ Each provider package:
 
 ### 8.4 Node.js Target
 
-- **Minimum**: Node 22+ (Maintenance LTS).
-- **Recommended**: Node 26 (pinned in `.nvmrc`). `AsyncLocalStorage` and `performance.now()` are stable.
+- **Minimum**: Node 24+ (maintenance LTS).
+- **Recommended**: Node 26 (pinned in `.nvmrc` for local development). CI also runs on Node 24. `AsyncLocalStorage` and `performance.now()` are stable.
 - **AsyncLocalStorage**: Available since Node 13.10, stable since Node 16. No concern.
 
 ## 9. Error Handling
@@ -853,5 +853,5 @@ Node.js is single-threaded (ignoring worker threads). This simplifies several Sh
 | **Cloud integration tests** | LocalStack (S3, DynamoDB) + GCP emulators (Firestore, Datastore). Spanner/GCS: unit tests only.                    |
 | **Package scope**           | `@tslock/*`                                                                                                        |
 | **Module format**           | Dual ESM + CJS (tsup)                                                                                              |
-| **Node.js minimum**         | Node 22+                                                                                                           |
+| **Node.js minimum**         | Node 24+ (CI matrix on Node 24 and 26)                                                                             |
 | **Config API**              | Plain typed object + `parseDuration()`                                                                             |

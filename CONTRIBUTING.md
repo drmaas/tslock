@@ -32,12 +32,12 @@ Be kind and professional. Treat everyone with respect. Harassment, personal atta
 
 ### Prerequisites
 
-- **Node.js 26.11.1** (pinned in [`.nvmrc`](./.nvmrc); use [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) to match it. Published packages still allow Node >= 22.)
+- **Node.js 26.11.1** (pinned in [`.nvmrc`](./.nvmrc) for local development; use [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) to match it. CI runs on Node 24 and 26. Published packages require Node >= 24.)
 - **pnpm 12** (pinned as `packageManager`. Node 26 does not ship Corepack: `npm install -g corepack@latest && corepack enable`)
 
 ### Bun compatibility
 
-TSLock targets the **Node.js API surface** (Node >= 22): `AsyncLocalStorage`, `node:os` hostname, Timers, and standard `fetch` where providers use it. There is **no Bun-only package**. Running under [Bun](https://bun.sh) is best-effort: if Bun's Node compatibility layer covers the APIs a given provider needs (and its peer driver works on Bun), the same `@tslock/*` packages should work. CI and local development use the Node 26 pin in `.nvmrc`. Published packages still allow Node >= 22. Prefer that Node line over Bun unless you have verified your provider + driver combination under Bun.
+TSLock targets the **Node.js API surface** (Node >= 24): `AsyncLocalStorage`, `node:os` hostname, Timers, and standard `fetch` where providers use it. There is **no Bun-only package**. Running under [Bun](https://bun.sh) is best-effort: if Bun's Node compatibility layer covers the APIs a given provider needs (and its peer driver works on Bun), the same `@tslock/*` packages should work. Local development uses the Node 26 pin in `.nvmrc`; CI runs the verify and integration jobs on Node 24 and 26. Prefer that Node line over Bun unless you have verified your provider + driver combination under Bun.
 
 Provider drivers (Redis clients, AWS SDK, database drivers, Cloudflare Workers runtime for Durable Objects, etc.) each have their own Bun support story — validate those separately.
 
