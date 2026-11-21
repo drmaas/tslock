@@ -409,6 +409,27 @@ ${snapshotsAligned.replace('pkg', 'root')} adm-zip: 0.6.0
     assert.match(errors.join('\n'), /"adm-zip"/);
   });
 
+  it('rejects scoped snapshot drift when packages pin matches override', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "@babel/core": 7.29.7
+`;
+    const lockfile = `${lockfilePrefix}
+  '@babel/core@7.29.7':
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  pkg@1.0.0:
+    dependencies:
+      '@babel/core': 7.29.6
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /@babel\/core/);
+    assert.match(errors.join('\n'), /7\.29\.6/);
+  });
+
   it('rejects wrong @babel/core pin for scoped plain override', () => {
     const workspace = `packages:
   - "packages/*"
