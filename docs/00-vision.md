@@ -215,13 +215,13 @@ The mapping:
 - **Not the fastest lock library.** Correctness and clarity over micro-optimization. A lock check is a single round-trip to the backing store; latency is dominated by network, not library overhead.
 - **Not a distributed coordination framework.** No leader election, no barrier, no phaser. Just locks.
 - **Not a replacement for Redis Redlock.** Redlock is a different algorithm (quorum-based). TSLock's Redis provider uses single-instance `SET NX PX` + Lua, matching ShedLock's approach.
-- **Not polyglot.** TypeScript/Node.js only. Official support is Node 22+. Bun may work via Node API compatibility (see `CONTRIBUTING.md`); there is no Bun-only package. Not designed for browsers.
+- **Not polyglot.** TypeScript/Node.js only. Official support is Node 24 and 26. Bun may work via Node API compatibility (see `CONTRIBUTING.md`); there is no Bun-only package. Not designed for browsers.
 
 ## 10. Versioning & Compatibility
 
 - **v1.0.0**: Initial release with all providers and core abstractions.
 - **Semver**: Breaking changes to the core API require a major version bump. Provider packages follow their own semver but track core's major.
-- **Node.js support**: Minimum Node 22 (Maintenance LTS). Development and CI pin Node 26 in `.nvmrc`.
+- **Node.js support**: Minimum Node 24 (maintenance LTS). Local development pins Node 26 in `.nvmrc`; CI runs verify and integration on Node 24 and 26.
 - **TypeScript**: Target TS 5.x. Emit ESM + CJS dual format.
 
 ## 11. License
@@ -242,5 +242,5 @@ Apache 2.0, matching ShedLock.
 | **Cloud integration tests** | LocalStack + emulators                                                              | LocalStack for S3/DynamoDB, GCP emulators for Firestore/Datastore. Skip Spanner/GCS (no emulator) — unit tests only.                                                                           |
 | **Package scope**           | `@tslock/*`                                                                         | Short, memorable, matches project name                                                                                                                                                         |
 | **Module format**           | Dual ESM + CJS                                                                      | Maximum compatibility. tsup handles both.                                                                                                                                                      |
-| **Node.js minimum**         | Node 22+                                                                            | Maintenance LTS remains supported. Development and CI pin Node 26 in `.nvmrc`                                                                                                                  |
+| **Node.js minimum**         | Node 24+                                                                            | Node 24 (maintenance LTS) and Node 26 (active LTS) are tested in CI. Local development pins Node 26 in `.nvmrc`.                                                                               |
 | **Config API**              | Plain object + `parseDuration()`                                                    | Simplest, TypeScript validates shape. No builder class.                                                                                                                                        |

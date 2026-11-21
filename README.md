@@ -238,7 +238,7 @@ Contributions are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the
 
 ### Prerequisites
 
-- **Node.js 26.11.1** (check with `node -v`; manage versions with [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) — pinned in [`.nvmrc`](./.nvmrc). Published packages still allow Node >= 22.)
+- **Node.js 26.11.1** (check with `node -v`; manage versions with [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) — pinned in [`.nvmrc`](./.nvmrc) for local development. CI exercises Node 24 and 26. Published packages require Node >= 24.)
 - **pnpm 12** (pinned as `packageManager`. Node 26 does not ship Corepack: `npm install -g corepack@latest && corepack enable`)
 - **Docker** (only for integration tests, which use testcontainers / emulators)
 

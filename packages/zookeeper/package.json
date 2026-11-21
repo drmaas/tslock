@@ -30,7 +30,7 @@
     "typecheck": "tsc --noEmit"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "peerDependencies": {
     "@tslock/core": "workspace:^"
