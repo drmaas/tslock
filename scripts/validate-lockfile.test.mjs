@@ -323,6 +323,37 @@ snapshots:
     assert.match(errors.join('\n'), /6\.29\.0/);
   });
 
+  it('parses all eight committed workspace override shapes', () => {
+    const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8');
+    const parsed = parseBareWorkspaceOverrides(workspace);
+    assert.equal(parsed.length, 8);
+    assert.deepEqual(
+      parsed.map(({ overrideKey, name, range, expectedVersion, parent }) => ({
+        overrideKey,
+        name,
+        range,
+        expectedVersion,
+        ...(parent === undefined ? {} : { parent }),
+      })),
+      [
+        { overrideKey: '@babel/core', name: '@babel/core', range: undefined, expectedVersion: '7.29.7' },
+        {
+          overrideKey: '@types/mssql>tedious',
+          name: 'tedious',
+          parent: '@types/mssql',
+          range: undefined,
+          expectedVersion: '20.0.0',
+        },
+        { overrideKey: 'adm-zip', name: 'adm-zip', range: undefined, expectedVersion: '0.6.1' },
+        { overrideKey: 'fast-xml-parser@', name: 'fast-xml-parser', range: undefined, expectedVersion: '5.11.1' },
+        { overrideKey: 'qs@', name: 'qs', range: undefined, expectedVersion: '6.17.1' },
+        { overrideKey: 'tar@', name: 'tar', range: undefined, expectedVersion: '7.5.22' },
+        { overrideKey: 'undici@^6', name: 'undici', range: '^6', expectedVersion: '6.29.0' },
+        { overrideKey: 'undici@^8', name: 'undici', range: '^8', expectedVersion: '8.11.2' },
+      ],
+    );
+  });
+
   it('rejects in-range snapshot version mismatch when packages only has an out-of-range pin', () => {
     const workspace = `packages:
   - "packages/*"
@@ -343,5 +374,78 @@ snapshots:
     assert.match(errors.join('\n'), /"undici@\^6"/);
     assert.match(errors.join('\n'), /snapshots: references undici@6\.28\.0/);
     assert.match(errors.join('\n'), /no in-range/i);
+  });
+});
+
+describe('plain, scoped, and nested workspace overrides', () => {
+  const lockfilePrefix = `---
+lockfileVersion: '9.0'
+
+importers:
+  .: {}
+
+packages:
+`;
+
+  const snapshotsAligned = `snapshots:
+  pkg@1.0.0:
+    dependencies:
+`;
+
+  it('rejects wrong adm-zip pin for plain override', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  adm-zip: 0.6.1
+`;
+    const lockfile = `${lockfilePrefix}
+  adm-zip@0.6.0:
+    resolution: {integrity: sha512-a}
+
+${snapshotsAligned.replace('pkg', 'root')} adm-zip: 0.6.0
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"adm-zip"/);
+  });
+
+  it('rejects wrong @babel/core pin for scoped plain override', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "@babel/core": 7.29.7
+`;
+    const lockfile = `${lockfilePrefix}
+  '@babel/core@7.29.6':
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  pkg@1.0.0:
+    dependencies:
+      '@babel/core': 7.29.6
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"@babel\/core"/);
+  });
+
+  it('rejects wrong tedious pin for nested override', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "@types/mssql>tedious": 20.0.0
+`;
+    const lockfile = `${lockfilePrefix}
+  tedious@19.0.0:
+    resolution: {integrity: sha512-a}
+
+snapshots:
+  pkg@1.0.0:
+    dependencies:
+      tedious: 19.0.0
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"@types\/mssql>tedious"/);
   });
 });

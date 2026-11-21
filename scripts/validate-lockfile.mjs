@@ -292,26 +292,48 @@ export function parseBareWorkspaceOverrides(workspaceText) {
 
     let name;
     let range;
-    if (parsed.key.endsWith('@')) {
+    let parent;
+    const nestedIndex = parsed.key.indexOf('>');
+    if (nestedIndex >= 0) {
+      parent = parsed.key.slice(0, nestedIndex);
+      name = parsed.key.slice(nestedIndex + 1);
+      if (!parent || !name) continue;
+      range = undefined;
+    } else if (parsed.key.endsWith('@')) {
       name = parsed.key.slice(0, -1);
       range = undefined;
     } else {
       const at = parsed.key.lastIndexOf('@');
-      if (at <= 0) continue;
-      name = parsed.key.slice(0, at);
-      range = parsed.key.slice(at + 1);
-      if (!range) continue;
+      if (at > 0) {
+        name = parsed.key.slice(0, at);
+        range = parsed.key.slice(at + 1);
+        if (!range) continue;
+      } else {
+        name = parsed.key;
+        range = undefined;
+      }
     }
 
-    overrides.push({
+    const entry = {
       overrideKey: parsed.key,
       name,
       range,
       expectedVersion: parsed.value,
-    });
+    };
+    if (parent !== undefined) {
+      entry.parent = parent;
+    }
+    overrides.push(entry);
   }
 
   return overrides;
+}
+
+function stripYamlQuotes(key) {
+  if ((key.startsWith("'") && key.endsWith("'")) || (key.startsWith('"') && key.endsWith('"'))) {
+    return key.slice(1, -1);
+  }
+  return key;
 }
 
 function lockfileMainDocument(lockfileText) {
@@ -339,7 +361,7 @@ export function collectLockfilePackageKeys(lockfileText) {
     const rest = line.slice(colon + 1).trim();
     if (rest !== '' && !rest.startsWith('{')) continue;
 
-    keys.push(line.slice(2, colon).trim());
+    keys.push(stripYamlQuotes(line.slice(2, colon).trim()));
   }
 
   return keys;
