@@ -276,6 +276,7 @@ function parseOverrideEntry(trimmed) {
 
 export function parseBareWorkspaceOverrides(workspaceText) {
   const overrides = [];
+  const errors = [];
   const lines = workspaceText.split(/\r?\n/);
   let inOverrides = false;
 
@@ -297,7 +298,10 @@ export function parseBareWorkspaceOverrides(workspaceText) {
     if (nestedIndex >= 0) {
       parent = parsed.key.slice(0, nestedIndex);
       name = parsed.key.slice(nestedIndex + 1);
-      if (!parent || !name) continue;
+      if (!parent || !name) {
+        errors.push(`malformed workspace override key ${JSON.stringify(parsed.key)}`);
+        continue;
+      }
       range = undefined;
     } else if (parsed.key.endsWith('@')) {
       name = parsed.key.slice(0, -1);
@@ -326,7 +330,7 @@ export function parseBareWorkspaceOverrides(workspaceText) {
     overrides.push(entry);
   }
 
-  return overrides;
+  return { overrides, errors };
 }
 
 function stripYamlQuotes(key) {
@@ -408,7 +412,8 @@ function collectSnapshotDependencyVersions(lockfileText) {
 
 export function validateWorkspaceOverrides(workspaceText, lockfileText) {
   const errors = [];
-  const bareOverrides = parseBareWorkspaceOverrides(workspaceText);
+  const { overrides: bareOverrides, errors: parseErrors } = parseBareWorkspaceOverrides(workspaceText);
+  errors.push(...parseErrors);
   if (bareOverrides.length === 0) return errors;
 
   const packageKeys = collectLockfilePackageKeys(lockfileText);
