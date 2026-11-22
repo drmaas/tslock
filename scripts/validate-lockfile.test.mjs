@@ -228,7 +228,7 @@ overrides:
 `;
 
   it('parses pkgname@ and pkgname@<range> override keys', () => {
-    const parsed = parseBareWorkspaceOverrides(workspaceUndiciRanges);
+    const { overrides: parsed } = parseBareWorkspaceOverrides(workspaceUndiciRanges);
     assert.equal(parsed.length, 2);
     assert.deepEqual(
       parsed.map(({ overrideKey, name, range, expectedVersion }) => ({
@@ -325,7 +325,8 @@ snapshots:
 
   it('parses all eight committed workspace override shapes', () => {
     const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8');
-    const parsed = parseBareWorkspaceOverrides(workspace);
+    const { overrides: parsed, errors: parseErrors } = parseBareWorkspaceOverrides(workspace);
+    assert.deepEqual(parseErrors, []);
     assert.equal(parsed.length, 8);
     assert.deepEqual(
       parsed.map(({ overrideKey, name, range, expectedVersion, parent }) => ({
@@ -468,5 +469,39 @@ snapshots:
     const errors = validateWorkspaceOverrides(workspace, lockfile);
     assert.notEqual(errors.length, 0);
     assert.match(errors.join('\n'), /"@types\/mssql>tedious"/);
+  });
+
+  it('rejects malformed nested override keys with empty parent or name', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "@types/mssql>": 20.0.0
+  ">tedious": 20.0.0
+`;
+    const lockfile = `${lockfilePrefix}
+  tedious@20.0.0:
+    resolution: {integrity: sha512-a}
+
+${snapshotsAligned.replace('pkg', 'root')} tedious: 20.0.0
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"@types\/mssql>"/);
+    assert.match(errors.join('\n'), /">tedious"/);
+  });
+
+  it('accepts well-formed nested override when lockfile is aligned', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "@types/mssql>tedious": 20.0.0
+`;
+    const lockfile = `${lockfilePrefix}
+  tedious@20.0.0:
+    resolution: {integrity: sha512-a}
+
+${snapshotsAligned.replace('pkg', 'root')} tedious: 20.0.0
+`;
+    assert.deepEqual(validateWorkspaceOverrides(workspace, lockfile), []);
   });
 });
