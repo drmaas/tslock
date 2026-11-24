@@ -490,8 +490,11 @@ ${snapshotsAligned.replace('pkg', 'root')} undici: 6.29.0
 `;
     const errors = validateWorkspaceOverrides(workspace, lockfile);
     assert.notEqual(errors.length, 0);
-    assert.match(errors.join('\n'), /"qs@@"/);
-    assert.match(errors.join('\n'), /"undici@\^6@"/);
+    const joined = errors.join('\n');
+    assert.match(joined, /malformed workspace override key "qs@@"/);
+    assert.match(joined, /malformed workspace override key "undici@\^6@"/);
+    assert.doesNotMatch(joined, /has no "qs@@/);
+    assert.doesNotMatch(joined, /has no "undici@\^6@/);
   });
 
   it('accepts bare qs@ override when lockfile matches', () => {
