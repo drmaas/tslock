@@ -471,6 +471,44 @@ snapshots:
     assert.match(errors.join('\n'), /"@types\/mssql>tedious"/);
   });
 
+  it('rejects workspace override keys with empty range after the final @', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "qs@@": 6.17.1
+  undici@^6@: 6.29.0
+`;
+    const lockfile = `${lockfilePrefix}
+  qs@6.17.1:
+    resolution: {integrity: sha512-a}
+
+  undici@6.29.0:
+    resolution: {integrity: sha512-b}
+
+${snapshotsAligned.replace('pkg', 'root')} qs: 6.17.1
+${snapshotsAligned.replace('pkg', 'root')} undici: 6.29.0
+`;
+    const errors = validateWorkspaceOverrides(workspace, lockfile);
+    assert.notEqual(errors.length, 0);
+    assert.match(errors.join('\n'), /"qs@@"/);
+    assert.match(errors.join('\n'), /"undici@\^6@"/);
+  });
+
+  it('accepts bare qs@ override when lockfile matches', () => {
+    const workspace = `packages:
+  - "packages/*"
+overrides:
+  "qs@": 6.17.1
+`;
+    const lockfile = `${lockfilePrefix}
+  qs@6.17.1:
+    resolution: {integrity: sha512-a}
+
+${snapshotsAligned.replace('pkg', 'root')} qs: 6.17.1
+`;
+    assert.deepEqual(validateWorkspaceOverrides(workspace, lockfile), []);
+  });
+
   it('rejects malformed nested override keys with empty parent or name', () => {
     const workspace = `packages:
   - "packages/*"

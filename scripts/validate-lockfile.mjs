@@ -311,7 +311,10 @@ export function parseBareWorkspaceOverrides(workspaceText) {
       if (at > 0) {
         name = parsed.key.slice(0, at);
         range = parsed.key.slice(at + 1);
-        if (!range) continue;
+        if (!range) {
+          errors.push(`malformed workspace override key ${JSON.stringify(parsed.key)}`);
+          continue;
+        }
       } else {
         name = parsed.key;
         range = undefined;
