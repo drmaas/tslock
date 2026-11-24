@@ -274,6 +274,13 @@ function parseOverrideEntry(trimmed) {
   return undefined;
 }
 
+const BARE_UNSCOPED_OVERRIDE_KEY = /^[^@]+@$/;
+const BARE_SCOPED_OVERRIDE_KEY = /^@[^@/]+\/[^@]+@$/;
+
+function isBareWorkspaceOverrideKey(key) {
+  return BARE_UNSCOPED_OVERRIDE_KEY.test(key) || BARE_SCOPED_OVERRIDE_KEY.test(key);
+}
+
 export function parseBareWorkspaceOverrides(workspaceText) {
   const overrides = [];
   const errors = [];
@@ -288,8 +295,14 @@ export function parseBareWorkspaceOverrides(workspaceText) {
     if (inOverrides && /^[^\s#]/.test(line)) break;
     if (!inOverrides || !line.startsWith('  ')) continue;
 
-    const parsed = parseOverrideEntry(line.trimStart());
-    if (!parsed) continue;
+    const trimmed = line.trimStart();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const parsed = parseOverrideEntry(trimmed);
+    if (!parsed) {
+      errors.push(`malformed workspace override line ${JSON.stringify(trimmed)}`);
+      continue;
+    }
 
     let name;
     let range;
@@ -303,7 +316,7 @@ export function parseBareWorkspaceOverrides(workspaceText) {
         continue;
       }
       range = undefined;
-    } else if (parsed.key.endsWith('@')) {
+    } else if (isBareWorkspaceOverrideKey(parsed.key)) {
       name = parsed.key.slice(0, -1);
       range = undefined;
     } else {
@@ -311,7 +324,10 @@ export function parseBareWorkspaceOverrides(workspaceText) {
       if (at > 0) {
         name = parsed.key.slice(0, at);
         range = parsed.key.slice(at + 1);
-        if (!range) continue;
+        if (!range) {
+          errors.push(`malformed workspace override key ${JSON.stringify(parsed.key)}`);
+          continue;
+        }
       } else {
         name = parsed.key;
         range = undefined;
