@@ -1,5 +1,16 @@
 # @tslock/otel
 
+## 2.5.0
+
+### Minor Changes
+
+- [#207](https://github.com/drmaas/tslock/pull/207) [`cd7f9ca`](https://github.com/drmaas/tslock/commit/cd7f9caa76ea799c1bf177ccf09feaebd7cb5859) Thanks [@drmaas](https://github.com/drmaas)! - Raise the documented Node.js engine requirement to `>=24`. Node.js 22 is no longer supported.
+
+### Patch Changes
+
+- Updated dependencies [[`cd7f9ca`](https://github.com/drmaas/tslock/commit/cd7f9caa76ea799c1bf177ccf09feaebd7cb5859)]:
+  - @tslock/core@2.5.0
+
 ## 2.4.0
 
 ### Minor Changes
